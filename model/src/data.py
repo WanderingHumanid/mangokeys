@@ -11,6 +11,7 @@ from __future__ import annotations
 import random
 from collections.abc import Iterator
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset, Sampler
 
@@ -18,7 +19,12 @@ from model.src.tokenizer import TranslitTokenizer
 
 
 class PairDataset(Dataset):
-    """Parallel roman and native text encoded to tensors."""
+    """Parallel roman and native text encoded to tensors.
+
+    The encoded ids live in two flat numpy arrays with an offset table. A list
+    of python lists would cost several gigabytes once the corpus reaches a few
+    million pairs.
+    """
 
     def __init__(
         self,
@@ -28,29 +34,42 @@ class PairDataset(Dataset):
         max_tgt: int = 64,
     ) -> None:
         self.pairs = pairs
-        self.tokenizer = tokenizer
         self.max_src = max_src
         self.max_tgt = max_tgt
 
-        self.src_ids: list[list[int]] = []
-        self.tgt_ids: list[list[int]] = []
-        for pair in pairs:
+        src_chunks: list[np.ndarray] = []
+        src_offsets = np.zeros(len(pairs) + 1, dtype=np.int64)
+        tgt_chunks: list[np.ndarray] = []
+        tgt_offsets = np.zeros(len(pairs) + 1, dtype=np.int64)
+
+        for index, pair in enumerate(pairs):
             src = tokenizer.encode_src(pair["roman"])[:max_src]
             tgt = tokenizer.encode_tgt(pair["native"])[:max_tgt]
-            self.src_ids.append(src)
-            self.tgt_ids.append(tgt)
+            src_chunks.append(np.asarray(src, dtype=np.int32))
+            tgt_chunks.append(np.asarray(tgt, dtype=np.int32))
+            src_offsets[index + 1] = src_offsets[index] + len(src)
+            tgt_offsets[index + 1] = tgt_offsets[index] + len(tgt)
+
+        self.src_flat = (
+            np.concatenate(src_chunks) if src_chunks else np.zeros(0, dtype=np.int32)
+        )
+        self.tgt_flat = (
+            np.concatenate(tgt_chunks) if tgt_chunks else np.zeros(0, dtype=np.int32)
+        )
+        self.src_offsets = src_offsets
+        self.tgt_offsets = tgt_offsets
 
     def __len__(self) -> int:
         return len(self.pairs)
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
-        src = torch.tensor(self.src_ids[index], dtype=torch.long)
-        tgt = torch.tensor(self.tgt_ids[index], dtype=torch.long)
-        return src, tgt
+        src = torch.from_numpy(self.src_flat[self.src_offsets[index] : self.src_offsets[index + 1]])
+        tgt = torch.from_numpy(self.tgt_flat[self.tgt_offsets[index] : self.tgt_offsets[index + 1]])
+        return src.long(), tgt.long()
 
     @property
     def lengths(self) -> list[int]:
-        return [len(ids) for ids in self.src_ids]
+        return np.diff(self.src_offsets).tolist()
 
 
 class Collator:
