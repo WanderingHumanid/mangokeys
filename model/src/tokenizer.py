@@ -19,14 +19,16 @@ SPECIALS = (PAD, UNK, BOS, EOS)
 # The whole Malayalam block, seeded so that no target character is ever unknown.
 MALAYALAM_BLOCK = range(0x0D00, 0x0D80)
 
-# Latin ranges we accept on the source side.
-LATIN_RANGES = (range(0x41, 0x5B), range(0x61, 0x7B), range(0x30, 0x3A))
+# Latin characters accepted on the source side.
+UPPER = range(0x41, 0x5B)
+LOWER = range(0x61, 0x7B)
+DIGITS = range(0x30, 0x3A)
 PUNCTUATION = set(" .,-_'!?/():;@&+=\"#*[]{}<>|~`\\^$%")
 
 
 @dataclass
 class CharTokenizer:
-    """Maps characters to integer ids and back."""
+    """Maps characters to integer ids and back for one side of the pair."""
 
     itos: list[str]
     stoi: dict[str, int]
@@ -53,71 +55,83 @@ class CharTokenizer:
     def encode(self, text: str) -> list[int]:
         return [self.stoi.get(ch, self.unk_id) for ch in text]
 
-    def decode(self, ids: list[int], skip_specials: bool = True) -> str:
-        out = []
-        for i in ids:
-            token = self.itos[i] if 0 <= i < len(self.itos) else UNK
-            if skip_specials and token in SPECIALS:
-                continue
-            out.append(token)
-        return "".join(out)
+    def decode(self, ids: list[int]) -> str:
+        return "".join(self.itos[i] for i in ids if 0 <= i < len(self.itos) and self.itos[i] not in SPECIALS)
+
+    @classmethod
+    def build(cls, texts: list[str], min_freq: int = 1) -> CharTokenizer:
+        """Build a tokenizer from a list of strings."""
+        counter: Counter[str] = Counter()
+        for text in texts:
+            counter.update(text)
+        vocab = list(SPECIALS) + sorted(
+            (ch for ch, n in counter.items() if n >= min_freq),
+            key=lambda ch: (-counter[ch], ch),
+        )
+        return cls(itos=vocab, stoi={ch: i for i, ch in enumerate(vocab)})
+
+    @classmethod
+    def build_source(cls) -> CharTokenizer:
+        """Build the fixed source vocabulary.
+
+        The source side is closed over printable ASCII so that anything a user
+        can type is representable and never out of vocabulary.
+        """
+        chars = [chr(cp) for cp in UPPER]
+        chars += [chr(cp) for cp in LOWER]
+        chars += [chr(cp) for cp in DIGITS]
+        chars += sorted(PUNCTUATION)
+        itos = list(SPECIALS) + chars
+        return cls(itos=itos, stoi={ch: i for i, ch in enumerate(itos)})
+
+    @classmethod
+    def build_target(cls, texts: list[str], min_freq: int = 1) -> CharTokenizer:
+        """Build the target vocabulary, seeded with the Malayalam block."""
+        counter: Counter[str] = Counter()
+        for text in texts:
+            counter.update(text)
+
+        seed = [chr(cp) for cp in MALAYALAM_BLOCK]
+        seed_set = set(seed)
+        extra = sorted(
+            (ch for ch, n in counter.items() if n >= min_freq and ch not in seed_set),
+            key=lambda ch: (-counter[ch], ch),
+        )
+        itos = list(SPECIALS) + seed + extra
+        return cls(itos=itos, stoi={ch: i for i, ch in enumerate(itos)})
+
+
+@dataclass
+class TranslitTokenizer:
+    """The pair of tokenizers used by the model."""
+
+    src: CharTokenizer
+    tgt: CharTokenizer
+
+    def encode_src(self, text: str) -> list[int]:
+        return self.src.encode(text)
+
+    def encode_tgt(self, text: str) -> list[int]:
+        return self.tgt.encode(text)
+
+    def decode_tgt(self, ids: list[int]) -> str:
+        return self.tgt.decode(ids)
+
+    @property
+    def src_vocab(self) -> int:
+        return len(self.src)
+
+    @property
+    def tgt_vocab(self) -> int:
+        return len(self.tgt)
 
     def save(self, path: str | Path) -> None:
-        Path(path).write_text(json.dumps({"itos": self.itos}, ensure_ascii=False), encoding="utf-8")
+        payload = {"src": self.src.itos, "tgt": self.tgt.itos}
+        Path(path).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
     @classmethod
-    def load(cls, path: str | Path) -> CharTokenizer:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-        itos = data["itos"]
-        return cls(itos=itos, stoi={ch: i for i, ch in enumerate(itos)})
-
-    @classmethod
-    def build(
-        cls,
-        source_texts: list[str],
-        target_texts: list[str],
-        min_freq: int = 1,
-    ) -> CharTokenizer:
-        """Build a joint tokenizer from parallel text.
-
-        The source side is closed over known Latin characters so that typing is
-        never out of vocabulary. The target side is seeded with the full
-        Malayalam block and then extended with anything else seen in the data.
-        """
-        source_vocab = _source_vocab()
-        target_counter: Counter[str] = Counter()
-        for text in target_texts:
-            target_counter.update(text)
-
-        target_vocab = [chr(cp) for cp in MALAYALAM_BLOCK]
-        target_vocab += sorted(
-            (ch for ch, n in target_counter.items() if n >= min_freq and ch not in target_vocab),
-            key=lambda ch: (-target_counter[ch], ch),
-        )
-
-        itos = list(SPECIALS) + source_vocab + target_vocab
-        return cls(itos=itos, stoi={ch: i for i, ch in enumerate(itos)})
-
-    def split_vocab(self) -> tuple[list[str], list[str]]:
-        """Return the source and target vocabularies as separate lists.
-
-        The encoder and decoder do not share embeddings, so training needs to
-        know where one vocabulary ends and the other begins.
-        """
-        source = [t for t in self.itos if t not in SPECIALS and _is_source_char(t)]
-        target = [t for t in self.itos if t not in SPECIALS and not _is_source_char(t)]
-        return source, target
-
-
-def _is_source_char(ch: str) -> bool:
-    if ch in LATIN_RANGES[0] or ch in LATIN_RANGES[1] or ch in LATIN_RANGES[2]:
-        return True
-    return ch in PUNCTUATION
-
-
-def _source_vocab() -> list[str]:
-    chars: list[str] = []
-    for rng in LATIN_RANGES:
-        chars.extend(chr(cp) for cp in rng)
-    chars.extend(sorted(PUNCTUATION))
-    return chars
+    def load(cls, path: str | Path) -> TranslitTokenizer:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        src = CharTokenizer(itos=payload["src"], stoi={c: i for i, c in enumerate(payload["src"])})
+        tgt = CharTokenizer(itos=payload["tgt"], stoi={c: i for i, c in enumerate(payload["tgt"])})
+        return cls(src=src, tgt=tgt)
