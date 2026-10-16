@@ -33,11 +33,22 @@ def test_counter_cer_uses_graphemes():
     assert abs(counter.cer - 1 / 6) < 1e-9
 
 
+def test_counter_accumulates_across_rows():
+    counter = ErrorCounter()
+    counter.update("കേരളം", "കേരള")
+    counter.update("കേരളം", "കേരള")
+    assert counter.substitutions == 2
+    assert abs(counter.cer - 2 / 6) < 1e-9
+
+
 def test_counter_ranks_candidates():
     counter = ErrorCounter()
+    counter.update("കേരളം", "കേരളം")
     counter.update_ranking("കേരളം", ["കേരളം", "കേരളി"])
+    counter.update("കേരളം", "കേരളി")
     counter.update_ranking("കേരളം", ["കേരളി"])
     assert counter.recall_at_k == 0.5
+    assert counter.total == 2
 
 
 def test_word_error_rate():

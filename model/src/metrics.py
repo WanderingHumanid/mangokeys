@@ -63,23 +63,29 @@ class ErrorCounter:
         self.reference_length = 0
         self.exact = 0
         self.total = 0
-        self.hits_at_k = 0
+        self.rank_hits = 0
 
     def update(self, reference: str, hypothesis: str) -> None:
+        """Score one hypothesis against one reference."""
         ref = graphemes(reference)
         hyp = graphemes(hypothesis)
         self.total += 1
         self.reference_length += len(ref)
         if ref == hyp:
             self.exact += 1
-        self.substitutions, self.deletions, self.insertions = _align(ref, hyp)
+        subs, dels, ins = _align(ref, hyp)
+        self.substitutions += subs
+        self.deletions += dels
+        self.insertions += ins
 
     def update_ranking(self, reference: str, candidates: Sequence[str]) -> None:
-        """Count a hit when the reference appears anywhere in the candidate list."""
-        self.total += 1
-        self.reference_length += len(graphemes(reference))
+        """Count a hit when the reference appears anywhere in the candidate list.
+
+        This only touches the ranking counter, so it can be called next to
+        update without counting the row twice.
+        """
         if reference in candidates:
-            self.hits_at_k += 1
+            self.rank_hits += 1
 
     @property
     def errors(self) -> int:
@@ -101,13 +107,14 @@ class ErrorCounter:
     def recall_at_k(self) -> float:
         if self.total == 0:
             return 0.0
-        return self.hits_at_k / self.total
+        return self.rank_hits / self.total
 
     def summary(self) -> dict[str, float]:
         return {
             "n": self.total,
             "top1": round(self.accuracy, 4),
             "cer": round(self.cer, 4),
+            "top5": round(self.recall_at_k, 4),
             "sub": self.substitutions,
             "del": self.deletions,
             "ins": self.insertions,
