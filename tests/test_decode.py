@@ -54,3 +54,23 @@ def test_beam_scores_are_ordered():
     out = beam_search(model, src, mask, bos_id=2, eos_id=3, beam=4, max_len=8, n_best=4)
     assert len(out[0]) == 4
     assert len(set(len(c) for c in out[0])) == 1
+
+
+def test_beam_batch_matches_single_rows():
+    model = build_model()
+    src = torch.randint(3, 90, (3, 6))
+    mask = torch.ones(3, 6, dtype=torch.bool)
+
+    batched = beam_search(model, src, mask, bos_id=2, eos_id=3, beam=3, max_len=8, n_best=2)
+    for row in range(3):
+        single = beam_search(
+            model,
+            src[row : row + 1],
+            mask[row : row + 1],
+            bos_id=2,
+            eos_id=3,
+            beam=3,
+            max_len=8,
+            n_best=2,
+        )
+        assert batched[row][0] == single[0][0]

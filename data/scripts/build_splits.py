@@ -1,15 +1,15 @@
 """Build the training, validation and test files.
 
-    python -m data.scripts.build_splits --dakshina data/raw/dakshina --aksharantar data/raw
+    python -m data.scripts.build_splits --aksharantar data/raw/aksharantar_ml
 
-Sources are read, normalized, filtered and split by native word so that a word
-and its spelling variants never straddle the train and test boundary.
+The official Aksharantar splits are respected. The Dakshina lexicon train file
+joins the training data, while its dev and test lexicons are kept aside as a
+separate evaluation set so that nothing leaks.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import random
 import re
@@ -23,28 +23,37 @@ from model.src.normalize import normalize_malayalam, normalize_roman
 MALAYALAM_RE = re.compile(r"[ഀ-ൿ]")
 LATIN_RE = re.compile(r"[A-Za-z]")
 
+AKSHARANTAR_SPLITS = ("train", "valid", "test")
 
-def read_dakshina_lexicon(root: Path) -> list[dict]:
-    """Read the Dakshina Malayalam lexicon files."""
+
+def read_dakshina_lexicon(root: Path, splits: tuple[str, ...]) -> list[dict]:
+    """Read the Dakshina Malayalam lexicon files for the given splits."""
     pairs: list[dict] = []
     lexicon_dir = root / "ml" / "lexicons"
     for path in sorted(lexicon_dir.glob("ml.translit.sampled.*.tsv")):
         split = path.stem.rsplit(".", 1)[-1]
+        if split not in splits:
+            continue
         with path.open(encoding="utf-8") as handle:
             for line in handle:
                 parts = line.rstrip("\n").split("\t")
                 if len(parts) < 2:
                     continue
-                native, roman = parts[0], parts[1]
                 count = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
                 pairs.append(
-                    {"roman": roman, "native": native, "src": "dakshina", "split": split, "count": count}
+                    {
+                        "roman": parts[1],
+                        "native": parts[0],
+                        "source": "dakshina",
+                        "split": split,
+                        "count": count,
+                    }
                 )
     return pairs
 
 
 def read_dakshina_sentences(root: Path) -> list[dict]:
-    """Read the romanized Dakshina sentences and split them into word pairs."""
+    """Read the romanized Dakshina sentences as word pairs."""
     pairs: list[dict] = []
     path = root / "ml" / "romanized" / "ml.romanized.rejoined.tsv"
     if not path.exists():
@@ -60,37 +69,42 @@ def read_dakshina_sentences(root: Path) -> list[dict]:
                 continue
             for native, roman in zip(native_words, roman_words, strict=True):
                 pairs.append(
-                    {"roman": roman, "native": native, "src": "dakshina_sent", "split": "all", "count": 1}
+                    {
+                        "roman": roman,
+                        "native": native,
+                        "source": "dakshina_sent",
+                        "split": "all",
+                        "count": 1,
+                    }
                 )
     return pairs
 
 
-def read_aksharantar(root: Path) -> list[dict]:
-    """Read the Malayalam slice of Aksharantar."""
-    pairs: list[dict] = []
-    candidates = sorted(root.rglob("*.jsonl"))
-    if not candidates:
-        raise FileNotFoundError(f"no jsonl files under {root}")
-    with candidates[0].open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            row = json.loads(line)
-            native = row.get("ml") or row.get("native") or row.get("tgt")
-            roman = row.get("en") or row.get("roman") or row.get("src")
-            if not native or not roman:
-                continue
-            pairs.append(
-                {
-                    "roman": roman,
-                    "native": native,
-                    "src": row.get("src", "aksharantar"),
-                    "split": "all",
-                    "count": 1,
-                }
-            )
-    return pairs
+def read_aksharantar(root: Path) -> dict[str, list[dict]]:
+    """Read every Aksharantar split for Malayalam."""
+    result: dict[str, list[dict]] = {}
+    for split in AKSHARANTAR_SPLITS:
+        path = root / f"mal_{split}.json"
+        if not path.exists():
+            continue
+        rows: list[dict] = []
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                rows.append(
+                    {
+                        "roman": row.get("english word", ""),
+                        "native": row.get("native word", ""),
+                        "source": row.get("source", "aksharantar"),
+                        "split": split,
+                        "count": 1,
+                    }
+                )
+        result[split] = rows
+    return result
 
 
 def normalize_pair(pair: dict) -> dict | None:
@@ -120,24 +134,17 @@ def dedupe(pairs: list[dict]) -> list[dict]:
     return list(best.values())
 
 
-def split_by_word(
+def hold_out_by_word(
     pairs: list[dict],
-    valid_ratio: float = 0.02,
-    test_ratio: float = 0.02,
-    seed: int = 0,
-) -> tuple[list[dict], list[dict], list[dict]]:
-    """Split on the native word so that variants cannot leak across splits."""
+    holdout_ratio: float,
+    seed: int,
+) -> tuple[list[dict], list[dict]]:
+    """Split on the native word so that spelling variants cannot leak."""
     rng = random.Random(seed)
     shuffled = list(pairs)
     rng.shuffle(shuffled)
-
-    total = len(shuffled)
-    valid_size = int(total * valid_ratio)
-    test_size = int(total * test_ratio)
-    valid = shuffled[:valid_size]
-    test = shuffled[valid_size : valid_size + test_size]
-    train = shuffled[valid_size + test_size :]
-    return train, valid, test
+    size = int(len(shuffled) * holdout_ratio)
+    return shuffled[size:], shuffled[:size]
 
 
 def main() -> None:
@@ -148,51 +155,79 @@ def main() -> None:
     parser.add_argument("--augment-copies", type=int, default=1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-train", type=int, default=0, help="cap the training set size")
+    parser.add_argument("--dakshina-holdout", type=float, default=0.02)
     args = parser.parse_args()
-
-    pairs: list[dict] = []
-    dakshina_root = Path(args.dakshina)
-    if dakshina_root.exists():
-        pairs += read_dakshina_lexicon(dakshina_root)
-        pairs += read_dakshina_sentences(dakshina_root)
-        print(f"dakshina: {len(pairs)} pairs")
-
-    aksharantar_root = Path(args.aksharantar)
-    if aksharantar_root.exists():
-        extra = read_aksharantar(aksharantar_root)
-        print(f"aksharantar: {len(extra)} pairs")
-        pairs += extra
-
-    print(f"total raw pairs: {len(pairs)}")
-
-    normalized = [p for p in (normalize_pair(pair) for pair in pairs) if p]
-    print(f"after normalization: {len(normalized)}")
-
-    deduped = dedupe(normalized)
-    print(f"after dedupe by native word: {len(deduped)}")
-
-    sources = Counter(pair["src"] for pair in deduped)
-    print(f"sources: {dict(sources)}")
-
-    train, valid, test = split_by_word(deduped, seed=args.seed)
-    print(f"split: train {len(train)}  valid {len(valid)}  test {len(test)}")
-
-    if args.augment_copies > 0:
-        augmenter = ManglishAugmenter(AugmentConfig(), seed=args.seed)
-        train = augment_pairs(train, augmenter, copies=args.augment_copies)
-        styles = Counter(pair.get("style", "standard") for pair in train)
-        print(f"after augmentation: {len(train)} ({dict(styles)})")
-
-    if args.max_train and len(train) > args.max_train:
-        random.Random(args.seed).shuffle(train)
-        train = train[: args.max_train]
-        print(f"capped train to {len(train)}")
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    for name, rows in (("train", train), ("valid", valid), ("test", test)):
-        count = write_pairs(out_dir / f"{name}.tsv", rows)
-        print(f"wrote {out_dir / f'{name}.tsv'} ({count} rows)")
+
+    # ------------------------------------------------------------- test sets
+    aksharantar = read_aksharantar(Path(args.aksharantar))
+    test_rows = [p for p in (normalize_pair(r) for r in aksharantar.get("test", [])) if p]
+    for row in test_rows:
+        row["bucket"] = row["source"]
+    write_pairs(out_dir / "test_aksharantar.tsv", test_rows)
+    print(f"test_aksharantar.tsv: {len(test_rows)} rows")
+
+    dakshina_root = Path(args.dakshina)
+    dakshina_eval: list[dict] = []
+    if dakshina_root.exists():
+        raw = read_dakshina_lexicon(dakshina_root, ("dev", "test"))
+        dakshina_eval = [p for p in (normalize_pair(r) for r in raw) if p]
+        for row in dakshina_eval:
+            row["bucket"] = row["split"]
+        write_pairs(out_dir / "test_dakshina.tsv", dakshina_eval)
+        print(f"test_dakshina.tsv: {len(dakshina_eval)} rows")
+
+    # ---------------------------------------------------------- training data
+    train_rows: list[dict] = []
+    for row in aksharantar.get("train", []):
+        normalized = normalize_pair(row)
+        if normalized:
+            train_rows.append(normalized)
+
+    if dakshina_root.exists():
+        raw = read_dakshina_lexicon(dakshina_root, ("train",))
+        extra = [p for p in (normalize_pair(r) for r in raw) if p]
+        train_rows += extra
+        print(f"dakshina lexicon train: {len(extra)} rows")
+
+    print(f"training pool: {len(train_rows)}")
+    sources = Counter(row["source"] for row in train_rows)
+    print(f"sources: {dict(sources)}")
+
+    train_rows, held_out = hold_out_by_word(train_rows, args.dakshina_holdout, args.seed)
+    if not aksharantar.get("valid"):
+        valid_rows = held_out
+    else:
+        valid_rows = [p for p in (normalize_pair(r) for r in aksharantar["valid"]) if p]
+        valid_rows += held_out
+    print(f"valid: {len(valid_rows)}  train after holdout: {len(train_rows)}")
+
+    if args.augment_copies > 0:
+        augmenter = ManglishAugmenter(AugmentConfig(), seed=args.seed)
+        train_rows = augment_pairs(train_rows, augmenter, copies=args.augment_copies)
+        styles = Counter(row.get("style", "standard") for row in train_rows)
+        print(f"after augmentation: {len(train_rows)} ({dict(styles)})")
+
+    if args.max_train and len(train_rows) > args.max_train:
+        random.Random(args.seed).shuffle(train_rows)
+        train_rows = train_rows[: args.max_train]
+        print(f"capped train to {len(train_rows)}")
+
+    write_pairs(out_dir / "train.tsv", train_rows)
+    write_pairs(out_dir / "valid.tsv", valid_rows)
+    print(f"train.tsv: {len(train_rows)}  valid.tsv: {len(valid_rows)}")
+
+    # A per source copy makes the human versus mined comparison a one line run.
+    by_source: dict[str, list[dict]] = {}
+    for row in train_rows:
+        if row.get("style") == "adhoc":
+            continue
+        by_source.setdefault(row["source"], []).append(row)
+    for source, rows in by_source.items():
+        write_pairs(out_dir / f"train_{source}.tsv", rows)
+        print(f"train_{source}.tsv: {len(rows)}")
 
 
 if __name__ == "__main__":

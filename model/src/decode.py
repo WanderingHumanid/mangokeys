@@ -45,7 +45,7 @@ def greedy_decode(
             outputs[row].append(token)
         if bool(finished.all()):
             break
-        tokens = next_ids.unsqueeze(1)
+        tokens = torch.cat([tokens, next_ids.unsqueeze(1)], dim=1)
 
     return outputs
 
@@ -83,14 +83,17 @@ def beam_search(
     finished: list[list[tuple[float, list[int]]]] = [[] for _ in range(batch)]
 
     for _ in range(max_len):
-        logits = model.decode_step(tokens[:, -1:], memory, expanded_mask)
+        logits = model.decode_step(tokens, memory, expanded_mask)
         log_probs = F.log_softmax(logits, dim=-1)
         vocab = log_probs.size(-1)
 
         candidate = (scores.unsqueeze(1) + log_probs).view(batch, width * vocab)
         top_scores, top_indices = candidate.topk(width, dim=-1)
 
-        beam_index = (top_indices // vocab).view(-1)
+        # The parent of each candidate is a beam inside the same batch row, so
+        # the row offset has to be added to get the flat index.
+        row_offset = (torch.arange(batch, device=device) * width).view(batch, 1)
+        beam_index = (top_indices // vocab + row_offset).view(-1)
         token_index = (top_indices % vocab).view(-1)
 
         history = tokens[beam_index]

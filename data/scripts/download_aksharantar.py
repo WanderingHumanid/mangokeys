@@ -13,7 +13,8 @@ import zipfile
 from pathlib import Path
 
 BASE = "https://huggingface.co/datasets/ai4bharat/Aksharantar/resolve/main"
-LANG = "ml"
+# Aksharantar names its files with the ISO 639-2 code, so Malayalam is mal.
+LANG = "mal"
 
 
 def download_zip(out_dir: Path, lang: str) -> Path:
@@ -38,9 +39,10 @@ def extract(archive: Path, out_dir: Path) -> Path:
 
 
 def find_jsonl(root: Path) -> Path:
-    candidates = sorted(root.rglob("*.jsonl"))
+    # The archive stores json lines in files with a .json extension.
+    candidates = sorted(root.rglob("*.jsonl")) + sorted(root.rglob("*.json"))
     if not candidates:
-        raise FileNotFoundError(f"no jsonl files under {root}")
+        raise FileNotFoundError(f"no json files under {root}")
     return candidates[0]
 
 

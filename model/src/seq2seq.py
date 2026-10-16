@@ -205,17 +205,28 @@ class Seq2Seq(nn.Module):
 
     def decode_step(
         self,
-        tgt_last: torch.Tensor,
+        tgt_prefix: torch.Tensor,
         memory: torch.Tensor,
         src_mask: torch.Tensor,
+        self_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Decode a single step given the last emitted token.
+        """Decode one step given the target prefix generated so far.
 
-        The host runtime calls this in a loop, or in parallel across a beam.
-        Returns logits of shape [batch, vocab].
+        The whole prefix is fed in and only the last position is read back.
+        The self attention is masked the same way as during training, so the
+        result matches the full decode exactly.
+
+        The prefix is recomputed at every step rather than kept in a key value
+        cache. Sequences are short, and a cache would complicate the exported
+        graph considerably.
+
+        The self mask can be passed in. The exported graph takes it as an input
+        because a mask built from a traced length would be frozen at export
+        time.
         """
-        x = self.dropout(self.pos(self.tgt_embed(tgt_last)))
-        self_mask = None
+        x = self.dropout(self.pos(self.tgt_embed(tgt_prefix)))
+        if self_mask is None:
+            self_mask = _causal_mask(tgt_prefix.size(1), tgt_prefix.device)
         cross_mask = _expand_mask(src_mask)
         for layer in self.decoder:
             x = layer(x, memory, self_mask, cross_mask)
@@ -237,8 +248,13 @@ def _expand_mask(mask: torch.Tensor) -> torch.Tensor:
 
 
 def _causal_mask(length: int, device: torch.device) -> torch.Tensor:
-    """Additive mask that hides future positions from every query."""
-    future = torch.triu(torch.ones(length, length, device=device, dtype=torch.bool), diagonal=1)
+    """Additive mask that hides future positions from every query.
+
+    The mask is built from a range comparison rather than a constant tensor so
+    that it survives an ONNX export with a dynamic sequence length.
+    """
+    index = torch.arange(length, device=device)
+    future = index[None, :] > index[:, None]
     return future.view(1, 1, length, length)
 
 

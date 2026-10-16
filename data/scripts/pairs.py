@@ -1,8 +1,8 @@
 """Helpers for reading and writing transliteration pair files.
 
 Pairs are stored as tab separated text so that they stay easy to inspect and
-to diff. The roman form comes first, the native form second, and optional
-extra columns carry provenance.
+to diff. The roman form comes first, the native form second. An optional third
+column carries a bucket label such as the test subset a row came from.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 ROMAN, NATIVE = "roman", "native"
+BUCKET = "bucket"
 
 
 def write_pairs(path: str | Path, pairs: Iterable[dict]) -> int:
@@ -21,7 +22,8 @@ def write_pairs(path: str | Path, pairs: Iterable[dict]) -> int:
     count = 0
     with path.open("w", encoding="utf-8") as handle:
         for pair in pairs:
-            handle.write(f"{pair[ROMAN]}\t{pair[NATIVE]}\n")
+            label = pair.get(BUCKET, "")
+            handle.write(f"{pair[ROMAN]}\t{pair[NATIVE]}\t{label}\n")
             count += 1
     return count
 
@@ -36,7 +38,10 @@ def read_pairs(path: str | Path) -> Iterator[dict]:
             parts = line.split("\t")
             if len(parts) < 2:
                 continue
-            yield {ROMAN: parts[0], NATIVE: parts[1]}
+            pair = {ROMAN: parts[0], NATIVE: parts[1]}
+            if len(parts) > 2 and parts[2]:
+                pair[BUCKET] = parts[2]
+            yield pair
 
 
 def read_jsonl(path: str | Path) -> Iterator[dict]:
