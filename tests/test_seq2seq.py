@@ -69,7 +69,7 @@ def test_decode_step_matches_full_decode():
     full = model.decode(tgt, memory, mask)
     stepped = model.decode_step(tgt[:, :1], memory, mask)
 
-    assert torch.allclose(full[:, 0], stepped[:, 0], atol=1e-5)
+    assert torch.allclose(full[:, 0], stepped, atol=1e-5)
 
 
 def test_parameter_count_is_small():

@@ -212,13 +212,14 @@ class Seq2Seq(nn.Module):
         """Decode a single step given the last emitted token.
 
         The host runtime calls this in a loop, or in parallel across a beam.
+        Returns logits of shape [batch, vocab].
         """
         x = self.dropout(self.pos(self.tgt_embed(tgt_last)))
         self_mask = None
         cross_mask = _expand_mask(src_mask)
         for layer in self.decoder:
             x = layer(x, memory, self_mask, cross_mask)
-        return self.output_proj(self.dec_norm(x))
+        return self.output_proj(self.dec_norm(x))[:, -1]
 
     def forward(
         self,
