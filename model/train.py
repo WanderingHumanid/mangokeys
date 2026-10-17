@@ -213,7 +213,8 @@ def main() -> None:
             if index % settings["log_every"] == 0:
                 print(
                     f"epoch {epoch} step {step} loss {running / (index + 1):.4f} "
-                    f"lr {lr:.2e} {time.time() - start:.0f}s"
+                    f"lr {lr:.2e} {time.time() - start:.0f}s",
+                    flush=True,
                 )
 
         if (epoch + 1) % settings["eval_every"] == 0:
@@ -221,7 +222,7 @@ def main() -> None:
             metrics["epoch"] = epoch
             metrics["train_loss"] = running / max(len(train_loader), 1)
             history.append(metrics)
-            print(f"valid  {json.dumps(metrics)}")
+            print(f"valid  {json.dumps(metrics)}", flush=True)
 
             if metrics["cer"] < best_cer:
                 best_cer = metrics["cer"]
@@ -235,7 +236,7 @@ def main() -> None:
                     },
                     out_dir / "best.pt",
                 )
-                print(f"saved best checkpoint, cer {best_cer:.4f}")
+                print(f"saved best checkpoint, cer {best_cer:.4f}", flush=True)
 
             (out_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
 
