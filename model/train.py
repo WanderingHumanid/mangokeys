@@ -207,7 +207,7 @@ def main() -> None:
             torch.nn.utils.clip_grad_norm_(model.parameters(), settings["grad_clip"])
             optimizer.step()
 
-            running += float(loss)
+            running += loss.item()
             step += 1
 
             if index % settings["log_every"] == 0:
