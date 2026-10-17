@@ -102,11 +102,26 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/ml_mini.yaml")
     parser.add_argument("--resume", default=None, help="checkpoint to resume from")
+    parser.add_argument("--out-dir", default=None, help="override the output directory")
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--train", default=None, help="override the training file")
+    parser.add_argument("--valid", default=None, help="override the validation file")
     args = parser.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     settings = config["train"]
     max_tgt = config["data"]["max_tgt"]
+    if args.out_dir:
+        settings["out_dir"] = args.out_dir
+    if args.epochs:
+        settings["epochs"] = args.epochs
+    if args.seed is not None:
+        settings["seed"] = args.seed
+    if args.train:
+        config["data"]["train"] = args.train
+    if args.valid:
+        config["data"]["valid"] = args.valid
     set_seed(settings["seed"])
 
     out_dir = Path(settings["out_dir"])

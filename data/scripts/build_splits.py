@@ -147,29 +147,28 @@ def hold_out_by_word(
     return shuffled[size:], shuffled[:size]
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dakshina", default="data/raw/dakshina")
-    parser.add_argument("--aksharantar", default="data/raw/aksharantar_ml")
-    parser.add_argument("--out", default="data/processed")
-    parser.add_argument("--augment-copies", type=int, default=1)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--max-train", type=int, default=0, help="cap the training set size")
-    parser.add_argument("--dakshina-holdout", type=float, default=0.02)
-    args = parser.parse_args()
-
-    out_dir = Path(args.out)
+def build(
+    dakshina: str = "data/raw/dakshina",
+    aksharantar: str = "data/raw/aksharantar_ml",
+    out: str = "data/processed",
+    augment_copies: int = 1,
+    seed: int = 0,
+    max_train: int = 0,
+    dakshina_holdout: float = 0.02,
+) -> dict[str, list[dict]]:
+    """Build every split and write them out. Returns the split sizes."""
+    out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------- test sets
-    aksharantar = read_aksharantar(Path(args.aksharantar))
+    aksharantar = read_aksharantar(Path(aksharantar))
     test_rows = [p for p in (normalize_pair(r) for r in aksharantar.get("test", [])) if p]
     for row in test_rows:
         row["bucket"] = row["source"]
     write_pairs(out_dir / "test_aksharantar.tsv", test_rows)
-    print(f"test_aksharantar.tsv: {len(test_rows)} rows")
+    print(f"test_akshantar.tsv: {len(test_rows)} rows")
 
-    dakshina_root = Path(args.dakshina)
+    dakshina_root = Path(dakshina)
     dakshina_eval: list[dict] = []
     if dakshina_root.exists():
         raw = read_dakshina_lexicon(dakshina_root, ("dev", "test"))
@@ -196,23 +195,23 @@ def main() -> None:
     sources = Counter(row["source"] for row in train_rows)
     print(f"sources: {dict(sources)}")
 
-    train_rows, held_out = hold_out_by_word(train_rows, args.dakshina_holdout, args.seed)
-    if not aksharantar.get("valid"):
-        valid_rows = held_out
-    else:
+    train_rows, held_out = hold_out_by_word(train_rows, dakshina_holdout, seed)
+    if aksharantar.get("valid"):
         valid_rows = [p for p in (normalize_pair(r) for r in aksharantar["valid"]) if p]
         valid_rows += held_out
+    else:
+        valid_rows = held_out
     print(f"valid: {len(valid_rows)}  train after holdout: {len(train_rows)}")
 
-    if args.augment_copies > 0:
-        augmenter = ManglishAugmenter(AugmentConfig(), seed=args.seed)
-        train_rows = augment_pairs(train_rows, augmenter, copies=args.augment_copies)
+    if augment_copies > 0:
+        augmenter = ManglishAugmenter(AugmentConfig(), seed=seed)
+        train_rows = augment_pairs(train_rows, augmenter, copies=augment_copies)
         styles = Counter(row.get("style", "standard") for row in train_rows)
         print(f"after augmentation: {len(train_rows)} ({dict(styles)})")
 
-    if args.max_train and len(train_rows) > args.max_train:
-        random.Random(args.seed).shuffle(train_rows)
-        train_rows = train_rows[: args.max_train]
+    if max_train and len(train_rows) > max_train:
+        random.Random(seed).shuffle(train_rows)
+        train_rows = train_rows[:max_train]
         print(f"capped train to {len(train_rows)}")
 
     write_pairs(out_dir / "train.tsv", train_rows)
@@ -228,6 +227,35 @@ def main() -> None:
     for source, rows in by_source.items():
         write_pairs(out_dir / f"train_{source}.tsv", rows)
         print(f"train_{source}.tsv: {len(rows)}")
+
+    return {
+        "train": train_rows,
+        "valid": valid_rows,
+        "test_aksharantar": test_rows,
+        "test_dakshina": dakshina_eval,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dakshina", default="data/raw/dakshina")
+    parser.add_argument("--aksharantar", default="data/raw/aksharantar_ml")
+    parser.add_argument("--out", default="data/processed")
+    parser.add_argument("--augment-copies", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--max-train", type=int, default=0, help="cap the training set size")
+    parser.add_argument("--dakshina-holdout", type=float, default=0.02)
+    args = parser.parse_args()
+
+    build(
+        dakshina=args.dakshina,
+        aksharantar=args.aksharantar,
+        out=args.out,
+        augment_copies=args.augment_copies,
+        seed=args.seed,
+        max_train=args.max_train,
+        dakshina_holdout=args.dakshina_holdout,
+    )
 
 
 if __name__ == "__main__":
