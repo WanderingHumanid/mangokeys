@@ -8,9 +8,6 @@
  * time.
  */
 
-const MALAYALAM_BLOCK_START = 0x0d00;
-const MALAYALAM_BLOCK_END = 0x0d80;
-
 const LEGACY_CHILLU = {
   "ണ": "ൺ",
   "ന": "ൻ",
@@ -23,7 +20,6 @@ const LEGACY_CHILLU = {
 const VIRAMA = "്";
 const ANUSVARA = "ം";
 const ZWJ = "‍";
-const ZWNJ = "‌";
 
 export function normalizeMalayalam(text) {
   let out = text.normalize("NFC");
@@ -47,41 +43,38 @@ export function normalizeRoman(text) {
 
 function causalMask(length) {
   const mask = new Uint8Array(length * length);
-  for (let i = 0; i < length; i += 1) {
-    for (let j = i + 1; j < length; j += 1) {
-      mask[i * length + j] = 1;
+  for (let row = 0; row < length; row += 1) {
+    for (let column = row + 1; column < length; column += 1) {
+      mask[row * length + column] = 1;
     }
   }
   return mask;
 }
 
-function logSoftmax(values) {
+function logSoftmax(values, offset, size) {
   let max = -Infinity;
-  for (const value of values) {
-    if (value > max) max = value;
+  for (let i = 0; i < size; i += 1) {
+    if (values[offset + i] > max) max = values[offset + i];
   }
   let sum = 0;
-  const out = new Float32Array(values.length);
-  for (let i = 0; i < values.length; i += 1) {
-    out[i] = values[i] - max;
+  const out = new Float64Array(size);
+  for (let i = 0; i < size; i += 1) {
+    out[i] = values[offset + i] - max;
     sum += Math.exp(out[i]);
   }
   const logSum = Math.log(sum);
-  for (let i = 0; i < out.length; i += 1) {
-    out[i] -= logSum;
-  }
+  for (let i = 0; i < size; i += 1) out[i] -= logSum;
   return out;
 }
 
 export class Transliterator {
   /**
-   * @param {object} session encoder and decoder sessions
-   * @param {object} tokenizer with src and target vocabularies
-   * @param {object} options maxSrc, maxTgt and beam size
+   * @param {object} sessions encoder and decoder ONNX sessions
+   * @param {object} tokenizer src and target vocabularies
    */
-  constructor(session, tokenizer, options = {}) {
-    this.encoder = session.encoder;
-    this.decoder = session.decoder;
+  constructor(sessions, tokenizer, options = {}) {
+    this.encoder = sessions.encoder;
+    this.decoder = sessions.decoder;
     this.tokenizer = tokenizer;
     this.maxSrc = options.maxSrc ?? 48;
     this.maxTgt = options.maxTgt ?? 64;
@@ -111,70 +104,79 @@ export class Transliterator {
     const clean = normalizeRoman(roman);
     if (!clean) return [];
 
+    const ort = this.ort;
     const srcIds = this.encodeSource(clean);
-    const src = new BigInt64Array(this.maxSrc);
-    const srcMask = new Uint8Array(this.maxSrc);
+    const srcData = new BigInt64Array(this.maxSrc);
+    const maskData = new Uint8Array(this.maxSrc);
     for (let i = 0; i < srcIds.length; i += 1) {
-      src[i] = BigInt(srcIds[i]);
-      srcMask[i] = 1;
+      srcData[i] = BigInt(srcIds[i]);
+      maskData[i] = 1;
     }
 
-    const memory = await this.encoder.run({ src_ids: src, src_mask: srcMask });
+    const encoded = await this.encoder.run({
+      src_ids: new ort.Tensor("int64", srcData, [1, this.maxSrc]),
+      src_mask: new ort.Tensor("bool", maskData, [1, this.maxSrc]),
+    });
+    const memory = encoded.memory;
+
     const width = Math.min(this.beam, this.maxTgt);
-    const beamMemory = new BigInt64Array(memory.dims[0] * width * memory.dims[1] * memory.dims[2]);
-    for (let b = 0; b < width; b += 1) {
-      const copy = memory.data.slice(b * memory.dims[1] * memory.dims[2], (b + 1) * memory.dims[1] * memory.dims[2]);
-      beamMemory.set(copy, b * memory.dims[1] * memory.dims[2]);
+    const rowSize = memory.dims[1] * memory.dims[2];
+    const beamData = new Float32Array(rowSize * width);
+    for (let slot = 0; slot < width; slot += 1) {
+      beamData.set(memory.data.subarray(slot * rowSize, (slot + 1) * rowSize), slot * rowSize);
     }
-    const beamMask = new Uint8Array(this.maxSrc * width);
-    for (let b = 0; b < width; b += 1) {
-      beamMask.set(srcMask, b * this.maxSrc);
+    const beamMaskData = new Uint8Array(this.maxSrc * width);
+    for (let slot = 0; slot < width; slot += 1) {
+      beamMaskData.set(maskData, slot * this.maxSrc);
     }
+
+    const beamMemory = new ort.Tensor("float32", beamData, [width, memory.dims[1], memory.dims[2]]);
+    const beamMask = new ort.Tensor("bool", beamMaskData, [width, this.maxSrc]);
 
     let tokens = new BigInt64Array(width);
     for (let i = 0; i < width; i += 1) tokens[i] = BigInt(this.tokenizer.bos);
 
-    let scores = new Float32Array(width).fill(-Infinity);
+    let scores = new Float64Array(width).fill(-Infinity);
     scores[0] = 0;
     const finished = [];
 
     for (let step = 0; step < this.maxTgt; step += 1) {
-      const logits = await this.decoder.run({
-        tgt_prefix: tokens,
+      const step_ = tokens.length;
+      const outputs = await this.decoder.run({
+        tgt_prefix: new ort.Tensor("int64", tokens, [width, step_]),
         memory: beamMemory,
         src_mask: beamMask,
-        self_mask: causalMask(tokens.length),
+        self_mask: new ort.Tensor("bool", causalMask(step_), [1, 1, step_, step_]),
       });
 
+      const logits = outputs.logits;
       const vocab = logits.dims[1];
-      const candidates = new Array(width * vocab);
-      for (let b = 0; b < width; b += 1) {
-        const row = logSoftmax(logits.data.subarray(b * vocab, (b + 1) * vocab));
-        for (let v = 0; v < vocab; v += 1) {
-          candidates[b * vocab + v] = scores[b] + row[v];
+      const ranked = [];
+      for (let slot = 0; slot < width; slot += 1) {
+        const row = logSoftmax(logits.data, slot * vocab, vocab);
+        for (let token = 0; token < vocab; token += 1) {
+          ranked.push({ score: scores[slot] + row[token], parent: slot, token });
         }
       }
-
-      const order = candidates
-        .map((score, index) => [score, index])
-        .sort((a, b) => b[0] - a[0])
-        .slice(0, width);
+      ranked.sort((a, b) => b.score - a.score);
 
       const nextTokens = new BigInt64Array(width);
-      const nextScores = new Float32Array(width);
-      const nextPrefix = new BigInt64Array(width * (tokens.length + 1));
+      const nextScores = new Float64Array(width);
+      const nextPrefix = new BigInt64Array(width * (step_ + 1));
       for (let slot = 0; slot < width; slot += 1) {
-        const [, index] = order[slot];
-        const parent = Math.floor(index / vocab);
-        const token = index % vocab;
-        nextPrefix.set(tokens.subarray(parent * tokens.length, (parent + 1) * tokens.length), slot * tokens.length);
-        nextPrefix[slot * (tokens.length + 1) + tokens.length] = BigInt(token);
+        const { score, parent, token } = ranked[slot];
+        const prefixStart = slot * (step_ + 1);
+        nextPrefix.set(tokens.subarray(parent * step_, (parent + 1) * step_), prefixStart);
+        nextPrefix[prefixStart + step_] = BigInt(token);
         nextTokens[slot] = BigInt(token);
-        nextScores[slot] = order[slot][0];
+        nextScores[slot] = score;
 
         if (token === this.tokenizer.eos) {
-          const sequence = Array.from(nextPrefix.subarray(slot * (tokens.length + 1), slot * (tokens.length + 1) + tokens.length));
-          finished.push({ score: order[slot][0] / Math.max(sequence.length, 1), sequence });
+          const sequence = Array.from(
+            nextPrefix.subarray(prefixStart, prefixStart + step_),
+            (value) => Number(value),
+          );
+          finished.push({ score: score / Math.max(sequence.length, 1), sequence });
         }
       }
 
@@ -192,15 +194,21 @@ export class Transliterator {
     }
 
     if (finished.length === 0) {
+      const step_ = tokens.length;
       for (let slot = 0; slot < width; slot += 1) {
         if (scores[slot] === -Infinity) continue;
-        const sequence = Array.from(tokens.subarray(slot * tokens.length, (slot + 1) * tokens.length));
+        const sequence = Array.from(
+          tokens.subarray(slot * step_, (slot + 1) * step_),
+          (value) => Number(value),
+        );
         finished.push({ score: scores[slot] / Math.max(sequence.length, 1), sequence });
       }
     }
 
     finished.sort((a, b) => b.score - a.score);
-    return finished.slice(0, nBest).map((item) => normalizeMalayalam(this.decodeTarget(item.sequence)));
+    return finished
+      .slice(0, nBest)
+      .map((item) => normalizeMalayalam(this.decodeTarget(item.sequence)));
   }
 
   async transliterate(roman) {
@@ -212,9 +220,7 @@ export class Transliterator {
 /** Build a tokenizer from the json file written next to the model. */
 export function buildTokenizer(payload) {
   const src = new Map();
-  const tgt = new Map();
   payload.src.forEach((ch, index) => src.set(ch, index));
-  payload.tgt.forEach((ch, index) => tgt.set(ch, index));
   return {
     src,
     tgt: { itos: payload.tgt },
@@ -223,5 +229,3 @@ export function buildTokenizer(payload) {
     unk: payload.tgt.indexOf("<unk>"),
   };
 }
-
-export { MALAYALAM_BLOCK_START, MALAYALAM_BLOCK_END };

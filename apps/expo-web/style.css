@@ -1,0 +1,197 @@
+:root {
+  --ink: #1c1b1f;
+  --muted: #6f6a75;
+  --line: #e3dfe6;
+  --bg: #fbf9fc;
+  --panel: #ffffff;
+  --accent: #7a2e8f;
+  --accent-soft: #f3e9f7;
+  --good: #1d6b4f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1rem 4rem;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 0.9rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge.error {
+  background: #fdecec;
+  color: #a12828;
+}
+
+.input-panel,
+.output-panel,
+.candidates,
+.benchmarks {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-top: 1.2rem;
+}
+
+label,
+.label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.45rem;
+}
+
+#word {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  font-size: 1.15rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fdfcfe;
+  color: inherit;
+}
+
+#word:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.examples button {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  cursor: pointer;
+}
+
+.examples button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.result {
+  padding: 0.35rem 0;
+}
+
+.result + .result {
+  border-top: 1px solid var(--line);
+  margin-top: 0.35rem;
+  padding-top: 0.7rem;
+}
+
+.native {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.45;
+}
+
+.native.muted {
+  color: var(--muted);
+  font-size: 1.15rem;
+}
+
+.candidates ol {
+  margin: 0;
+  padding-left: 1.4rem;
+  font-size: 1.05rem;
+}
+
+.candidates li {
+  padding: 0.12rem 0;
+}
+
+.benchmarks h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+td.num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+tr.ours td {
+  color: var(--good);
+  font-weight: 600;
+}
+
+.note {
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+footer {
+  margin-top: 1.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
