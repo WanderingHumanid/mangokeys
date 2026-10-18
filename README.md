@@ -24,7 +24,7 @@ substitute chillus. A model trained on clean pairs benchmarks beautifully and di
 | **Cost** | **₹0–2,000** · 8 weeks · a single Colab T4 is enough to train |
 
 > **Rule baseline, measured on the Aksharantar Malayalam test set (12,451 words):**
-> Top-1 **6.1%**, CER **57.3%**. The rules cannot resolve the ambiguities that Malayalam
+> Top-1 **9.2%**, CER **48.8%**. The rules cannot resolve the ambiguities that Malayalam
 > orthography hides (ന്ദ vs ണ്ട, ശ vs ഷ vs സ, ന്ത vs ന്റ). That gap is what the model is for.
 
 ## Status

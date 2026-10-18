@@ -136,6 +136,54 @@ demands.
 Every augmented row carries a style tag, so the effect of augmentation is
 measured rather than assumed.
 
+### 3.4 What the corpus says about the romanization
+
+Before writing the rule baseline we measured how ambiguous the romanization
+actually is. The script is `scripts/analyze_corpus.py` and the output is in
+`evals/results/corpus_ambiguity.json`.
+
+**The uppercase retroflex convention is barely used.** Looking at the first
+consonant of every training pair:
+
+| Uppercase letter | Share of rows |
+|---|---|
+| T (ട) | 6.6% |
+| D (ഡ) | 2.4% |
+| N (ണ) | 2.3% |
+| R (റ) | 0.01% |
+| S (ഷ) | never |
+
+So `T` means ട about a tenth of the time and `t` means ട the rest of the
+time. Most typers never hold shift for it.
+
+**The real ambiguity classes are these, with the readings each roman letter
+actually takes:**
+
+| Roman | Readings |
+|---|---|
+| `t` | ത 65%, ട 35% |
+| `d` | ദ 69%, ഡ 23%, ധ 7% |
+| `r` | ര 65%, റ 35% |
+| `s` | സ 60%, ശ 25%, ഷ 15% |
+| `sh` | ശ 65%, ഷ 17%, സ 18% |
+| `l` | ല 60%, ള 40% |
+| `n` | ന 75%, ണ 25% |
+| `k` | ക 98%, ഖ 2% |
+
+Everything else is essentially unambiguous. `ch` is ച 98 percent, `ny` is ഞ
+94 percent, `ksh` is the ക്ഷ conjunct 99 percent.
+
+**This changed the rule engine.** The first version used the textbook
+romanization, with uppercase for the retroflexes and lowercase for the
+dentals. Switching the table to the corpus convention, so that `t` is ത by
+default with ട offered as an alternative, took the rule baseline from
+**Top-1 6.1% and CER 57.3%** to **Top-1 9.2% and CER 48.8%**. A 51 percent
+relative improvement from getting the table right, with no model involved.
+
+It also set the direction for the augmentation. The `swap_retroflex_case`
+rule has to work in both directions, because the corpus contains both
+spellings for the same letter.
+
 ---
 
 ## 4. Model
