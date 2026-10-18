@@ -96,13 +96,47 @@ def main() -> None:
 
     if args.stage in ("all", "e6"):
         # Human written Dakshina rows only, against the mined IndicCorp rows.
+        # The per source files come out of build_splits.
         for source in ("Dakshina", "IndicCorp"):
             data_dir = ROOT / "data" / "processed" / "e2_augment"
             source_file = data_dir / f"train_{source}.tsv"
             if not source_file.exists():
+                print(f"skipping {source}, no {source_file}")
                 continue
-            name = f"e6_{source.lower()}"
-            summary[name] = train_and_eval(name, data_dir, args.epochs, args.seed)
+            run_dir = ROOT / "runs" / f"e6_{source.lower()}"
+            run(
+                [
+                    sys.executable,
+                    "-m",
+                    "model.train",
+                    "--config",
+                    str(ROOT / "configs" / "ml_mini.yaml"),
+                    "--out-dir",
+                    str(run_dir),
+                    "--epochs",
+                    str(args.epochs),
+                    "--seed",
+                    str(args.seed),
+                    "--train",
+                    str(source_file),
+                ]
+            )
+            run(
+                [
+                    sys.executable,
+                    "-m",
+                    "model.evaluate",
+                    "--checkpoint",
+                    str(run_dir / "best.pt"),
+                    "--data",
+                    str(data_dir / "test_aksharantar.tsv"),
+                    "--out",
+                    str(RESULTS / f"e6_{source.lower()}.json"),
+                ]
+            )
+            summary[f"e6_{source.lower()}"] = json.loads(
+                (RESULTS / f"e6_{source.lower()}.json").read_text(encoding="utf-8")
+            )
 
     out = RESULTS / "ablation_summary.json"
     out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
