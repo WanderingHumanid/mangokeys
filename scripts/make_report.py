@@ -73,10 +73,39 @@ def bucket_table(rows: list[dict], test_file: str) -> list[str]:
     return lines
 
 
+def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[dict]:
+    """Build the file the web demo reads.
+
+    The demo expects one entry per test file with a systems table, so the
+    model and the rule baseline sit side by side.
+    """
+    payloads = []
+    for name, rows in systems.items():
+        for entry in rows:
+            if entry.get("file") != test_file:
+                continue
+            payloads.append(
+                {
+                    "file": entry["file"],
+                    "systems": {
+                        SYSTEM_LABELS.get(name, name): {
+                            "top1": entry["top1"],
+                            "cer": entry["cer"],
+                            "top5": entry.get("top5", 0.0),
+                            "ms_per_pair": entry.get("ms_per_pair", 0.0),
+                        }
+                    },
+                }
+            )
+            break
+    return payloads
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test-file", default="test_aksharantar.tsv")
     parser.add_argument("--out", default="evals/results/RESULTS.md")
+    parser.add_argument("--demo-out", default="apps/expo-web/models/eval.json")
     args = parser.parse_args()
 
     systems = {
@@ -111,6 +140,13 @@ def main() -> None:
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
     print(f"\nwrote {out}")
+
+    demo = ROOT / args.demo_out
+    demo.parent.mkdir(parents=True, exist_ok=True)
+    demo.write_text(
+        json.dumps(build_demo_payload(systems, args.test_file), indent=2), encoding="utf-8"
+    )
+    print(f"wrote {demo}")
 
 
 if __name__ == "__main__":
