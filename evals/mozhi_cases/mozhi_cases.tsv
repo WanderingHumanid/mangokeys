@@ -1,0 +1,100 @@
+# Cases from the Mozhi 2.0 scheme, one per line.
+# The third column is a note and is ignored by the evaluator.
+#
+# Only the unambiguous parts of the scheme are listed. The letters that carry
+# no diacritics and differ only in case are left out, because the corpus
+# writes them in lower case most of the time and the model is allowed to
+# prefer the reading the context supports.
+#
+# The ശ, ഷ and സ case is also left out on purpose. Mozhi writes ശ as S and ഷ
+# as sh, but the training corpus writes both as sh, which is what people
+# actually type. The model is judged on the corpus convention.
+
+# Independent vowels
+a	അ
+aa	ആ
+i	ഇ
+ii	ഈ
+u	ഉ
+uu	ഊ
+e	എ
+E	ഏ
+ai	ഐ
+o	ഒ
+O	ഓ
+au	ഔ
+
+# Velars
+ka	ക
+kha	ഖ
+ga	ഗ
+gha	ഘ
+nga	ങ
+
+# Palatals
+cha	ച
+chha	ഛ
+ja	ജ
+jha	ഝ
+nja	ഞ
+
+# Retroflexes
+Ta	ട
+Tha	ഠ
+Da	ഡ
+Dha	ഢ
+Na	ണ
+
+# Dentals
+tha	ത
+thha	ഥ
+da	ദ
+dha	ധ
+na	ന
+
+# Labials
+pa	പ
+pha	ഫ
+ba	ബ
+bha	ഭ
+ma	മ
+
+# Approximants
+ya	യ
+ra	ര
+la	ല
+va	വ
+
+# Sibilants and the rest
+sha	ശ
+sya	സ
+ha	ഹ
+La	ള
+zha	ഴ
+Ra	റ
+
+# Vowel signs on a consonant
+ki	കി
+kii	കീ
+ku	കു
+kuu	കൂ
+ke	കെ
+kee	കേ
+kai	കൈ
+ko	കൊ
+koo	കോ
+kau	കൗ
+
+# Clusters
+ksha	ക്ഷ
+ntha	ന്ത
+kka	ക്ക
+lla	ല്ല
+nta	ന്റ
+mba	മ്പ
+
+# Word end rules
+kam	കം	anusvara
+avan	അവൻ	chillu n
+aval	അവൽ	chillu l
+avar	അവർ	chillu r
