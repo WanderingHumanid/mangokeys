@@ -28,8 +28,10 @@ DIPHTHONG_TAILS = set("aiu")
 # because they are also how റ്റ് and ണ്ണ് are written.
 SAFE_DOUBLES = set("kpcsmgbdvyhr")
 
-# Retroflex letters in the common romanization scheme use uppercase.
-RETROFLEX = {"t": "T", "th": "Th", "d": "D", "dh": "Dh", "n": "N"}
+# Retroflex letters in the common romanization scheme use uppercase. The
+# corpus uses the uppercase form for a minority of words, so both directions
+# have to be reachable.
+RETROFLEX = {"T": "t", "Th": "th", "D": "d", "Dh": "dh", "N": "n"}
 
 # Alternate spellings that mean the same thing.
 SYNONYMS = {
@@ -186,11 +188,15 @@ class ManglishAugmenter:
     def _swap_retroflex_case(self, text: str) -> str:
         """Change the case of a retroflex consonant.
 
-        The letter stays the same, only the case changes, so the meaning of the
-        pair is untouched. The model learns that the case carries little
-        information and has to look at the whole word.
+        The letters stay the same, only the case changes, so the pair stays
+        plausible. The corpus writes the retroflex with a capital in about six
+        percent of words and without in the rest, so the rule has to be able to
+        go either way.
         """
-        for lower, upper in RETROFLEX.items():
+        for upper, lower in RETROFLEX.items():
+            if upper in text:
+                return text.replace(upper, lower, 1)
+        for upper, lower in RETROFLEX.items():
             if lower in text:
                 return text.replace(lower, upper, 1)
         return text

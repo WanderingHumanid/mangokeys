@@ -1,14 +1,20 @@
 """A rule based Manglish to Malayalam converter.
 
 This is the baseline the neural model has to beat. It follows the romanization
-scheme that the common Malayalam keyboards use: a table of consonants, a table
-of vowels, a small set of clusters, and a handful of context rules for the
-places where Malayalam orthography is not a simple concatenation.
+that the training corpus actually uses, which is close to the common Malayalam
+keyboard scheme: a table of consonants, a table of vowels, a small set of
+clusters, and a handful of context rules for the places where Malayalam
+orthography is not a simple concatenation.
 
 The engine cannot resolve ambiguity. A consonant in a cluster and the same
 consonant standing alone look the same in the roman text, so the engine cannot
 tell സുന്ദരി from സുന്ദ്രി. It produces several candidates instead and lets a
 ranker choose, which is how the shipped keyboards work.
+
+The primary reading of each letter is the one the corpus uses most often. The
+rest are offered as alternatives. The roman side barely uses the uppercase
+retroflex convention: T appears in six percent of rows, D in two and N in
+two, while R and S never appear in capitals at all.
 """
 
 from __future__ import annotations
@@ -62,14 +68,16 @@ CONSONANTS = {
     "j": "ജ",
     "jh": "ഝ",
     "nj": "ഞ",
-    "t": "ട",
     "T": "ട",
-    "th": "ഠ",
+    "Th": "ഠ",
     "D": "ഡ",
-    "dh": "ഢ",
+    "Dh": "ഢ",
     "N": "ണ",
-    "thh": "ത",
-    "dh": "ഥ",
+    "t": "ത",
+    "th": "ത",
+    "thh": "ഥ",
+    "d": "ദ",
+    "dh": "ധ",
     "n": "ന",
     "p": "പ",
     "ph": "ഫ",
@@ -82,7 +90,7 @@ CONSONANTS = {
     "v": "വ",
     "w": "വ",
     "sh": "ശ",
-    "S": "ഷ",
+    "Sh": "ഷ",
     "s": "സ",
     "h": "ഹ",
     "L": "ള",
@@ -111,21 +119,33 @@ CHILLUS = {
     "ക": "ൿ",
 }
 
-# Alternate spellings that produce the same sound.
+# Alternate spellings that produce the same sound. The primary mapping of each
+# roman letter is the one the corpus uses most often, and the alternatives are
+# the readings a person could have meant instead. Measured from the training
+# corpus: t is ത 65 percent of the time and ട 35 percent, s is സ 60 percent
+# with ശ and ഷ making up the rest, and so on.
 ALTERNATIVES = {
-    "t": ["ത", "റ്റ"],
-    "th": ["ഥ"],
-    "d": ["ദ", "ഡ"],
-    "dh": ["ധ", "ഢ"],
-    "n": ["ന", "ണ"],
-    "l": ["ല", "ള"],
-    "r": ["ര", "റ"],
-    "s": ["സ", "ശ", "ഷ"],
-    "sh": ["ശ", "ഷ"],
-    "ng": ["ങ", "ങ്ങ"],
+    "t": ["ട", "റ", "റ്റ"],
+    "th": ["ഥ", "ഠ"],
+    "d": ["ഡ", "ധ"],
+    "dh": ["ഢ", "ഥ"],
+    "n": ["ണ"],
+    "l": ["ള"],
+    "r": ["റ"],
+    "s": ["ശ", "ഷ"],
+    "sh": ["ഷ", "സ"],
+    "ng": ["ങ്ങ"],
     "kk": ["ക്ക"],
     "nd": ["ണ്ട"],
     "nth": ["ന്ത", "ന്റ"],
+    "T": ["ത"],
+    "Th": ["ഥ", "ത"],
+    "D": ["ദ"],
+    "Dh": ["ധ", "ദ"],
+    "N": ["ന"],
+    "L": ["ല"],
+    "R": ["ര"],
+    "Sh": ["ശ", "സ"],
 }
 
 

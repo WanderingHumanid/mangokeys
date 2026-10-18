@@ -92,8 +92,10 @@ def test_add_aspiration():
 
 def test_retroflex_case_swap():
     aug = augmenter(swap_retroflex_case=1.0)
+    # The corpus writes the retroflex in capitals for a minority of words, so
+    # the rule has to work in both directions.
     assert aug.augment("thala")[0] == "Thala"
-    assert aug.augment("nalam")[0] == "Nalam"
+    assert aug.augment("Thala")[0] == "thala"
 
 
 def test_simplify_palatal():
