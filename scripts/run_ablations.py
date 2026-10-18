@@ -40,6 +40,21 @@ def build_data(name: str, augment: bool) -> Path:
     return out_dir
 
 
+def split_by_style(data_dir: Path) -> None:
+    """Separate the standard rows from the augmented ones."""
+    run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.split_by_style",
+            "--data",
+            str(data_dir / "train.tsv"),
+            "--out",
+            str(data_dir),
+        ]
+    )
+
+
 def train_and_eval(name: str, data_dir: Path, epochs: int, seed: int) -> dict:
     config = ROOT / "configs" / "ml_mini.yaml"
     run_dir = ROOT / "runs" / name
@@ -74,69 +89,84 @@ def train_and_eval(name: str, data_dir: Path, epochs: int, seed: int) -> dict:
     return json.loads((RESULTS / f"{name}.json").read_text(encoding="utf-8"))
 
 
+def train_on(name: str, train_file: Path, data_dir: Path, epochs: int, seed: int) -> dict:
+    """Train on one file and evaluate the result on the shared test set."""
+    run_dir = ROOT / "runs" / name
+    run(
+        [
+            sys.executable,
+            "-m",
+            "model.train",
+            "--config",
+            str(ROOT / "configs" / "ml_mini.yaml"),
+            "--out-dir",
+            str(run_dir),
+            "--epochs",
+            str(epochs),
+            "--seed",
+            str(seed),
+            "--train",
+            str(train_file),
+        ]
+    )
+    run(
+        [
+            sys.executable,
+            "-m",
+            "model.evaluate",
+            "--checkpoint",
+            str(run_dir / "best.pt"),
+            "--data",
+            str(data_dir / "test_aksharantar.tsv"),
+            "--out",
+            str(RESULTS / f"{name}.json"),
+        ]
+    )
+    return json.loads((RESULTS / f"{name}.json").read_text(encoding="utf-8"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", default="all", help="which ablation to run")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--data",
+        default="data/processed",
+        help="the processed directory to run the ablations against",
+    )
     args = parser.parse_args()
 
     RESULTS.mkdir(parents=True, exist_ok=True)
     summary: dict[str, dict] = {}
+    main_dir = ROOT / args.data
 
     if args.stage in ("all", "e1"):
-        # No augmentation, the clean data ceiling.
-        data_dir = build_data("e1_noaugment", augment=False)
-        summary["e1_noaugment"] = train_and_eval("e1_noaugment", data_dir, args.epochs, args.seed)
+        # The standard rows only, the clean data ceiling.
+        split_by_style(main_dir)
+        standard = main_dir / "train_standard.tsv"
+        if not standard.exists():
+            print("no train_standard.tsv, run the data build first")
+            return
+        summary["e1_standard_only"] = train_on(
+            "e1_standard_only", standard, main_dir, args.epochs, args.seed
+        )
 
     if args.stage in ("all", "e2"):
-        # With the augmentation pipeline, the main hypothesis.
-        data_dir = build_data("e2_augment", augment=True)
-        summary["e2_augment"] = train_and_eval("e2_augment", data_dir, args.epochs, args.seed)
+        # Everything, standard and augmented, the main hypothesis.
+        summary["e2_with_augment"] = train_on(
+            "e2_with_augment", main_dir / "train.tsv", main_dir, args.epochs, args.seed
+        )
 
     if args.stage in ("all", "e6"):
         # Human written Dakshina rows only, against the mined IndicCorp rows.
-        # The per source files come out of build_splits.
         for source in ("Dakshina", "IndicCorp"):
-            data_dir = ROOT / "data" / "processed" / "e2_augment"
-            source_file = data_dir / f"train_{source}.tsv"
+            source_file = main_dir / f"train_{source}.tsv"
             if not source_file.exists():
                 print(f"skipping {source}, no {source_file}")
                 continue
-            run_dir = ROOT / "runs" / f"e6_{source.lower()}"
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "model.train",
-                    "--config",
-                    str(ROOT / "configs" / "ml_mini.yaml"),
-                    "--out-dir",
-                    str(run_dir),
-                    "--epochs",
-                    str(args.epochs),
-                    "--seed",
-                    str(args.seed),
-                    "--train",
-                    str(source_file),
-                ]
-            )
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "model.evaluate",
-                    "--checkpoint",
-                    str(run_dir / "best.pt"),
-                    "--data",
-                    str(data_dir / "test_aksharantar.tsv"),
-                    "--out",
-                    str(RESULTS / f"e6_{source.lower()}.json"),
-                ]
-            )
-            summary[f"e6_{source.lower()}"] = json.loads(
-                (RESULTS / f"e6_{source.lower()}.json").read_text(encoding="utf-8")
-            )
+            name = f"e6_{source.lower()}"
+            summary[name] = train_on(name, source_file, main_dir, args.epochs, args.seed)
 
     out = RESULTS / "ablation_summary.json"
     out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
