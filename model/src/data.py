@@ -9,6 +9,7 @@ shuffling the order between epochs.
 from __future__ import annotations
 
 import random
+from array import array
 from collections.abc import Iterator
 
 import numpy as np
@@ -21,46 +22,43 @@ from model.src.tokenizer import TranslitTokenizer
 class PairDataset(Dataset):
     """Parallel roman and native text encoded to tensors.
 
-    The encoded ids live in two flat numpy arrays with an offset table. A list
-    of python lists would cost several gigabytes once the corpus reaches a few
+    The encoded ids live in two flat arrays with an offset table. A list of
+    python lists would cost several gigabytes once the corpus reaches a few
     million pairs.
     """
 
     def __init__(
         self,
-        pairs: list[dict],
+        pairs: list,
         tokenizer: TranslitTokenizer,
         max_src: int = 48,
         max_tgt: int = 64,
     ) -> None:
-        self.pairs = pairs
         self.max_src = max_src
         self.max_tgt = max_tgt
+        self.count = len(pairs)
 
-        src_chunks: list[np.ndarray] = []
-        src_offsets = np.zeros(len(pairs) + 1, dtype=np.int64)
-        tgt_chunks: list[np.ndarray] = []
-        tgt_offsets = np.zeros(len(pairs) + 1, dtype=np.int64)
+        src_flat = array("i")
+        tgt_flat = array("i")
+        src_offsets = array("q", [0])
+        tgt_offsets = array("q", [0])
 
-        for index, pair in enumerate(pairs):
-            src = tokenizer.encode_src(pair["roman"])[:max_src]
-            tgt = tokenizer.encode_tgt(pair["native"])[:max_tgt]
-            src_chunks.append(np.asarray(src, dtype=np.int32))
-            tgt_chunks.append(np.asarray(tgt, dtype=np.int32))
-            src_offsets[index + 1] = src_offsets[index] + len(src)
-            tgt_offsets[index + 1] = tgt_offsets[index] + len(tgt)
+        for pair in pairs:
+            roman, native = pair if isinstance(pair, tuple) else (pair["roman"], pair["native"])
+            src = tokenizer.encode_src(roman)[:max_src]
+            tgt = tokenizer.encode_tgt(native)[:max_tgt]
+            src_flat.extend(src)
+            tgt_flat.extend(tgt)
+            src_offsets.append(len(src_flat))
+            tgt_offsets.append(len(tgt_flat))
 
-        self.src_flat = (
-            np.concatenate(src_chunks) if src_chunks else np.zeros(0, dtype=np.int32)
-        )
-        self.tgt_flat = (
-            np.concatenate(tgt_chunks) if tgt_chunks else np.zeros(0, dtype=np.int32)
-        )
-        self.src_offsets = src_offsets
-        self.tgt_offsets = tgt_offsets
+        self.src_flat = np.frombuffer(src_flat, dtype=np.int32)
+        self.tgt_flat = np.frombuffer(tgt_flat, dtype=np.int32)
+        self.src_offsets = np.frombuffer(src_offsets, dtype=np.int64)
+        self.tgt_offsets = np.frombuffer(tgt_offsets, dtype=np.int64)
 
     def __len__(self) -> int:
-        return len(self.pairs)
+        return self.count
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
         src = torch.from_numpy(self.src_flat[self.src_offsets[index] : self.src_offsets[index + 1]])

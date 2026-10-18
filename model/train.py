@@ -31,20 +31,21 @@ def set_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def load_pairs(path: str) -> list[dict]:
-    rows: list[dict] = []
+def load_pairs(path: str) -> list[tuple[str, str]]:
+    """Read pairs as plain tuples. Millions of dicts would not fit in memory."""
+    rows: list[tuple[str, str]] = []
     with Path(path).open(encoding="utf-8") as handle:
         for line in handle:
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 2:
                 continue
-            rows.append({"roman": parts[0], "native": parts[1]})
+            rows.append((parts[0], parts[1]))
     return rows
 
 
-def build_tokenizer(pairs: list[dict]) -> TranslitTokenizer:
+def build_tokenizer(pairs: list) -> TranslitTokenizer:
     src = CharTokenizer.build_source()
-    tgt = CharTokenizer.build_target([pair["native"] for pair in pairs])
+    tgt = CharTokenizer.build_target([native for _, native in pairs])
     return TranslitTokenizer(src=src, tgt=tgt)
 
 
@@ -107,6 +108,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--train", default=None, help="override the training file")
     parser.add_argument("--valid", default=None, help="override the validation file")
+    parser.add_argument("--no-amp", action="store_true", help="disable mixed precision")
     args = parser.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -122,6 +124,7 @@ def main() -> None:
         config["data"]["train"] = args.train
     if args.valid:
         config["data"]["valid"] = args.valid
+    settings["amp"] = torch.cuda.is_available() and not args.no_amp
     set_seed(settings["seed"])
 
     out_dir = Path(settings["out_dir"])
@@ -140,6 +143,8 @@ def main() -> None:
 
     train_set = PairDataset(train_pairs, tokenizer, config["data"]["max_src"], config["data"]["max_tgt"])
     valid_set = PairDataset(valid_pairs, tokenizer, config["data"]["max_src"], config["data"]["max_tgt"])
+    # The dataset holds the encoded ids, so the raw text is no longer needed.
+    del train_pairs, valid_pairs
     collator = Collator(tokenizer)
 
     train_sampler = BucketBatchSampler(train_set.lengths, settings["batch_size"], seed=settings["seed"])
@@ -159,7 +164,7 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_model(config, tokenizer).to(device)
     total_params = sum(p.numel() for p in model.parameters())
-    print(f"parameters: {total_params / 1e6:.2f}M   device: {device}")
+    print(f"parameters: {total_params / 1e6:.2f}M   device: {device}   amp: {settings['amp']}")
 
     criterion = LabelSmoothedLoss(
         vocab_size=tokenizer.tgt_vocab,
@@ -188,6 +193,7 @@ def main() -> None:
         model.train()
         running = 0.0
         start = time.time()
+        scaler = torch.amp.GradScaler(device.type, enabled=settings["amp"])
 
         for index, batch in enumerate(train_loader):
             lr = inverse_sqrt_lr(step, settings["warmup_steps"], settings["lr"])
@@ -199,13 +205,16 @@ def main() -> None:
             tgt_in = batch["tgt_in"].to(device, non_blocking=True)
             tgt_out = batch["tgt_out"].to(device, non_blocking=True)
 
-            logits = model(src, tgt_in, src_mask)
-            loss = criterion(logits, tgt_out)
+            with torch.amp.autocast(device.type, dtype=torch.bfloat16, enabled=settings["amp"]):
+                logits = model(src, tgt_in, src_mask)
+                loss = criterion(logits, tgt_out)
 
             optimizer.zero_grad(set_to_none=True)
-            loss.backward()
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), settings["grad_clip"])
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
 
             running += loss.item()
             step += 1

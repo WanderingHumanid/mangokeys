@@ -1,7 +1,7 @@
 data:
   train: data/processed/train.tsv
   valid: data/processed/valid.tsv
-  test: data/processed/test.tsv
+  test: data/processed/test_aksharantar.tsv
   max_src: 48
   max_tgt: 64
 
@@ -17,11 +17,11 @@ train:
   batch_size: 1024
   lr: 0.0007
   warmup_steps: 4000
-  epochs: 25
+  epochs: 12
   label_smoothing: 0.1
   grad_clip: 1.0
   seed: 42
   out_dir: runs/ml_mini
-  log_every: 50
+  log_every: 100
   eval_every: 1
-  num_workers: 4
+  num_workers: 0

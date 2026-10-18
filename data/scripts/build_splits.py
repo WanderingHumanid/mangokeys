@@ -5,6 +5,10 @@
 The official Aksharantar splits are respected. The Dakshina lexicon train file
 joins the training data, while its dev and test lexicons are kept aside as a
 separate evaluation set so that nothing leaks.
+
+The corpus is large enough that the pipeline streams rather than building
+lists in memory. A pair is written to disk as it is read, normalized and
+augmented.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ import random
 import re
 from collections import Counter
 from pathlib import Path
+from typing import Iterator
 
 from data.scripts.pairs import write_pairs
 from model.src.augment import AugmentConfig, ManglishAugmenter, augment_pairs
@@ -26,9 +31,8 @@ LATIN_RE = re.compile(r"[A-Za-z]")
 AKSHARANTAR_SPLITS = ("train", "valid", "test")
 
 
-def read_dakshina_lexicon(root: Path, splits: tuple[str, ...]) -> list[dict]:
+def read_dakshina_lexicon(root: Path, splits: tuple[str, ...]) -> Iterator[dict]:
     """Read the Dakshina Malayalam lexicon files for the given splits."""
-    pairs: list[dict] = []
     lexicon_dir = root / "ml" / "lexicons"
     for path in sorted(lexicon_dir.glob("ml.translit.sampled.*.tsv")):
         split = path.stem.rsplit(".", 1)[-1]
@@ -40,24 +44,20 @@ def read_dakshina_lexicon(root: Path, splits: tuple[str, ...]) -> list[dict]:
                 if len(parts) < 2:
                     continue
                 count = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
-                pairs.append(
-                    {
-                        "roman": parts[1],
-                        "native": parts[0],
-                        "source": "dakshina",
-                        "split": split,
-                        "count": count,
-                    }
-                )
-    return pairs
+                yield {
+                    "roman": parts[1],
+                    "native": parts[0],
+                    "source": "dakshina",
+                    "split": split,
+                    "count": count,
+                }
 
 
-def read_dakshina_sentences(root: Path) -> list[dict]:
+def read_dakshina_sentences(root: Path) -> Iterator[dict]:
     """Read the romanized Dakshina sentences as word pairs."""
-    pairs: list[dict] = []
     path = root / "ml" / "romanized" / "ml.romanized.rejoined.tsv"
     if not path.exists():
-        return pairs
+        return
     with path.open(encoding="utf-8") as handle:
         for line in handle:
             parts = line.rstrip("\n").split("\t")
@@ -68,43 +68,33 @@ def read_dakshina_sentences(root: Path) -> list[dict]:
             if len(native_words) != len(roman_words):
                 continue
             for native, roman in zip(native_words, roman_words, strict=True):
-                pairs.append(
-                    {
-                        "roman": roman,
-                        "native": native,
-                        "source": "dakshina_sent",
-                        "split": "all",
-                        "count": 1,
-                    }
-                )
-    return pairs
+                yield {
+                    "roman": roman,
+                    "native": native,
+                    "source": "dakshina_sent",
+                    "split": "all",
+                    "count": 1,
+                }
 
 
-def read_aksharantar(root: Path) -> dict[str, list[dict]]:
-    """Read every Aksharantar split for Malayalam."""
-    result: dict[str, list[dict]] = {}
-    for split in AKSHARANTAR_SPLITS:
-        path = root / f"mal_{split}.json"
-        if not path.exists():
-            continue
-        rows: list[dict] = []
-        with path.open(encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if not line:
-                    continue
-                row = json.loads(line)
-                rows.append(
-                    {
-                        "roman": row.get("english word", ""),
-                        "native": row.get("native word", ""),
-                        "source": row.get("source", "aksharantar"),
-                        "split": split,
-                        "count": 1,
-                    }
-                )
-        result[split] = rows
-    return result
+def read_aksharantar(root: Path, split: str) -> Iterator[dict]:
+    """Read one Aksharantar split for Malayalam."""
+    path = root / f"mal_{split}.json"
+    if not path.exists():
+        return
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            yield {
+                "roman": row.get("english word", ""),
+                "native": row.get("native word", ""),
+                "source": row.get("source", "aksharantar"),
+                "split": split,
+                "count": 1,
+            }
 
 
 def normalize_pair(pair: dict) -> dict | None:
@@ -155,85 +145,127 @@ def build(
     seed: int = 0,
     max_train: int = 0,
     dakshina_holdout: float = 0.02,
-) -> dict[str, list[dict]]:
+) -> dict[str, int]:
     """Build every split and write them out. Returns the split sizes."""
     out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    counts: dict[str, int] = {}
 
     # ------------------------------------------------------------- test sets
-    aksharantar = read_aksharantar(Path(aksharantar))
-    test_rows = [p for p in (normalize_pair(r) for r in aksharantar.get("test", [])) if p]
-    for row in test_rows:
-        row["bucket"] = row["source"]
+    test_rows = []
+    for row in read_aksharantar(Path(aksharantar), "test"):
+        normalized = normalize_pair(row)
+        if normalized is None:
+            continue
+        normalized["bucket"] = normalized["source"]
+        test_rows.append(normalized)
     write_pairs(out_dir / "test_aksharantar.tsv", test_rows)
+    counts["test_aksharantar"] = len(test_rows)
     print(f"test_akshantar.tsv: {len(test_rows)} rows")
 
     dakshina_root = Path(dakshina)
-    dakshina_eval: list[dict] = []
+    dakshina_eval = []
     if dakshina_root.exists():
-        raw = read_dakshina_lexicon(dakshina_root, ("dev", "test"))
-        dakshina_eval = [p for p in (normalize_pair(r) for r in raw) if p]
-        for row in dakshina_eval:
+        raw = list(read_dakshina_lexicon(dakshina_root, ("dev", "test")))
+        for row in (normalize_pair(p) for p in raw):
+            if row is None:
+                continue
             row["bucket"] = row["split"]
+            dakshina_eval.append(row)
         write_pairs(out_dir / "test_dakshina.tsv", dakshina_eval)
+        counts["test_dakshina"] = len(dakshina_eval)
         print(f"test_dakshina.tsv: {len(dakshina_eval)} rows")
 
     # ---------------------------------------------------------- training data
-    train_rows: list[dict] = []
-    for row in aksharantar.get("train", []):
+    # The raw pool is written to disk first so that the augmentation pass can
+    # stream over it instead of holding millions of pairs in memory.
+    pool_path = out_dir / "pool.tsv"
+    source_counts: Counter[str] = Counter()
+    pool_rows = 0
+    with pool_path.open("w", encoding="utf-8") as handle:
+        for row in read_aksharantar(Path(aksharantar), "train"):
+            normalized = normalize_pair(row)
+            if normalized is None:
+                continue
+            handle.write(f"{normalized['roman']}\t{normalized['native']}\t{normalized['source']}\n")
+            source_counts[normalized["source"]] += 1
+            pool_rows += 1
+
+        if dakshina_root.exists():
+            lexicon = [
+                p
+                for p in (normalize_pair(row) for row in read_dakshina_lexicon(dakshina_root, ("train",)))
+                if p
+            ]
+            # The lexicon has several romanizations per word, so keep the best
+            # attested one.
+            for row in dedupe(lexicon):
+                handle.write(f"{row['roman']}\t{row['native']}\t{row['source']}\n")
+                source_counts[row["source"]] += 1
+                pool_rows += 1
+
+    print(f"training pool: {pool_rows}  sources: {dict(source_counts)}")
+
+    # ----------------------------------------------------------- validation
+    valid_rows = []
+    for row in read_aksharantar(Path(aksharantar), "valid"):
         normalized = normalize_pair(row)
-        if normalized:
-            train_rows.append(normalized)
-
-    if dakshina_root.exists():
-        raw = read_dakshina_lexicon(dakshina_root, ("train",))
-        extra = [p for p in (normalize_pair(r) for r in raw) if p]
-        train_rows += extra
-        print(f"dakshina lexicon train: {len(extra)} rows")
-
-    print(f"training pool: {len(train_rows)}")
-    sources = Counter(row["source"] for row in train_rows)
-    print(f"sources: {dict(sources)}")
-
-    train_rows, held_out = hold_out_by_word(train_rows, dakshina_holdout, seed)
-    if aksharantar.get("valid"):
-        valid_rows = [p for p in (normalize_pair(r) for r in aksharantar["valid"]) if p]
-        valid_rows += held_out
-    else:
-        valid_rows = held_out
-    print(f"valid: {len(valid_rows)}  train after holdout: {len(train_rows)}")
-
-    if augment_copies > 0:
-        augmenter = ManglishAugmenter(AugmentConfig(), seed=seed)
-        train_rows = augment_pairs(train_rows, augmenter, copies=augment_copies)
-        styles = Counter(row.get("style", "standard") for row in train_rows)
-        print(f"after augmentation: {len(train_rows)} ({dict(styles)})")
-
-    if max_train and len(train_rows) > max_train:
-        random.Random(seed).shuffle(train_rows)
-        train_rows = train_rows[:max_train]
-        print(f"capped train to {len(train_rows)}")
-
-    write_pairs(out_dir / "train.tsv", train_rows)
+        if normalized is not None:
+            valid_rows.append(normalized)
     write_pairs(out_dir / "valid.tsv", valid_rows)
-    print(f"train.tsv: {len(train_rows)}  valid.tsv: {len(valid_rows)}")
+    counts["valid"] = len(valid_rows)
+    print(f"valid.tsv: {len(valid_rows)} rows")
 
-    # A per source copy makes the human versus mined comparison a one line run.
-    by_source: dict[str, list[dict]] = {}
-    for row in train_rows:
-        if row.get("style") == "adhoc":
-            continue
-        by_source.setdefault(row["source"], []).append(row)
-    for source, rows in by_source.items():
-        write_pairs(out_dir / f"train_{source}.tsv", rows)
-        print(f"train_{source}.tsv: {len(rows)}")
+    # ------------------------------------------------------------- augment
+    augmenter = ManglishAugmenter(AugmentConfig(), seed=seed)
+    train_path = out_dir / "train.tsv"
+    styles: Counter[str] = Counter()
+    per_source: Counter[str] = Counter()
+    written = 0
+    source_paths: dict[str, Path] = {}
 
-    return {
-        "train": train_rows,
-        "valid": valid_rows,
-        "test_aksharantar": test_rows,
-        "test_dakshina": dakshina_eval,
-    }
+    with pool_path.open(encoding="utf-8") as source, train_path.open(
+        "w", encoding="utf-8"
+    ) as target:
+        for line in source:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 2:
+                continue
+            roman, native = parts[0], parts[1]
+            source_name = parts[2] if len(parts) > 2 else "unknown"
+
+            target.write(f"{roman}\t{native}\tstandard\n")
+            styles["standard"] += 1
+            written += 1
+
+            # The un augmented copy also goes into the per source file, which
+            # is what the human versus mined experiment trains on.
+            per_source[source_name] += 1
+            if source_name not in source_paths:
+                path = out_dir / f"train_{source_name}.tsv"
+                path.write_text("", encoding="utf-8")
+                source_paths[source_name] = path
+            with source_paths[source_name].open("a", encoding="utf-8") as handle:
+                handle.write(f"{roman}\t{native}\n")
+
+            for _ in range(augment_copies):
+                variant, applied = augmenter.augment(roman)
+                if not applied or variant == roman:
+                    continue
+                target.write(f"{variant}\t{native}\tadhoc\n")
+                styles["adhoc"] += 1
+                written += 1
+            if max_train and written >= max_train:
+                break
+
+    pool_path.unlink()
+    counts["train"] = written
+    print(f"train.tsv: {written} rows ({dict(styles)})")
+
+    for source_name, count in per_source.items():
+        print(f"train_{source_name}.tsv: {count}")
+
+    return counts
 
 
 def main() -> None:

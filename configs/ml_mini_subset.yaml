@@ -24,4 +24,4 @@ train:
   out_dir: runs/subset
   log_every: 25
   eval_every: 2
-  num_workers: 6
+  num_workers: 0
