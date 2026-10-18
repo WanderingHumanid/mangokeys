@@ -12,6 +12,47 @@
 
 ---
 
+## 0. Status
+
+The project is built and running. This section records where each part stands.
+
+| Component | State | Where |
+|---|---|---|
+| Data pipeline | ✅ working on the real 4.1M-pair corpus | `data/scripts/` |
+| Augmentation rules (13) | ✅ with unit tests | `model/src/augment.py` |
+| Model, training, AMP, length bucketing | ✅ 5.37M params | `model/src/seq2seq.py` |
+| Evaluation, grapheme aware CER | ✅ | `model/src/metrics.py` |
+| Rule-based baseline | ✅ Top-1 9.2%, CER 48.8% | `model/src/rules.py` |
+| Mozhi conformance (67 cases) | ✅ rule engine passes all 67 | `evals/mozhi_cases/` |
+| ONNX export, int8 path, Python runtime | ✅ parity checked against PyTorch | `model/export_onnx.py` |
+| Browser runtime | ✅ written | `runtime/js/` |
+| Kotlin runtime | ✅ written | `runtime/kotlin/` |
+| Static web demo | ✅ built | `apps/expo-web/` |
+| Corpus ambiguity analysis | ✅ measured | `scripts/analyze_corpus.py` |
+| Full corpus training | ⏳ running | `runs/ml_mini/` |
+| Ablations E1, E2, E6 | ⏳ queued | `scripts/run_ablations.py` |
+| Adhoc manual eval set | ⬜ needs human collection | `evals/adhoc_manual/` |
+
+### What changed from the plan
+
+1. **Dakshina is not the primary training data.** Aksharantar is, because it
+   has 130 times more Malayalam pairs and a permissive licence. Dakshina's
+   human-attested romanizations are still valuable, and the plan uses them
+   where they are available.
+2. **The model is a rules-propose, model-rank setup, not a standalone
+   seq2seq.** Ezhuthola's rule engine turned out to be a strong baseline and
+   a good candidate generator. See §4.7 and §7.2.
+3. **The retroflex convention is barely used in the corpus.** Measured, not
+   assumed: `T` appears in 6.6% of rows, `D` in 2.4%, `N` in 2.3%, and `R`
+   and `S` never in capitals. Aligning the rule table with the corpus took
+   the baseline from Top-1 6.1% to 9.2%.
+4. **The decoder takes the whole prefix, not the last token.** A key value
+   cache would be faster but complicates the exported graph.
+5. **The corpus does not have to be held in memory.** The pipeline streams,
+   because six and a half million pairs as python objects does not fit.
+
+---
+
 ## 1. Project at a glance
 
 | | |

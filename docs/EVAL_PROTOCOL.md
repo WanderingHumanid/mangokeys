@@ -59,10 +59,26 @@ test-manual          N       0.XXX   0.XXX    0.0XX    0.0XX   0.XXX
 **Mandatory companion rows:**
 
 - **IndicXlit baseline** — the same table, from the same harness. If we cannot beat it, we ship it.
-- **Rule-based (Mozhi) baseline** — the deterministic layer on its own. This tells us how much
-  the neural model actually contributes.
+- **Rule-based baseline** — the deterministic layer on its own. This tells us how much the neural
+  model actually contributes.
 - **Ours, int8** — the quantized artifact, not just the fp32 checkpoint. Quantization can cost
   accuracy; the shipped number is the one that matters.
+
+### Leakage check
+
+The Aksharantar train and test splits share **zero** native words. Checked
+directly over the 4.1M pair training pool and the 12,451 row test set, in
+every subset:
+
+| Test subset | native words also in train |
+|---|---|
+| AK-Freq | 0 / 4858 |
+| AK-NEF | 0 / 833 |
+| AK-NEI | 0 / 1191 |
+| Dakshina | 0 / 5569 |
+
+The augmented copies do not change this, because augmentation rewrites the
+roman side and never introduces a new native word.
 
 ---
 
