@@ -6,6 +6,8 @@ ALL_RULES = [
     "drop_inherent_vowels",
     "drop_short_i",
     "drop_final_u",
+    "drop_long_vowel",
+    "add_long_vowel",
     "collapse_gemination",
     "geminate_final_consonant",
     "drop_aspiration",
@@ -57,6 +59,17 @@ def test_drop_final_u():
     aug = augmenter(drop_final_u=1.0)
     assert aug.augment("cheythu")[0] == "cheyth"
     assert aug.augment("varunnu")[0] == "varunn"
+
+
+def test_drop_long_vowel():
+    aug = augmenter(drop_long_vowel=1.0)
+    assert aug.augment("kaalam")[0] == "kalam"
+    assert aug.augment("keed")[0] == "ked"
+
+
+def test_add_long_vowel():
+    aug = augmenter(add_long_vowel=1.0)
+    assert aug.augment("kalam")[0] == "kaalam"
 
 
 def test_collapse_gemination():

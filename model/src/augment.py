@@ -47,6 +47,16 @@ SYNONYMS = {
 }
 
 
+# Rules that undo each other. If one fires the other is skipped, otherwise
+# the two can cancel out and leave the text unchanged.
+CONFLICTS = {
+    "drop_long_vowel": "add_long_vowel",
+    "add_long_vowel": "drop_long_vowel",
+    "drop_aspiration": "add_aspiration",
+    "add_aspiration": "drop_aspiration",
+}
+
+
 @dataclass
 class AugmentConfig:
     """Per rule probabilities. All of them default to conservative values."""
@@ -54,6 +64,8 @@ class AugmentConfig:
     drop_inherent_vowels: float = 0.35
     drop_short_i: float = 0.20
     drop_final_u: float = 0.15
+    drop_long_vowel: float = 0.25
+    add_long_vowel: float = 0.08
     collapse_gemination: float = 0.15
     geminate_final_consonant: float = 0.10
     drop_aspiration: float = 0.15
@@ -77,6 +89,8 @@ class ManglishAugmenter:
             self._drop_inherent_vowels,
             self._drop_short_i,
             self._drop_final_u,
+            self._drop_long_vowel,
+            self._add_long_vowel,
             self._collapse_gemination,
             self._geminate_final_consonant,
             self._drop_aspiration,
@@ -94,12 +108,17 @@ class ManglishAugmenter:
         text = roman
         applied: list[str] = []
         for rule in self._rules:
+            name = rule.__name__.lstrip("_")
+            partner = CONFLICTS.get(name)
+            if partner and partner in applied:
+                continue
             if not self._should_apply(rule):
                 continue
             new_text = rule(text)
-            if new_text != text:
-                applied.append(rule.__name__.lstrip("_"))
-                text = new_text
+            if new_text == text:
+                continue
+            applied.append(name)
+            text = new_text
         return text, applied
 
     def _should_apply(self, rule) -> bool:
@@ -157,6 +176,26 @@ class ManglishAugmenter:
         if text[-2] not in CONSONANT_LETTERS:
             return text
         return text[:-1]
+
+    def _drop_long_vowel(self, text: str) -> str:
+        """Write a long vowel with the short marker.
+
+        People type കാലം as "kalam" as often as they type "kaalam". The error
+        analysis showed that dropping a long vowel sign is the single largest
+        failure mode, so the model has to see the short spelling pointing at
+        the long vowel.
+        """
+        for long, short in (("aa", "a"), ("ee", "e"), ("ii", "i"), ("uu", "u"), ("oo", "o")):
+            if long in text:
+                return text.replace(long, short, 1)
+        return text
+
+    def _add_long_vowel(self, text: str) -> str:
+        """Write a short vowel with the long marker. The rarer direction."""
+        for short, long in (("ka", "kaa"), ("ke", "kee"), ("ki", "kii"), ("ku", "kuu"), ("ko", "koo")):
+            if short in text:
+                return text.replace(short, long, 1)
+        return text
 
     def _collapse_gemination(self, text: str) -> str:
         """Halve a doubled consonant. "kattu" becomes "katu"."""

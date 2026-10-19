@@ -1,0 +1,21 @@
+{
+  "n": 3000,
+  "correct": 1746,
+  "errors": 1254,
+  "top1": 0.582,
+  "classes": {
+    "missing-long-vowel": 411,
+    "missing-virama": 217,
+    "extra-virama": 180,
+    "other": 152,
+    "too-long": 137,
+    "missing-short-vowel": 56,
+    "rra-vs-ra": 22,
+    "too-short": 19,
+    "retroflex": 18,
+    "chillu": 15,
+    "nna-vs-na": 11,
+    "lla-vs-la": 10,
+    "sh-vs-sha": 6
+  }
+}
