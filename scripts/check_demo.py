@@ -10,7 +10,6 @@ the wasm build and the page wiring together.
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 CHROMIUM = Path.home() / ".cache/ms-playwright/chromium-1243/chrome-linux64/chrome"

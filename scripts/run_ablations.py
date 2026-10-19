@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from data.scripts.build_splits import build  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "evals" / "results"
@@ -26,18 +26,6 @@ RESULTS = ROOT / "evals" / "results"
 def run(command: list[str]) -> None:
     print("+", " ".join(command), flush=True)
     subprocess.run(command, check=True, cwd=ROOT)
-
-
-def build_data(name: str, augment: bool) -> Path:
-    """Build a training file for one ablation."""
-    out_dir = ROOT / "data" / "processed" / name
-    build(
-        dakshina=str(ROOT / "data" / "raw" / "dakshina"),
-        aksharantar=str(ROOT / "data" / "raw" / "aksharantar_ml"),
-        out=str(out_dir),
-        augment_copies=1 if augment else 0,
-    )
-    return out_dir
 
 
 def split_by_style(data_dir: Path) -> None:

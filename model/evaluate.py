@@ -15,7 +15,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import torch
-import yaml
 from torch.utils.data import DataLoader
 
 from model.src.data import Collator, PairDataset

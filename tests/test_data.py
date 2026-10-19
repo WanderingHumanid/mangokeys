@@ -1,7 +1,5 @@
 """Tests for the dataset and batching."""
 
-import torch
-
 from model.src.data import BucketBatchSampler, Collator, PairDataset
 from model.src.tokenizer import CharTokenizer, TranslitTokenizer
 

@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Iterator
 
 from data.scripts.pairs import write_pairs
-from model.src.augment import AugmentConfig, ManglishAugmenter, augment_pairs
+from model.src.augment import AugmentConfig, ManglishAugmenter
 from model.src.normalize import normalize_malayalam, normalize_roman
 
 MALAYALAM_RE = re.compile(r"[ഀ-ൿ]")
