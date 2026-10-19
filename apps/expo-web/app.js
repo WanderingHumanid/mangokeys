@@ -1,7 +1,7 @@
 import * as ort from "./ort/ort.min.mjs";
-import { Transliterator, buildTokenizer, normalizeRoman } from "../../runtime/js/transliterator.js";
+import { Transliterator, buildTokenizer, normalizeRoman } from "./transliterator.js";
 
-ort.env.wasm.wasmPaths = "./ort/";
+ort.env.wasm.wasmPaths = "/ort/";
 ort.env.wasm.numThreads = 1;
 
 const MAX_SRC = 48;
@@ -144,13 +144,15 @@ async function update() {
 
   const current = ++requestId;
   const started = performance.now();
-  const candidates = await engine.candidates(text, 5);
+  const words = text.split(/\s+/).filter((word) => word.length);
+  const last = words[words.length - 1];
+  const translated = await engine.transliterate(text);
   if (current !== requestId) return;
 
-  elements.modelOutput.textContent = candidates[0] ?? " ";
-  elements.candidates.innerHTML = candidates
-    .map((candidate) => `<li>${candidate}</li>`)
-    .join("");
+  elements.modelOutput.textContent = translated;
+  const candidates = await engine.candidates(last, 5);
+  if (current !== requestId) return;
+  elements.candidates.innerHTML = candidates.map((candidate) => `<li>${candidate}</li>`).join("");
   const elapsed = Math.round(performance.now() - started);
   elements.status.textContent = `model ready · ${elapsed} ms`;
 }

@@ -53,8 +53,19 @@ class Transliterator:
         self.beam = beam
 
     def transliterate(self, roman: str) -> str:
-        candidates = self.candidates(roman, n_best=1)
-        return candidates[0] if candidates else ""
+        """Transliterate a word or a whole phrase.
+
+        The model works on one word at a time, so a phrase is split on
+        whitespace and each word is transliterated on its own.
+        """
+        words = normalize_roman(roman).split()
+        if not words:
+            return ""
+        if len(words) == 1:
+            candidates = self.candidates(words[0], n_best=1)
+            return candidates[0] if candidates else ""
+        parts = [self.candidates(word, n_best=1) for word in words]
+        return " ".join(part[0] if part else "" for part in parts)
 
     def candidates(self, roman: str, n_best: int = 5) -> list[str]:
         """Return the top n Malayalam candidates for a Manglish string.

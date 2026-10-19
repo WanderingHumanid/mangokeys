@@ -53,6 +53,11 @@ def main() -> None:
     shutil.copy(checkpoint.parent / "tokenizer.json", DEMO / "tokenizer.json")
     print("copied tokenizer.json")
 
+    # The page is served from the demo folder, so the runtime has to sit next
+    # to it rather than being imported from the repository.
+    shutil.copy(ROOT / "runtime" / "js" / "transliterator.js", DEMO / "transliterator.js")
+    print("copied transliterator.js")
+
     results = Path(args.results)
     if results.exists():
         payload = json.loads(results.read_text(encoding="utf-8"))

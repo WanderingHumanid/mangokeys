@@ -219,8 +219,18 @@ export class Transliterator {
   }
 
   async transliterate(roman) {
-    const result = await this.candidates(roman, 1);
-    return result.length ? result[0] : "";
+    const words = normalizeRoman(roman).split(/\s+/).filter((word) => word.length);
+    if (!words.length) return "";
+    if (words.length === 1) {
+      const result = await this.candidates(words[0], 1);
+      return result.length ? result[0] : "";
+    }
+    const parts = [];
+    for (const word of words) {
+      const result = await this.candidates(word, 1);
+      parts.push(result.length ? result[0] : "");
+    }
+    return parts.join(" ");
   }
 }
 
