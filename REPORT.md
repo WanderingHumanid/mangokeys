@@ -256,6 +256,60 @@ common in which context.
 
 <!-- ABLATIONS -->
 
+### 5.3 Where the model still fails
+
+The error analysis script is `scripts/error_analysis.py`. It runs the model
+over the test set, sorts the errors into a fixed taxonomy and writes every
+one of them to `evals/results/errors.tsv`.
+
+The result that came out of it is the most interesting thing in this project.
+
+**The model has solved the letters and has not solved the lengths.**
+
+| Error class | Share |
+|---|---|
+| missing long vowel sign | **32.8%** |
+| missing virama | 17.3% |
+| extra virama | 14.4% |
+| other | 12.1% |
+| too long | 10.9% |
+| missing short vowel sign | 4.5% |
+| റ written as ര | 1.8% |
+| retroflex and dental confused | 1.4% |
+| chillu dropped | 1.2% |
+| ണ written as ന | 0.9% |
+| ള written as ല | 0.8% |
+| ശ and ഷ confused | 0.5% |
+
+**The six letter ambiguity classes together are 6.6% of the errors.** ശ against
+ഷ, ട against ത, ര against റ, ല against ള, ന against ണ, and the chillus. Those
+are the ambiguities that the roman text genuinely cannot resolve, and the model
+resolves them almost every time by using the rest of the word.
+
+**Two thirds of the remaining errors are about length.** The model writes
+ക where the word needs കാ, drops a ് that should be there, or adds one that
+should not be. The reason is the same ambiguity in a different place: the
+roman text `kalam` could be കലം or കാലം, and `kaalam` could be either as
+well.
+
+**This is what the augmentation pipeline is for, and the error analysis found a
+rule that was missing.** The rules as first written handled the vowel signs
+and the letter ambiguities but not the long vowel markers. Two rules were
+added as a result:
+
+| Rule | Example | Why |
+|---|---|---|
+| drop long vowel | `kaalam` → `kalam` | People write കാലം as "kalam" as often as "kaalam" |
+| add long vowel | `kalam` → `kaalam` | The rarer direction, at a lower probability |
+
+The two rules are declared as conflicting, so the augmenter will not apply
+both to the same word and undo its own work.
+
+**The loop that produced this is the one to point at in the report.** Train,
+measure, break the errors into classes, find the class that dominates, add
+the data rule that targets it, train again. The error taxonomy is not a
+afterthought, it is the engine.
+
 ---
 
 ## 6. The demo
