@@ -32,14 +32,27 @@ substitute chillus. A model trained on clean pairs benchmarks beautifully and di
 | Piece | State |
 |---|---|
 | Data pipeline (download → normalize → filter → augment → split) | ✅ working on the real 4.1M-pair corpus |
-| Model, training loop, length bucketing, label smoothing | ✅ working |
+| Model, training loop, length bucketing, label smoothing, AMP | ✅ working, 5.37M params |
 | Augmentation rules (13) with unit tests | ✅ working |
 | Evaluation (CER / Top-1 / Top-5, grapheme aware, per bucket) | ✅ working |
-| Rule-based baseline + baseline evaluation | ✅ working |
-| ONNX export, int8 quantization path, Python runtime | ✅ working, parity checked against PyTorch |
-| Browser runtime (ONNX Runtime Web) | ✅ written |
+| Rule-based baseline + baseline evaluation | ✅ working, Top-1 9.2% |
+| Mozhi conformance (67 cases) | ✅ rule engine passes all 67 |
+| ONNX export, int8 quantization, Python runtime | ✅ parity checked against PyTorch |
+| Browser runtime (ONNX Runtime Web) | ✅ verified in a real browser, agrees with Python |
 | Kotlin runtime (ONNX Runtime Mobile) | ✅ written |
+| Static web demo | ✅ working, runs the model in the browser |
 | Model trained on the full corpus | ⏳ running |
+
+### Measured so far
+
+| System | Top-1 | CER | Top-5 | Size | ms / word |
+|---|---|---|---|---|---|
+| Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
+| Our model, epoch 0, int8, beam 4 | 46.7% | 15.7% | 69.9% | **6.1 MB** | 127 |
+| Our model, epoch 0, int8, greedy | 46.3% | 15.8% | - | 6.1 MB | **10.5** |
+
+Quantization costs 0.17 points of Top-1 and no measurable CER. Greedy is 12 times
+faster than beam 4 for 0.4 points, so the live path should be greedy.
 
 ## Layout
 
@@ -78,6 +91,11 @@ python -m scripts.check_parity --checkpoint runs/ml_mini/best.pt --onnx runs/ml_
 
 # 6. Try it
 python -m scripts.demo --onnx runs/ml_mini/onnx --tokenizer runs/ml_mini/tokenizer.json --word ente
+
+# 7. Build and serve the expo demo
+python -m scripts.build_demo --checkpoint runs/ml_mini/best.pt --quantize
+python apps/expo-web/serve.py --port 8000
+# then open http://localhost:8000
 ```
 
 ## Credits
