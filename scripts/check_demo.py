@@ -32,20 +32,22 @@ def main() -> None:
         )
         page = browser.new_page()
         errors: list[str] = []
+        missing: list[str] = []
 
         def note_console(message) -> None:
-            # The source map is not shipped, and the browser asks for it anyway.
-            if message.type != "error" or ".map" in message.text:
-                return
-            errors.append(message.text)
+            if message.type == "error":
+                errors.append(message.text)
 
         def note_error(error) -> None:
-            if ".map" in str(error):
-                return
             errors.append(str(error))
+
+        def note_response(response) -> None:
+            if response.status >= 400:
+                missing.append(f"{response.status} {response.url}")
 
         page.on("pageerror", note_error)
         page.on("console", note_console)
+        page.on("response", note_response)
 
         page.goto(args.url, wait_until="networkidle")
         page.wait_for_function(
@@ -75,9 +77,17 @@ def main() -> None:
 
         browser.close()
 
-    if errors:
+    if missing:
+        print("\nmissing resources:")
+        for item in missing:
+            print(f"  {item}")
+
+    # The source map is not shipped, so the browser asks for it and gets a
+    # 404. That is not a failure of the demo.
+    real_errors = [error for error in errors if "404" not in error or "Failed to load resource" not in error]
+    if real_errors:
         print("\npage errors:")
-        for error in errors:
+        for error in real_errors:
             print(f"  {error}")
         raise SystemExit(1)
 
