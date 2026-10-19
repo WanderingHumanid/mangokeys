@@ -71,11 +71,13 @@ export class Transliterator {
   /**
    * @param {object} sessions encoder and decoder ONNX sessions
    * @param {object} tokenizer src and target vocabularies
+   * @param {object} ort the onnxruntime module
    */
-  constructor(sessions, tokenizer, options = {}) {
+  constructor(sessions, tokenizer, ort, options = {}) {
     this.encoder = sessions.encoder;
     this.decoder = sessions.decoder;
     this.tokenizer = tokenizer;
+    this.ort = ort;
     this.maxSrc = options.maxSrc ?? 48;
     this.maxTgt = options.maxTgt ?? 64;
     this.beam = options.beam ?? 4;
@@ -123,7 +125,8 @@ export class Transliterator {
     const rowSize = memory.dims[1] * memory.dims[2];
     const beamData = new Float32Array(rowSize * width);
     for (let slot = 0; slot < width; slot += 1) {
-      beamData.set(memory.data.subarray(slot * rowSize, (slot + 1) * rowSize), slot * rowSize);
+      // The encoder produced one row. Every beam slot works on the same one.
+      beamData.set(memory.data.subarray(0, rowSize), slot * rowSize);
     }
     const beamMaskData = new Uint8Array(this.maxSrc * width);
     for (let slot = 0; slot < width; slot += 1) {
@@ -133,6 +136,7 @@ export class Transliterator {
     const beamMemory = new ort.Tensor("float32", beamData, [width, memory.dims[1], memory.dims[2]]);
     const beamMask = new ort.Tensor("bool", beamMaskData, [width, this.maxSrc]);
 
+    let prefixLength = 1;
     let tokens = new BigInt64Array(width);
     for (let i = 0; i < width; i += 1) tokens[i] = BigInt(this.tokenizer.bos);
 
@@ -141,12 +145,11 @@ export class Transliterator {
     const finished = [];
 
     for (let step = 0; step < this.maxTgt; step += 1) {
-      const step_ = tokens.length;
       const outputs = await this.decoder.run({
-        tgt_prefix: new ort.Tensor("int64", tokens, [width, step_]),
+        tgt_prefix: new ort.Tensor("int64", tokens, [width, prefixLength]),
         memory: beamMemory,
         src_mask: beamMask,
-        self_mask: new ort.Tensor("bool", causalMask(step_), [1, 1, step_, step_]),
+        self_mask: new ort.Tensor("bool", causalMask(prefixLength), [1, 1, prefixLength, prefixLength]),
       });
 
       const logits = outputs.logits;
@@ -160,20 +163,24 @@ export class Transliterator {
       }
       ranked.sort((a, b) => b.score - a.score);
 
+      const nextLength = prefixLength + 1;
       const nextTokens = new BigInt64Array(width);
       const nextScores = new Float64Array(width);
-      const nextPrefix = new BigInt64Array(width * (step_ + 1));
+      const nextPrefix = new BigInt64Array(width * nextLength);
       for (let slot = 0; slot < width; slot += 1) {
         const { score, parent, token } = ranked[slot];
-        const prefixStart = slot * (step_ + 1);
-        nextPrefix.set(tokens.subarray(parent * step_, (parent + 1) * step_), prefixStart);
-        nextPrefix[prefixStart + step_] = BigInt(token);
+        const prefixStart = slot * nextLength;
+        nextPrefix.set(
+          tokens.subarray(parent * prefixLength, (parent + 1) * prefixLength),
+          prefixStart,
+        );
+        nextPrefix[prefixStart + prefixLength] = BigInt(token);
         nextTokens[slot] = BigInt(token);
         nextScores[slot] = score;
 
         if (token === this.tokenizer.eos) {
           const sequence = Array.from(
-            nextPrefix.subarray(prefixStart, prefixStart + step_),
+            nextPrefix.subarray(prefixStart, prefixStart + prefixLength),
             (value) => Number(value),
           );
           finished.push({ score: score / Math.max(sequence.length, 1), sequence });
@@ -181,6 +188,7 @@ export class Transliterator {
       }
 
       tokens = nextPrefix;
+      prefixLength = nextLength;
       scores = nextScores;
       let alive = false;
       for (let slot = 0; slot < width; slot += 1) {
@@ -194,11 +202,10 @@ export class Transliterator {
     }
 
     if (finished.length === 0) {
-      const step_ = tokens.length;
       for (let slot = 0; slot < width; slot += 1) {
         if (scores[slot] === -Infinity) continue;
         const sequence = Array.from(
-          tokens.subarray(slot * step_, (slot + 1) * step_),
+          tokens.subarray(slot * prefixLength, (slot + 1) * prefixLength),
           (value) => Number(value),
         );
         finished.push({ score: scores[slot] / Math.max(sequence.length, 1), sequence });

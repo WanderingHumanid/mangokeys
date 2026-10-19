@@ -1,0 +1,15 @@
+{
+  "name": "mangokeyboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Manglish to Malayalam transliteration, browser and android runtimes",
+  "scripts": {
+    "test:runtime": "node runtime/js/test_runtime.mjs",
+    "build:tokenizer": "node runtime/js/build_tokenizer.js"
+  },
+  "devDependencies": {
+    "onnxruntime-node": "1.20.1",
+    "onnxruntime-web": "1.20.1"
+  }
+}

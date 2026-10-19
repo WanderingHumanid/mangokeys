@@ -86,12 +86,11 @@ async function loadModel() {
   ]);
 
   const tokenizer = buildTokenizer(tokenizerPayload);
-  engine = new Transliterator({ encoder, decoder }, tokenizer, {
+  engine = new Transliterator({ encoder, decoder }, tokenizer, ort, {
     maxSrc: MAX_SRC,
     maxTgt: MAX_TGT,
     beam: BEAM,
   });
-  engine.ort = ort;
 
   elements.status.textContent = "model ready";
   elements.status.classList.remove("error");
