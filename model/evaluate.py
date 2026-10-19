@@ -139,10 +139,56 @@ def evaluate_file(
     return result
 
 
+def evaluate_onnx(
+    onnx_dir: Path,
+    tokenizer_path: Path,
+    rows: list[dict],
+    config: dict,
+    device: torch.device,
+    beam: int,
+    n_best: int,
+    batch_size: int,
+) -> dict:
+    """Evaluate an exported model instead of the pytorch checkpoint."""
+    from runtime.python.transliterator import Transliterator
+
+    engine = Transliterator(
+        onnx_dir,
+        tokenizer_path,
+        max_src=config["data"]["max_src"],
+        max_tgt=config["data"]["max_tgt"],
+        beam=beam,
+    )
+    overall = ErrorCounter()
+    per_bucket: dict[str, ErrorCounter] = defaultdict(ErrorCounter)
+
+    start = time.time()
+    for row in rows:
+        candidates = engine.candidates(row["roman"], n_best=n_best)
+        reference = row["native"]
+        best = candidates[0] if candidates else ""
+        overall.update(reference, best)
+        overall.update_ranking(reference, candidates)
+        per_bucket[row.get("bucket", "all")].update(reference, best)
+    elapsed = time.time() - start
+
+    return {
+        "file": "unknown",
+        "n": len(rows),
+        "top1": round(overall.accuracy, 4),
+        "cer": round(overall.cer, 4),
+        "top5": round(overall.recall_at_k, 4),
+        "seconds": round(elapsed, 1),
+        "ms_per_pair": round(elapsed * 1000 / max(len(rows), 1), 2),
+        "buckets": {name: counter.summary() for name, counter in sorted(per_bucket.items())},
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", default="runs/ml_mini/best.pt")
-    parser.add_argument("--data", nargs="+", default=["data/processed/test_aksharantar.tsv"])
+    parser.add_argument("--onnx", default=None, help="evaluate an exported model instead")
+    parser.add_argument("--data", nargs="+", default=["data/processed/test_akshantar.tsv"])
     parser.add_argument("--beam", type=int, default=4)
     parser.add_argument("--n-best", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -160,16 +206,28 @@ def main() -> None:
             print(f"skipping missing {path}")
             continue
         rows = read_pairs(path)
-        result = evaluate_file(
-            model,
-            tokenizer,
-            rows,
-            config,
-            device,
-            beam=args.beam,
-            n_best=args.n_best,
-            batch_size=args.batch_size,
-        )
+        if args.onnx:
+            result = evaluate_onnx(
+                Path(args.onnx),
+                checkpoint.parent / "tokenizer.json",
+                rows,
+                config,
+                device,
+                beam=args.beam,
+                n_best=args.n_best,
+                batch_size=args.batch_size,
+            )
+        else:
+            result = evaluate_file(
+                model,
+                tokenizer,
+                rows,
+                config,
+                device,
+                beam=args.beam,
+                n_best=args.n_best,
+                batch_size=args.batch_size,
+            )
         result["file"] = path.name
         results.append(result)
         print(
