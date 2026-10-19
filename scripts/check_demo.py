@@ -83,7 +83,11 @@ def main() -> None:
 
     # The source map is not shipped, so the browser asks for it and gets a
     # 404. That is not a failure of the demo.
-    real_errors = [error for error in errors if "404" not in error or "Failed to load resource" not in error]
+    real_errors = [
+        error
+        for error in errors
+        if "404" not in error or "Failed to load resource" not in error
+    ]
     if real_errors:
         print("\npage errors:")
         for error in real_errors:

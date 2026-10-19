@@ -84,7 +84,10 @@ def main() -> None:
             f"({result['ms_per_pair']} ms/pair)"
         )
         for name, summary in result["buckets"].items():
-            print(f"    {name:12} n={summary['n']:6} top1={summary['top1']:.4f} cer={summary['cer']:.4f}")
+            print(
+                f"    {name:12} n={summary['n']:6} "
+                f"top1={summary['top1']:.4f} cer={summary['cer']:.4f}"
+            )
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -145,13 +145,16 @@ def main() -> None:
     tokenizer.save(out_dir / "tokenizer.json")
     print(f"vocab: source {tokenizer.src_vocab}  target {tokenizer.tgt_vocab}")
 
-    train_set = PairDataset(train_pairs, tokenizer, config["data"]["max_src"], config["data"]["max_tgt"])
-    valid_set = PairDataset(valid_pairs, tokenizer, config["data"]["max_src"], config["data"]["max_tgt"])
+    max_src = config["data"]["max_src"]
+    train_set = PairDataset(train_pairs, tokenizer, max_src, max_tgt)
+    valid_set = PairDataset(valid_pairs, tokenizer, max_src, max_tgt)
     # The dataset holds the encoded ids, so the raw text is no longer needed.
     del train_pairs, valid_pairs
     collator = Collator(tokenizer)
 
-    train_sampler = BucketBatchSampler(train_set.lengths, settings["batch_size"], seed=settings["seed"])
+    train_sampler = BucketBatchSampler(
+        train_set.lengths, settings["batch_size"], seed=settings["seed"]
+    )
     train_loader = DataLoader(
         train_set,
         batch_sampler=train_sampler,

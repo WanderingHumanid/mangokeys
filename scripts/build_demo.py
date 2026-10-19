@@ -36,12 +36,32 @@ def main() -> None:
         raise SystemExit(f"no checkpoint at {checkpoint}")
 
     onnx_dir = ROOT / "runs" / "demo" / "onnx"
-    run([sys.executable, "-m", "model.export_onnx", "--checkpoint", str(checkpoint), "--out", str(onnx_dir)])
+    run(
+        [
+            sys.executable,
+            "-m",
+            "model.export_onnx",
+            "--checkpoint",
+            str(checkpoint),
+            "--out",
+            str(onnx_dir),
+        ]
+    )
 
     source_dir = onnx_dir
     if args.quantize:
         quantized = ROOT / "runs" / "demo" / "onnx-int8"
-        run([sys.executable, "-m", "model.quantize", "--onnx", str(onnx_dir), "--out", str(quantized)])
+        run(
+            [
+                sys.executable,
+                "-m",
+                "model.quantize",
+                "--onnx",
+                str(onnx_dir),
+                "--out",
+                str(quantized),
+            ]
+        )
         source_dir = quantized
 
     DEMO.mkdir(parents=True, exist_ok=True)

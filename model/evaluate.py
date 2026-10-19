@@ -1,6 +1,7 @@
 """Evaluate a trained checkpoint.
 
-    python -m model.evaluate --checkpoint runs/ml_mini/best.pt --data data/processed/test_aksharantar.tsv
+    python -m model.evaluate --checkpoint runs/ml_mini/best.pt \
+        --data data/processed/test_aksharantar.tsv
 
 Reports top-1 accuracy, character error rate and top-5 recall for every test
 set, broken down by the bucket label when the file has one.
@@ -24,7 +25,9 @@ from model.src.seq2seq import Seq2Seq
 from model.src.tokenizer import TranslitTokenizer
 
 
-def load_model(checkpoint_path: Path, device: torch.device) -> tuple[Seq2Seq, TranslitTokenizer, dict]:
+def load_model(
+    checkpoint_path: Path, device: torch.device
+) -> tuple[Seq2Seq, TranslitTokenizer, dict]:
     state = torch.load(checkpoint_path, map_location=device, weights_only=False)
     config = state["config"]
     tokenizer = TranslitTokenizer.load(checkpoint_path.parent / "tokenizer.json")
@@ -235,7 +238,10 @@ def main() -> None:
             f"({result['ms_per_pair']} ms/pair)"
         )
         for name, summary in result["buckets"].items():
-            print(f"    {name:12} n={summary['n']:6} top1={summary['top1']:.4f} cer={summary['cer']:.4f}")
+            print(
+                f"    {name:12} n={summary['n']:6} "
+                f"top1={summary['top1']:.4f} cer={summary['cer']:.4f}"
+            )
 
     if args.out:
         Path(args.out).write_text(json.dumps(results, indent=2), encoding="utf-8")

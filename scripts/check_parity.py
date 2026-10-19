@@ -72,7 +72,10 @@ def main() -> None:
         if expected[:1] != actual[:1]:
             mismatches += 1
             if mismatches <= 5:
-                print(f"row {index}: torch={expected[:1]} onnx={actual[:1]} roman={rows[index]['roman']!r}")
+                print(
+                f"row {index}: torch={expected[:1]} onnx={actual[:1]} "
+                f"roman={rows[index]['roman']!r}"
+            )
 
     total = len(rows)
     print(f"checked {total} rows, {mismatches} mismatches")

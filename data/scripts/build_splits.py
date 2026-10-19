@@ -194,7 +194,10 @@ def build(
         if dakshina_root.exists():
             lexicon = [
                 p
-                for p in (normalize_pair(row) for row in read_dakshina_lexicon(dakshina_root, ("train",)))
+                for p in (
+                    normalize_pair(row)
+                    for row in read_dakshina_lexicon(dakshina_root, ("train",))
+                )
                 if p
             ]
             # The lexicon has several romanizations per word, so keep the best

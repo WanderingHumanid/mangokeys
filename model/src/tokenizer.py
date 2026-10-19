@@ -56,7 +56,8 @@ class CharTokenizer:
         return [self.stoi.get(ch, self.unk_id) for ch in text]
 
     def decode(self, ids: list[int]) -> str:
-        return "".join(self.itos[i] for i in ids if 0 <= i < len(self.itos) and self.itos[i] not in SPECIALS)
+        chars = (self.itos[i] for i in ids if 0 <= i < len(self.itos))
+        return "".join(char for char in chars if char not in SPECIALS)
 
     @classmethod
     def build(cls, texts: list[str], min_freq: int = 1) -> CharTokenizer:
