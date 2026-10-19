@@ -61,3 +61,7 @@ evals/results/*.local.*
 *.keystore
 *.jks
 secrets.properties
+
+# Generated split files
+data/processed/train_standard.tsv
+data/processed/train_adhoc.tsv
