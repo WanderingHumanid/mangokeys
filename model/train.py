@@ -96,7 +96,11 @@ def evaluate(
             hypothesis = tokenizer.decode_tgt(ids)
             reference = tokenizer.decode_tgt(targets[row].tolist())
             counter.update(reference, hypothesis)
-    return counter.summary()
+    # The training monitor only does greedy decoding, so there is no ranking
+    # metric to report. The full evaluation reports top-5.
+    summary = counter.summary()
+    summary.pop("top5", None)
+    return summary
 
 
 def main() -> None:
