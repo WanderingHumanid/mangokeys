@@ -130,9 +130,13 @@ def main() -> None:
     main_dir = ROOT / args.data
 
     if args.stage in ("all", "e1"):
-        # The standard rows only, the clean data ceiling.
-        split_by_style(main_dir)
-        standard = main_dir / "train_standard.tsv"
+        # The same number of rows as the augmented run, but all of them in the
+        # standard style. The only difference from the augmented run is what
+        # the extra rows look like, so this isolates the effect of the style
+        # coverage from the effect of having more data.
+        standard = main_dir / "train_standard_doubled.tsv"
+        if not standard.exists():
+            standard = main_dir / "train_standard.tsv"
         if not standard.exists():
             print("no train_standard.tsv, run the data build first")
             return
