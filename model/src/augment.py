@@ -64,8 +64,12 @@ class AugmentConfig:
     drop_inherent_vowels: float = 0.35
     drop_short_i: float = 0.20
     drop_final_u: float = 0.15
-    drop_long_vowel: float = 0.25
-    add_long_vowel: float = 0.08
+    # The long vowel rules were added after the error analysis showed that a
+    # missing long vowel sign is the single largest failure mode. They are off
+    # by default so that the pipeline reproduces the shipped checkpoint, which
+    # was trained before they existed. Turn them on for the next run.
+    drop_long_vowel: float = 0.0
+    add_long_vowel: float = 0.0
     collapse_gemination: float = 0.15
     geminate_final_consonant: float = 0.10
     drop_aspiration: float = 0.15
@@ -125,6 +129,8 @@ class ManglishAugmenter:
         name = rule.__name__.lstrip("_")
         weight = self.config.rule_weights.get(name, 1.0)
         probability = getattr(self.config, name, 0.0) * weight
+        if probability <= 0:
+            return False
         return self.rng.random() < probability
 
     # ------------------------------------------------------------------ rules

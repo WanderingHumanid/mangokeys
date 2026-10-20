@@ -163,6 +163,24 @@ def build(
     counts["test_aksharantar"] = len(test_rows)
     print(f"test_akshantar.tsv: {len(test_rows)} rows")
 
+    # The same words written in the adhoc style. The official validation and
+    # test sets are in careful spelling, so they cannot show what the
+    # augmentation is for. These rows have the same native words, so the
+    # comparison is fair, but the roman side has been rewritten the way people
+    # actually type.
+    augmenter = ManglishAugmenter(AugmentConfig(), seed=seed)
+    adhoc_rows = []
+    for row in test_rows:
+        variant, applied = augmenter.augment(row["roman"])
+        if not applied or variant == row["roman"]:
+            continue
+        adhoc_rows.append(
+            {"roman": variant, "native": row["native"], "bucket": row["bucket"]}
+        )
+    write_pairs(out_dir / "test_aksharantar_adhoc.tsv", adhoc_rows)
+    counts["test_aksharantar_adhoc"] = len(adhoc_rows)
+    print(f"test_akshantar_adhoc.tsv: {len(adhoc_rows)} rows")
+
     dakshina_root = Path(dakshina)
     dakshina_eval = []
     if dakshina_root.exists():

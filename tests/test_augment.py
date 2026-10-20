@@ -151,7 +151,16 @@ def test_augment_leaves_text_alone_when_all_rules_off():
 
 
 def test_default_config_covers_every_rule():
+    # The long vowel rules are off by default, on purpose.
+    disabled = {"drop_long_vowel", "add_long_vowel"}
     aug = ManglishAugmenter(AugmentConfig(), seed=0)
     for rule in aug._rules:
         name = rule.__name__.lstrip("_")
+        if name in disabled:
+            continue
         assert getattr(AugmentConfig(), name) > 0
+
+
+def test_long_vowel_rules_are_off_by_default():
+    aug = ManglishAugmenter(AugmentConfig(), seed=0)
+    assert aug.augment("kaalam")[0] == "kaalam"
