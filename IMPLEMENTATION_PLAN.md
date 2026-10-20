@@ -19,19 +19,26 @@ The project is built and running. This section records where each part stands.
 | Component | State | Where |
 |---|---|---|
 | Data pipeline | ✅ working on the real 4.1M-pair corpus | `data/scripts/` |
-| Augmentation rules (13) | ✅ with unit tests | `model/src/augment.py` |
-| Model, training, AMP, length bucketing | ✅ 5.37M params | `model/src/seq2seq.py` |
+| Augmentation rules (15) | ✅ with unit tests | `model/src/augment.py` |
+| Model, training, AMP, length bucketing | ✅ 5.37M params, 6.6M pairs, 12 epochs | `model/src/seq2seq.py` |
 | Evaluation, grapheme aware CER | ✅ | `model/src/metrics.py` |
-| Rule-based baseline | ✅ Top-1 9.2%, CER 48.8% | `model/src/rules.py` |
-| Mozhi conformance (67 cases) | ✅ rule engine passes all 67 | `evals/mozhi_cases/` |
+| Rule-based baseline | ✅ Top-1 9.2%, CER 48.8%, 67/67 Mozhi cases | `model/src/rules.py` |
 | ONNX export, int8 path, Python runtime | ✅ parity checked against PyTorch | `model/export_onnx.py` |
-| Browser runtime | ✅ written | `runtime/js/` |
+| Browser runtime | ✅ verified in a real browser, agrees with Python | `runtime/js/` |
 | Kotlin runtime | ✅ written | `runtime/kotlin/` |
-| Static web demo | ✅ built | `apps/expo-web/` |
+| Static web demo | ✅ working, screenshot verified | `apps/expo-web/` |
 | Corpus ambiguity analysis | ✅ measured | `scripts/analyze_corpus.py` |
-| Full corpus training | ⏳ running | `runs/ml_mini/` |
-| Ablations E1, E2, E6 | ⏳ queued | `scripts/run_ablations.py` |
+| Error analysis | ✅ 12-class taxonomy | `scripts/error_analysis.py` |
+| Augmentation ablation E1 | ⏳ running | `scripts/run_ablations.py` |
 | Adhoc manual eval set | ⬜ needs human collection | `evals/adhoc_manual/` |
+
+### The headline result
+
+| System | Top-1 | CER | Top-5 | Size | ms / word |
+|---|---|---|---|---|---|
+| Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
+| **Our model, int8, beam 4** | **53.3%** | **17.1%** | **72.2%** | **6.1 MB** | 125 |
+| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **9.6** |
 
 ### What changed from the plan
 
@@ -50,6 +57,9 @@ The project is built and running. This section records where each part stands.
    cache would be faster but complicates the exported graph.
 5. **The corpus does not have to be held in memory.** The pipeline streams,
    because six and a half million pairs as python objects does not fit.
+6. **The error analysis found a missing augmentation rule.** The model
+   resolves the letter ambiguities well and gets the lengths wrong, so the
+   long vowel rules were added after the first training run.
 
 ---
 
