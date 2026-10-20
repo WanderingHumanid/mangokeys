@@ -39,7 +39,7 @@ object Normalizer {
         "–" to "-", "—" to "-", "―" to "-", "−" to "-",
     )
 
-    private val ZERO_WIDTH = charArrayOf('', '⁠', '﻿').toSet()
+    private val ZERO_WIDTH = charArrayOf('\u200B', '\u2060', '\uFEFF').toSet()
 
     fun normalizeMalayalam(text: String): String {
         var out = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC)

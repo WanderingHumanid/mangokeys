@@ -66,3 +66,9 @@ secrets.properties
 data/processed/train_standard.tsv
 data/processed/train_adhoc.tsv
 data/processed/train_standard_doubled.tsv
+
+# Gradle
+.gradle/
+runtime/build/
+runtime/android/build/
+local.properties

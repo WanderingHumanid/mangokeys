@@ -20,9 +20,9 @@ class Tokenizer(private val payload: JSONObject) {
 
     private val tgtChars: JSONArray = payload.getJSONArray("tgt")
 
-    val bosId: Int = tgtChars.indexOf("<bos>")
-    val eosId: Int = tgtChars.indexOf("<eos>")
-    val unkId: Int = tgtChars.indexOf("<unk>")
+    val bosId: Int = tgtChars.indexOfString("<bos>")
+    val eosId: Int = tgtChars.indexOfString("<eos>")
+    val unkId: Int = tgtChars.indexOfString("<unk>")
 
     fun encodeSource(text: String): IntArray {
         val ids = ArrayList<Int>(text.length)
@@ -42,4 +42,12 @@ class Tokenizer(private val payload: JSONObject) {
         }
         return out.toString()
     }
+}
+
+/** org.json has no indexOf for a string, so scan for it. */
+private fun JSONArray.indexOfString(value: String): Int {
+    for (index in 0 until length()) {
+        if (getString(index) == value) return index
+    }
+    return -1
 }
