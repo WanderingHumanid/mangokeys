@@ -48,13 +48,17 @@ substitute chillus. A model trained on clean pairs benchmarks beautifully and di
 | System | Top-1 | CER | Top-5 | Size | ms / word |
 |---|---|---|---|---|---|
 | Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
-| **Our model, int8, beam 4** | **53.3%** | **17.1%** | **72.2%** | **6.1 MB** | 125 |
-| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **9.6** |
+| **Our model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | **6.1 MB** | 27.4 |
+| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **12.0** |
 
 The model is 5.8 times better than the rule engine on top-1, and its character
 error rate is 2.9 times lower. Quantization to int8 costs nothing measurable.
-Greedy is 13 times faster than beam 4 for 0.28 points of top-1, so the live
-path should be greedy.
+The timings are the int8 model on a desktop cpu, which is what the browser and
+the phone use.
+
+In the browser the model runs in a Web Worker on four threads, so the page
+never stutters: the longest frame gap while typing is 17 to 27 milliseconds,
+which is the normal frame budget. See [`docs/LATENCY.md`](docs/LATENCY.md).
 
 ### The augmentation is the whole project
 
@@ -64,8 +68,8 @@ the style of the extra rows differs.
 | Training data | Standard test set | | Adhoc test set | |
 |---|---|---|---|---|
 | | Top-1 | CER | Top-1 | CER |
-| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
-| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+| standard rows only | **56.2%** | **15.4%** | 6.2% | 49.7% |
+| standard + adhoc rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
 
 Training on careful spelling alone makes a model three points better at
 careful spelling and **40 points worse at real typing**. That is the

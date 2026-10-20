@@ -278,8 +278,8 @@ The numbers, on the full test sets:
 | Training data | Standard test set | | Adhoc test set | |
 |---|---|---|---|---|
 | | Top-1 | CER | Top-1 | CER |
-| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
-| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+| standard rows only | **56.2%** | **15.4%** | 6.2% | 49.7% |
+| standard + adhoc rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
 
 **Training on careful spelling alone makes a model that is three points
 better at careful spelling and 40 points worse at real typing.** The gap is

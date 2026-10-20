@@ -5,8 +5,8 @@
     "top1": 0.5302,
     "cer": 0.1712,
     "top5": 0.5302,
-    "seconds": 120.0,
-    "ms_per_pair": 9.64,
+    "seconds": 148.9,
+    "ms_per_pair": 11.96,
     "buckets": {
       "AK-Freq": {
         "n": 4858,

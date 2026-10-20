@@ -37,8 +37,8 @@ The project is built and running. This section records where each part stands.
 | System | Top-1 | CER | Top-5 | Size | ms / word |
 |---|---|---|---|---|---|
 | Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
-| **Our model, int8, beam 4** | **53.3%** | **17.1%** | **72.2%** | **6.1 MB** | 125 |
-| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **9.6** |
+| **Our model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | **6.1 MB** | 27.4 |
+| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **12.0** |
 
 ### The ablation
 
@@ -48,8 +48,8 @@ the style of the extra rows differs.
 | Training data | Standard test set | | Adhoc test set | |
 |---|---|---|---|---|
 | | Top-1 | CER | Top-1 | CER |
-| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
-| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+| standard rows only | **56.2%** | **15.4%** | 6.2% | 49.7% |
+| standard + adhoc rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
 
 **Training on careful spelling alone makes a model three points better at
 careful spelling and forty points worse at real typing.**
