@@ -1,12 +1,7 @@
-import * as ort from "./ort/ort.min.mjs";
 import { Transliterator, buildTokenizer, normalizeRoman } from "./transliterator.js";
-
-ort.env.wasm.wasmPaths = "/ort/";
-ort.env.wasm.numThreads = 1;
 
 const MAX_SRC = 48;
 const MAX_TGT = 64;
-const BEAM = 4;
 
 const elements = {
   status: document.getElementById("status"),
@@ -18,7 +13,7 @@ const elements = {
   benchNote: document.getElementById("bench-note"),
 };
 
-let engine = null;
+let worker = null;
 let timer = null;
 let requestId = 0;
 
@@ -28,9 +23,9 @@ const CONSONANTS = {
   j: "ജ", jh: "ഝ", nj: "ഞ", t: "ട", T: "ട", th: "ഠ", D: "ഡ",
   dh: "ഢ", N: "ണ", thh: "ത", n: "ന", p: "പ", ph: "ഫ", b: "ബ",
   bh: "ഭ", m: "മ", y: "യ", r: "ര", l: "ല", v: "വ", sh: "ശ",
-  S: "ഷ", s: "സ", h: "ഹ", L: "ള", zh: "ഴ", R: "റ", rr: "റ",
+  Sh: "ഷ", s: "സ", h: "ഹ", L: "ള", zh: "ഴ", R: "റ", rr: "റ",
 };
-const VOWELS = { a: "അ", aa: "ആ", i: "ഇ", ii: "ഈ", u: "ഉ", uu: "ഊ", e: "എ", ee: "ഏ", ai: "ഐ", o: "ഒ", oo: "ഓ", au: "ഔ" };
+const VOWELS = { a: "അ", aa: "ആ", i: "ഇ", ii: "ഈ", u: "ഉ", uu: "ഊ", e: "എ", ee: "ഏ", ai: "ഐ", o: "ഒ", O: "ഓ", au: "ഔ" };
 const SIGNS = { a: "", aa: "ാ", i: "ി", ii: "ീ", u: "ു", uu: "ൂ", e: "െ", ee: "േ", ai: "ൈ", o: "ൊ", oo: "ോ", au: "ൗ" };
 const CHILLUS = { "ണ": "ൺ", "ന": "ൻ", "ര": "ർ", "ല": "ൽ", "ള": "ൾ", "ക": "ൿ" };
 
@@ -78,30 +73,61 @@ function ruleConvert(text) {
   return out;
 }
 
-async function loadModel() {
-  const [encoder, decoder, tokenizerPayload] = await Promise.all([
-    ort.InferenceSession.create("./models/encoder.onnx", { executionProviders: ["wasm"] }),
-    ort.InferenceSession.create("./models/decoder.onnx", { executionProviders: ["wasm"] }),
-    fetch("./models/tokenizer.json").then((response) => response.json()),
-  ]);
-
-  const tokenizer = buildTokenizer(tokenizerPayload);
-  engine = new Transliterator({ encoder, decoder }, tokenizer, ort, {
-    maxSrc: MAX_SRC,
-    maxTgt: MAX_TGT,
-    beam: BEAM,
-  });
-
-  elements.status.textContent = "model ready";
-  elements.status.classList.remove("error");
+function startWorker() {
+  worker = new Worker("./worker.js", { type: "module" });
+  worker.onmessage = (event) => {
+    const { id, candidates, error, ready, threads, text } = event.data;
+    if (error) {
+      elements.status.textContent = `model error: ${error}`;
+      elements.status.classList.add("error");
+      return;
+    }
+    if (ready) {
+      elements.status.textContent = `model ready · ${threads} threads`;
+      elements.status.classList.remove("error");
+    }
+    if (id !== requestId) return;
+    if (!candidates) return;
+    elements.modelOutput.textContent = text ?? candidates[0] ?? " ";
+    elements.candidates.innerHTML = candidates.map((c) => `<li>${c}</li>`).join("");
+  };
 }
+
+function requestModel(text) {
+  if (!worker) return;
+  requestId += 1;
+  worker.postMessage({ id: requestId, roman: text, nBest: 5 });
+}
+
+function update() {
+  const text = normalizeRoman(elements.word.value);
+  elements.ruleOutput.textContent = text ? ruleConvert(text) : " ";
+  if (!text) {
+    elements.modelOutput.textContent = " ";
+    elements.candidates.innerHTML = "";
+    return;
+  }
+  requestModel(text);
+}
+
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(update, 80);
+}
+
+elements.word.addEventListener("input", schedule);
+document.querySelectorAll(".examples button").forEach((button) => {
+  button.addEventListener("click", () => {
+    elements.word.value = button.dataset.word;
+    schedule();
+  });
+});
 
 async function loadBenchmarks() {
   try {
     const response = await fetch("./models/eval.json");
     if (!response.ok) throw new Error("missing");
-    const data = await response.json();
-    renderBenchmarks(data);
+    renderBenchmarks(await response.json());
   } catch {
     elements.benchNote.textContent =
       "Benchmark table not built yet. Run scripts/run_baselines.py and model/evaluate.py to produce it.";
@@ -140,49 +166,10 @@ function renderBenchmarks(data) {
   }
 }
 
-async function update() {
-  const text = normalizeRoman(elements.word.value);
-  elements.ruleOutput.textContent = text ? ruleConvert(text) : " ";
-  if (!engine || !text) {
-    elements.modelOutput.textContent = " ";
-    elements.candidates.innerHTML = "";
-    return;
-  }
+startWorker();
+loadBenchmarks();
+elements.word.focus();
 
-  const current = ++requestId;
-  const started = performance.now();
-  const words = text.split(/\s+/).filter((word) => word.length);
-  const last = words[words.length - 1];
-  const translated = await engine.transliterate(text);
-  if (current !== requestId) return;
-
-  elements.modelOutput.textContent = translated;
-  const candidates = await engine.candidates(last, 5);
-  if (current !== requestId) return;
-  elements.candidates.innerHTML = candidates.map((candidate) => `<li>${candidate}</li>`).join("");
-  const elapsed = Math.round(performance.now() - started);
-  elements.status.textContent = `model ready · ${elapsed} ms`;
-}
-
-function schedule() {
-  clearTimeout(timer);
-  timer = setTimeout(update, 90);
-}
-
-elements.word.addEventListener("input", schedule);
-document.querySelectorAll(".examples button").forEach((button) => {
-  button.addEventListener("click", () => {
-    elements.word.value = button.dataset.word;
-    schedule();
-  });
-});
-
-loadModel()
-  .then(() => {
-    loadBenchmarks();
-    elements.word.focus();
-  })
-  .catch((error) => {
-    elements.status.textContent = `could not load the model: ${error.message}`;
-    elements.status.classList.add("error");
-  });
+// Ask the worker to load the model straight away, so the first keystroke
+// does not have to wait for it.
+requestModel("");

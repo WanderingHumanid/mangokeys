@@ -9,7 +9,7 @@ the benchmark table that the page reads.
 from __future__ import annotations
 
 import argparse
-import json
+
 import shutil
 import subprocess
 import sys
@@ -73,18 +73,14 @@ def main() -> None:
     shutil.copy(checkpoint.parent / "tokenizer.json", DEMO / "tokenizer.json")
     print("copied tokenizer.json")
 
-    # The page is served from the demo folder, so the runtime has to sit next
-    # to it rather than being imported from the repository.
+    # The runtime has to sit next to the page, because the page is served from
+    # the demo folder and cannot import from the repository.
     shutil.copy(ROOT / "runtime" / "js" / "transliterator.js", DEMO / "transliterator.js")
     print("copied transliterator.js")
 
-    results = Path(args.results)
-    if results.exists():
-        payload = json.loads(results.read_text(encoding="utf-8"))
-        (DEMO / "eval.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        print(f"copied {results}")
-    else:
-        print(f"no results file at {results}, the page will say so")
+    # The page reads the benchmark table from the demo folder, and it has to be
+    # in the page's format rather than the raw evaluation format.
+    run([sys.executable, "-m", "scripts.make_report", "--demo-out", str(DEMO / "eval.json")])
 
     total = sum(path.stat().st_size for path in DEMO.glob("*.onnx")) / 1e6
     print(f"model payload: {total:.1f} MB")

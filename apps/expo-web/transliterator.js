@@ -143,6 +143,7 @@ export class Transliterator {
     let scores = new Float64Array(width).fill(-Infinity);
     scores[0] = 0;
     const finished = [];
+    let bestFinished = -Infinity;
 
     for (let step = 0; step < this.maxTgt; step += 1) {
       const outputs = await this.decoder.run({
@@ -183,22 +184,18 @@ export class Transliterator {
             nextPrefix.subarray(prefixStart, prefixStart + prefixLength),
             (value) => Number(value),
           );
-          finished.push({ score: score / Math.max(sequence.length, 1), sequence });
+          finished.push({ score, sequence });
+          if (score > bestFinished) bestFinished = score;
         }
       }
 
       tokens = nextPrefix;
       prefixLength = nextLength;
       scores = nextScores;
-      let alive = false;
       for (let slot = 0; slot < width; slot += 1) {
-        if (nextTokens[slot] === BigInt(this.tokenizer.eos)) {
-          scores[slot] = -Infinity;
-        } else if (scores[slot] > -Infinity) {
-          alive = true;
-        }
+        if (scores[slot] < bestFinished) scores[slot] = -Infinity;
       }
-      if (!alive) break;
+      if (!Array.from(scores).some((score) => score > -Infinity)) break;
     }
 
     if (finished.length === 0) {
@@ -208,14 +205,21 @@ export class Transliterator {
           tokens.subarray(slot * prefixLength, (slot + 1) * prefixLength),
           (value) => Number(value),
         );
-        finished.push({ score: scores[slot] / Math.max(sequence.length, 1), sequence });
+        finished.push({ score: scores[slot], sequence });
       }
     }
 
     finished.sort((a, b) => b.score - a.score);
-    return finished
-      .slice(0, nBest)
-      .map((item) => normalizeMalayalam(this.decodeTarget(item.sequence)));
+    const seen = new Set();
+    const results = [];
+    for (const item of finished) {
+      const text = normalizeMalayalam(this.decodeTarget(item.sequence));
+      if (seen.has(text)) continue;
+      seen.add(text);
+      results.push(text);
+      if (results.length >= nBest) break;
+    }
+    return results;
   }
 
   async transliterate(roman) {

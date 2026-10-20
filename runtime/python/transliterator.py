@@ -93,6 +93,7 @@ class Transliterator:
         scores = np.full(width, -np.inf, dtype=np.float32)
         scores[0] = 0.0
         finished: list[tuple[float, list[int]]] = []
+        best_finished = -np.inf
 
         for _ in range(self.max_tgt):
             self_mask = _causal_mask(tokens.shape[1])
@@ -122,10 +123,13 @@ class Transliterator:
                 if token_index[slot] != eos:
                     continue
                 sequence = history[slot].tolist()[1:]
-                length = max(len(sequence), 1)
-                finished.append((float(scores[slot]) / length, sequence))
+                finished.append((float(scores[slot]), sequence))
+                if scores[slot] > best_finished:
+                    best_finished = float(scores[slot])
 
-            scores = np.where(token_index == eos, -np.inf, scores)
+            # A live beam can only lose score, so it is hopeless once it is
+            # behind the best finished hypothesis.
+            scores = np.where(scores < best_finished, -np.inf, scores)
             if not np.any(scores > -np.inf):
                 break
 
@@ -134,10 +138,20 @@ class Transliterator:
                 if scores[slot] == -np.inf:
                     continue
                 sequence = tokens[slot].tolist()[1:]
-                finished.append((float(scores[slot]) / max(len(sequence), 1), sequence))
+                finished.append((float(scores[slot]), sequence))
 
         finished.sort(key=lambda item: item[0], reverse=True)
-        return [normalize_malayalam(self.tokenizer.decode_tgt(ids)) for _, ids in finished[:n_best]]
+        seen: set[str] = set()
+        results: list[str] = []
+        for _, ids in finished:
+            text = normalize_malayalam(self.tokenizer.decode_tgt(ids))
+            if text in seen:
+                continue
+            seen.add(text)
+            results.append(text)
+            if len(results) >= n_best:
+                break
+        return results
 
 
 def _log_softmax(logits: np.ndarray) -> np.ndarray:

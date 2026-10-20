@@ -59,12 +59,18 @@ def beam_search(
     eos_id: int,
     beam: int = 4,
     max_len: int = 64,
-    length_penalty: float = 1.0,
+    length_penalty: float = 0.0,
     n_best: int = 1,
 ) -> list[list[list[int]]]:
     """Beam search over a batch.
 
     Returns n_best candidate id lists per source row, ordered by score.
+
+    The scores are raw log probabilities. A live beam can only add tokens, so
+    its score can never go up, which makes it safe to drop a live beam that is
+    already behind the best finished hypothesis and to stop the search when no
+    live beam can still win. Without that the search keeps stepping beams long
+    after the answer is known, and that is most of the latency.
     """
     model.eval()
     device = src_ids.device
@@ -81,6 +87,7 @@ def beam_search(
     scores = scores.view(-1)
 
     finished: list[list[tuple[float, list[int]]]] = [[] for _ in range(batch)]
+    best_finished = torch.full((batch,), float("-inf"), device=device)
 
     for _ in range(max_len):
         logits = model.decode_step(tokens, memory, expanded_mask)
@@ -106,11 +113,16 @@ def beam_search(
                 continue
             row = flat // width
             sequence = history[flat].tolist()[1:]
-            length = max(len(sequence), 1)
-            score = float(scores[flat]) / length**length_penalty
+            score = float(scores[flat])
             finished[row].append((score, sequence))
+            if score > float(best_finished[row]):
+                best_finished[row] = score
 
-        scores = scores.masked_fill(token_index == eos_id, float("-inf"))
+        # A live beam can only lose score, so it is hopeless once it is behind
+        # the best finished hypothesis.
+        scores = scores.masked_fill(
+            scores < best_finished.repeat_interleave(width), float("-inf")
+        )
         if not bool((scores > float("-inf")).any()):
             break
 
