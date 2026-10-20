@@ -73,6 +73,16 @@ def bucket_table(rows: list[dict], test_file: str) -> list[str]:
     return lines
 
 
+def model_size_mb() -> float:
+    """The size of the shipped model, in megabytes."""
+    total = 0
+    for name in ("encoder.onnx", "decoder.onnx"):
+        path = ROOT / "apps" / "expo-web" / "models" / name
+        if path.exists():
+            total += path.stat().st_size
+    return round(total / 1e6, 1)
+
+
 def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[dict]:
     """Build the file the web demo reads.
 
@@ -84,6 +94,7 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
         for entry in rows:
             if entry.get("file") != test_file:
                 continue
+            size = f"{model_size_mb()} MB" if name == "ours" else "3 KB"
             payloads.append(
                 {
                     "file": entry["file"],
@@ -93,6 +104,7 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
                             "cer": entry["cer"],
                             "top5": entry.get("top5", 0.0),
                             "ms_per_pair": entry.get("ms_per_pair", 0.0),
+                            "size": size,
                         }
                     },
                 }
