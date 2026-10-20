@@ -87,30 +87,25 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
     """Build the file the web demo reads.
 
     The demo expects one entry per test file with a systems table, so the
-    model and the rule baseline sit side by side.
+    model and the rule baseline sit side by side in the same entry.
     """
-    payloads = []
+    table: dict[str, dict] = {}
     for name, rows in systems.items():
         for entry in rows:
             if entry.get("file") != test_file:
                 continue
             size = f"{model_size_mb()} MB" if name == "ours" else "3 KB"
-            payloads.append(
-                {
-                    "file": entry["file"],
-                    "systems": {
-                        SYSTEM_LABELS.get(name, name): {
-                            "top1": entry["top1"],
-                            "cer": entry["cer"],
-                            "top5": entry.get("top5", 0.0),
-                            "ms_per_pair": entry.get("ms_per_pair", 0.0),
-                            "size": size,
-                        }
-                    },
-                }
-            )
+            table[SYSTEM_LABELS.get(name, name)] = {
+                "top1": entry["top1"],
+                "cer": entry["cer"],
+                "top5": entry.get("top5", 0.0),
+                "ms_per_pair": entry.get("ms_per_pair", 0.0),
+                "size": size,
+            }
             break
-    return payloads
+    if not table:
+        return []
+    return [{"file": test_file, "systems": table}]
 
 
 def main() -> None:

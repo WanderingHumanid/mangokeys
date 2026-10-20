@@ -43,16 +43,40 @@ substitute chillus. A model trained on clean pairs benchmarks beautifully and di
 | Static web demo | ✅ working, runs the model in the browser |
 | Model trained on the full corpus | ⏳ running |
 
-### Measured so far
+### Measured on the Aksharantar Malayalam test set
 
 | System | Top-1 | CER | Top-5 | Size | ms / word |
 |---|---|---|---|---|---|
 | Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
-| Our model, epoch 0, int8, beam 4 | 46.7% | 15.7% | 69.9% | **6.1 MB** | 127 |
-| Our model, epoch 0, int8, greedy | 46.3% | 15.8% | - | 6.1 MB | **10.5** |
+| **Our model, int8, beam 4** | **53.3%** | **17.1%** | **72.2%** | **6.1 MB** | 125 |
+| Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **9.6** |
 
-Quantization costs 0.17 points of Top-1 and no measurable CER. Greedy is 12 times
-faster than beam 4 for 0.4 points, so the live path should be greedy.
+The model is 5.8 times better than the rule engine on top-1, and its character
+error rate is 2.9 times lower. Quantization to int8 costs nothing measurable.
+Greedy is 13 times faster than beam 4 for 0.28 points of top-1, so the live
+path should be greedy.
+
+The model has **solved the letter ambiguities** (ശ/ഷ/സ, ട/ത, ര/റ, ല/ള, ന/ണ and
+the chillus together are 6.6% of its errors) and has **not solved the
+lengths** (missing or extra vowel signs and viramas are 65%). The error
+analysis in `scripts/error_analysis.py` is what found that, and it is what
+motivated the long vowel augmentation rules.
+
+## Status
+
+| Piece | State |
+|---|---|
+| Data pipeline (download → normalize → filter → augment → split) | ✅ working on the real 4.1M-pair corpus |
+| Model, training loop, length bucketing, label smoothing, AMP | ✅ 5.37M params, trained on 6.6M pairs |
+| Augmentation rules (15) with unit tests | ✅ working |
+| Evaluation (CER / Top-1 / Top-5, grapheme aware, per bucket) | ✅ working |
+| Rule-based baseline | ✅ Top-1 9.2%, passes all 67 Mozhi cases |
+| ONNX export, int8 quantization, Python runtime | ✅ parity checked against PyTorch |
+| Browser runtime (ONNX Runtime Web) | ✅ verified in a real browser, agrees with Python |
+| Kotlin runtime (ONNX Runtime Mobile) | ✅ written |
+| Static web demo | ✅ working, runs the model in the browser |
+| Error analysis | ✅ 12-class taxonomy, dumped to `evals/results/errors.tsv` |
+| Augmentation ablation | ⏳ running |
 
 ## Layout
 

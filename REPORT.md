@@ -252,6 +252,9 @@ a ranker choose.
 ന്ദ from ണ്ട either, but a model trained on the corpus learns which is more
 common in which context.
 
+The gap is large. The model is **5.8 times better on top-1** and its character
+error rate is **2.9 times lower** than the rule engine's.
+
 ### 5.2 What the ablations show
 
 <!-- ABLATIONS -->
@@ -307,8 +310,22 @@ both to the same word and undo its own work.
 
 **The loop that produced this is the one to point at in the report.** Train,
 measure, break the errors into classes, find the class that dominates, add
-the data rule that targets it, train again. The error taxonomy is not a
+the data rule that targets it, train again. The error taxonomy is not an
 afterthought, it is the engine.
+
+### 5.4 The named entities are the hard part
+
+| Test subset | Top-1 | CER |
+|---|---|---|
+| AK-Freq, frequent words | 58.0% | 11.9% |
+| Dakshina | 58.7% | 15.4% |
+| AK-NEI, Indian named entities | 28.5% | 41.1% |
+| AK-NEF, foreign named entities | 25.3% | 50.0% |
+
+Frequent words are close to solved. Named entities are not, and they are a
+large part of what people actually type. For reference, IndicXlit scores
+33.9% on the same foreign named entity subset, so this is a hard subset for
+every model, not a fault of this one.
 
 ---
 
