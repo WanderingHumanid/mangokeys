@@ -129,9 +129,14 @@ class ManglishAugmenter:
         name = rule.__name__.lstrip("_")
         weight = self.config.rule_weights.get(name, 1.0)
         probability = getattr(self.config, name, 0.0) * weight
+        # The draw happens even for a disabled rule, so that the random stream
+        # stays the same however the rule set is configured. That way two
+        # configurations differ only because of the rules and not because of
+        # a different random draw.
+        draw = self.rng.random()
         if probability <= 0:
             return False
-        return self.rng.random() < probability
+        return draw < probability
 
     # ------------------------------------------------------------------ rules
 

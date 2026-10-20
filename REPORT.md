@@ -265,35 +265,39 @@ The error analysis script is `scripts/error_analysis.py`. It runs the model
 over the test set, sorts the errors into a fixed taxonomy and writes every
 one of them to `evals/results/errors.tsv`.
 
-The result that came out of it is the most interesting thing in this project.
+Over all 12,451 test words the model gets 5,814 wrong. The result that came
+out of the breakdown is the most interesting thing in this project.
 
 **The model has solved the letters and has not solved the lengths.**
 
-| Error class | Share |
-|---|---|
-| missing long vowel sign | **32.8%** |
-| missing virama | 17.3% |
-| extra virama | 14.4% |
-| other | 12.1% |
-| too long | 10.9% |
-| missing short vowel sign | 4.5% |
-| റ written as ര | 1.8% |
-| retroflex and dental confused | 1.4% |
-| chillu dropped | 1.2% |
-| ണ written as ന | 0.9% |
-| ള written as ല | 0.8% |
-| ശ and ഷ confused | 0.5% |
+| Error class | Errors | Share |
+|---|---|---|
+| missing long vowel sign | 1,482 | **25.5%** |
+| missing virama | 1,153 | 19.8% |
+| extra virama | 894 | 15.4% |
+| other | 857 | 14.7% |
+| too long | 636 | 10.9% |
+| missing short vowel sign | 404 | 6.9% |
+| retroflex and dental confused | 78 | 1.3% |
+| chillu dropped | 73 | 1.3% |
+| too short | 64 | 1.1% |
+| റ written as ര | 57 | 1.0% |
+| ള written as ല | 51 | 0.9% |
+| ണ written as ന | 37 | 0.6% |
+| ശ and ഷ confused | 22 | 0.4% |
+| സ and ശ confused | 3 | 0.1% |
+| ഴ wrong | 3 | 0.1% |
 
-**The six letter ambiguity classes together are 6.6% of the errors.** ശ against
-ഷ, ട against ത, ര against റ, ല against ള, ന against ണ, and the chillus. Those
-are the ambiguities that the roman text genuinely cannot resolve, and the model
-resolves them almost every time by using the rest of the word.
+**The eight letter ambiguity classes together are 5.7% of the errors.** ശ against
+ഷ, സ against ശ, ട against ത, ര against റ, ല against ള, ന against ണ, ഴ and the
+chillus. Those are the ambiguities that the roman text genuinely cannot
+resolve, and the model resolves them almost every time by using the rest of
+the word.
 
-**Two thirds of the remaining errors are about length.** The model writes
-ക where the word needs കാ, drops a ് that should be there, or adds one that
-should not be. The reason is the same ambiguity in a different place: the
-roman text `kalam` could be കലം or കാലം, and `kaalam` could be either as
-well.
+**Two thirds of the remaining errors are about length.** The model writes ക
+where the word needs കാ, drops a ് that should be there, or adds one that should
+not be. The reason is the same ambiguity in a different place: the roman text
+`kalam` could be കലം or കാലം, and `kaalam` could be either as well.
 
 **This is what the augmentation pipeline is for, and the error analysis found a
 rule that was missing.** The rules as first written handled the vowel signs
@@ -305,8 +309,10 @@ added as a result:
 | drop long vowel | `kaalam` → `kalam` | People write കാലം as "kalam" as often as "kaalam" |
 | add long vowel | `kalam` → `kaalam` | The rarer direction, at a lower probability |
 
-The two rules are declared as conflicting, so the augmenter will not apply
-both to the same word and undo its own work.
+**They are off by default.** The shipped checkpoint was trained before they
+existed, and the pipeline reproduces that checkpoint as it stands. Turning them
+on is a one line change in `configs`, and it is the first thing to try with
+the next training run.
 
 **The loop that produced this is the one to point at in the report.** Train,
 measure, break the errors into classes, find the class that dominates, add

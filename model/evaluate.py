@@ -195,9 +195,13 @@ def main() -> None:
     parser.add_argument("--n-best", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--out", default=None, help="write the results as json")
+    parser.add_argument("--device", default="auto", help="auto, cpu or cuda")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if args.device == "auto":
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device(args.device)
     checkpoint = Path(args.checkpoint)
     model, tokenizer, config = load_model(checkpoint, device)
 
