@@ -9,7 +9,27 @@ How the model gets onto a phone, and what it takes to turn it into a keyboard.
 | Model runtime | `runtime/kotlin/Transliterator.kt` | Pure Kotlin, no Android types, testable on a desktop |
 | Tokenizer | `runtime/kotlin/Tokenizer.kt` | Reads the same json the training run writes |
 | Normalization | `runtime/kotlin/Normalizer.kt` | Same rules as the Python side |
-| Inference library | `com.microsoft.onnxruntime:onnxruntime-mobile` | MIT, NNAPI and XNNPACK on Android |
+| Inference library | `com.microsoft.onnxruntime:onnxruntime-android:1.20.0` | MIT, NNAPI and XNNPACK on Android |
+| Gradle module | `runtime/android/` | Android library, `compileSdk 35`, `minSdk 24` |
+| Unit tests | `runtime/kotlin-test/` | Run the real model and check the output |
+
+The Kotlin runtime is **built and tested against the real model**, not just
+written. `runtime/android/` is a Gradle module that compiles the runtime and
+runs four unit tests, two of which check that the Kotlin runtime produces the
+same Malayalam as the Python one.
+
+```bash
+cd runtime
+export ANDROID_HOME=~/Android/Sdk
+../gradlew test        # or the gradle binary from the wrapper
+```
+
+Two things the tests caught that a compiler would not:
+
+- The onnx runtime hands a multi dimensional tensor back as **nested arrays**,
+  and the search loop needs one flat row per beam.
+- The tensors need **explicit shapes**. A flat array is a rank one tensor, and
+  the graph wants a rank two source and a rank three memory.
 
 ## How the model is used
 

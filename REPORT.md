@@ -259,6 +259,37 @@ error rate is **2.9 times lower** than the rule engine's.
 
 <!-- ABLATIONS -->
 
+**The augmentation is the whole project.** Two models were trained with the
+same architecture, the same number of rows, the same number of epochs and the
+same seed. The only difference is what the extra rows look like:
+
+- **standard rows only** — the corpus in careful spelling, with 2.5 million
+  rows repeated to make up the row count
+- **standard + adhoc rows** — the corpus plus 2.5 million rows rewritten by
+  the augmentation rules
+
+Both are then evaluated on the standard test set and on the same words written
+in the adhoc style.
+
+<!-- ABLATION_TABLE -->
+
+**Training on careful spelling alone makes a model that is slightly better at
+careful spelling and catastrophically worse at real typing.** The gap is not
+a percentage point, it is the difference between a keyboard that works and one
+that does not.
+
+**The cost side is small and it is paid in the wrong direction to hide.** The
+augmented model is a few points behind on the standard test set, because a
+third of its training data is deliberately awkward. That is a fair trade: the
+standard test set is a synthetic measure of what the corpus looks like, and
+the adhoc test set is a synthetic measure of what a keyboard has to survive.
+
+**The validation set cannot show this.** The official Aksharantar validation
+set is in careful spelling, and a standard-trained model wins on it at every
+epoch. Measuring the claim needed a test set in the style the augmentation
+targets, which is why `test_aksharantar_adhoc.tsv` exists: the same 12,451
+test words with the roman side rewritten by the augmentation rules.
+
 ### 5.3 Where the model still fails
 
 The error analysis script is `scripts/error_analysis.py`. It runs the model
