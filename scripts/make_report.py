@@ -108,6 +108,44 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
     return [{"file": test_file, "systems": table}]
 
 
+ABLATION_LABELS = {
+    "ablation_e1": "standard rows only",
+    "ablation_e2": "standard + adhoc rows",
+}
+
+
+def build_ablation_table() -> list[str]:
+    """Compare the two arms of the augmentation ablation.
+
+    Each arm is evaluated on the standard test set and on the same words
+    written in the adhoc style.
+    """
+    rows: dict[str, dict[str, dict]] = {}
+    for key, label in ABLATION_LABELS.items():
+        entries = load(RESULTS / f"{key}.json")
+        if not entries:
+            continue
+        rows[label] = {entry["file"]: entry for entry in entries}
+
+    if len(rows) < 2:
+        return []
+
+    lines = [
+        "| Training data | Standard test set | | Adhoc test set | |",
+        "|---|---|---|---|---|",
+    ]
+    for label, entries in rows.items():
+        standard = entries.get("test_aksharantar.tsv")
+        adhoc = entries.get("test_aksharantar_adhoc.tsv")
+        if standard is None or adhoc is None:
+            continue
+        lines.append(
+            f"| {label} | {percent(standard['top1'])} | {percent(standard['cer'])} "
+            f"| {percent(adhoc['top1'])} | {percent(adhoc['cer'])} |"
+        )
+    return lines
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test-file", default="test_aksharantar.tsv")
@@ -141,6 +179,10 @@ def main() -> None:
                     f"| {name} | {percent(row['top1'])} | {percent(row['cer'])} |"
                 )
         lines.append("")
+
+    table = build_ablation_table()
+    if table:
+        lines += ["### Does the augmentation help?", "", *table, ""]
 
     out = ROOT / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
