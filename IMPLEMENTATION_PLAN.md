@@ -40,6 +40,20 @@ The project is built and running. This section records where each part stands.
 | **Our model, int8, beam 4** | **53.3%** | **17.1%** | **72.2%** | **6.1 MB** | 125 |
 | Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **9.6** |
 
+### The ablation
+
+Two models, same architecture, same row count, same epochs, same seed. Only
+the style of the extra rows differs.
+
+| Training data | Standard test set | | Adhoc test set | |
+|---|---|---|---|---|
+| | Top-1 | CER | Top-1 | CER |
+| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
+| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+
+**Training on careful spelling alone makes a model three points better at
+careful spelling and forty points worse at real typing.**
+
 ### What changed from the plan
 
 1. **Dakshina is not the primary training data.** Aksharantar is, because it
@@ -59,7 +73,14 @@ The project is built and running. This section records where each part stands.
    because six and a half million pairs as python objects does not fit.
 6. **The error analysis found a missing augmentation rule.** The model
    resolves the letter ambiguities well and gets the lengths wrong, so the
-   long vowel rules were added after the first training run.
+   long vowel rules were added after the first training run. They are off by
+   default so that the pipeline reproduces the shipped checkpoint.
+7. **The augmentation ablation is the result.** Standard-only training is
+   three points better on standard input and forty points worse on adhoc
+   input. The official validation set is in careful spelling and cannot show
+   this, so a matching adhoc test set had to be built.
+8. **The Kotlin runtime is built and tested, not just written.** The Gradle
+   module compiles it and runs the real model through it.
 
 ---
 

@@ -56,9 +56,24 @@ error rate is 2.9 times lower. Quantization to int8 costs nothing measurable.
 Greedy is 13 times faster than beam 4 for 0.28 points of top-1, so the live
 path should be greedy.
 
+### The augmentation is the whole project
+
+Two models, same architecture, same row count, same epochs, same seed. Only
+the style of the extra rows differs.
+
+| Training data | Standard test set | | Adhoc test set | |
+|---|---|---|---|---|
+| | Top-1 | CER | Top-1 | CER |
+| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
+| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+
+Training on careful spelling alone makes a model three points better at
+careful spelling and **40 points worse at real typing**. That is the
+difference between a keyboard that works and one that does not.
+
 The model has **solved the letter ambiguities** (ശ/ഷ/സ, ട/ത, ര/റ, ല/ള, ന/ണ and
-the chillus together are 6.6% of its errors) and has **not solved the
-lengths** (missing or extra vowel signs and viramas are 65%). The error
+the chillus together are 5.7% of its errors) and has **not solved the
+lengths** (missing or extra vowel signs and viramas are 67%). The error
 analysis in `scripts/error_analysis.py` is what found that, and it is what
 motivated the long vowel augmentation rules.
 

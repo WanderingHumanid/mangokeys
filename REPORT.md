@@ -273,10 +273,18 @@ in the adhoc style.
 
 <!-- ABLATION_TABLE -->
 
-**Training on careful spelling alone makes a model that is slightly better at
-careful spelling and catastrophically worse at real typing.** The gap is not
-a percentage point, it is the difference between a keyboard that works and one
-that does not.
+The numbers, on the full test sets:
+
+| Training data | Standard test set | | Adhoc test set | |
+|---|---|---|---|---|
+| | Top-1 | CER | Top-1 | CER |
+| standard rows only | **56.3%** | **15.4%** | 6.1% | 50.0% |
+| standard + adhoc rows | 53.3% | 17.1% | **46.2%** | **20.1%** |
+
+**Training on careful spelling alone makes a model that is three points
+better at careful spelling and 40 points worse at real typing.** The gap is
+not a percentage point, it is the difference between a keyboard that works and
+one that does not.
 
 **The cost side is small and it is paid in the wrong direction to hide.** The
 augmented model is a few points behind on the standard test set, because a
@@ -285,10 +293,19 @@ standard test set is a synthetic measure of what the corpus looks like, and
 the adhoc test set is a synthetic measure of what a keyboard has to survive.
 
 **The validation set cannot show this.** The official Aksharantar validation
-set is in careful spelling, and a standard-trained model wins on it at every
-epoch. Measuring the claim needed a test set in the style the augmentation
-targets, which is why `test_aksharantar_adhoc.tsv` exists: the same 12,451
-test words with the roman side rewritten by the augmentation rules.
+set is in careful spelling, and the standard-trained model wins on it at every
+epoch of training. Measuring the claim needed a test set in the style the
+augmentation targets, which is why `test_aksharantar_adhoc.tsv` exists: the
+same test words with the roman side rewritten by the augmentation rules.
+
+**One caveat, stated plainly.** The adhoc test set is built with the same
+augmentation rules as the training data, so a model that has seen those rules
+is being tested on data from the same generator. The comparison between the
+two arms is still fair — both are tested on the same words, and only one arm
+was trained on that style — but the absolute adhoc numbers are optimistic
+relative to genuinely unseen typing habits. The IndoNLP-2025 adhoc test set,
+which was written by people rather than generated, is the independent check
+and it is the number to quote if there is only room for one.
 
 ### 5.3 Where the model still fails
 
