@@ -92,6 +92,7 @@ class Transliterator(
         var scores = DoubleArray(width) { Double.NEGATIVE_INFINITY }
         scores[0] = 0.0
         val finished = mutableListOf<Pair<Double, IntArray>>()
+        var bestFinished = Double.NEGATIVE_INFINITY
 
         for (step in 0 until maxTgt) {
             val logits = decode(tokens, prefixLength, beamMemory, memorySeq, memoryDim, beamMask)
@@ -128,7 +129,8 @@ class Transliterator(
 
                 if (token == tokenizer.eosId) {
                     val sequence = nextPrefix.copyOfRange(prefixStart, prefixStart + prefixLength)
-                    finished.add(Pair(score / maxOf(sequence.size, 1), sequence.map { it.toInt() }.toIntArray()))
+                    finished.add(Pair(score, sequence.map { it.toInt() }.toIntArray()))
+                    if (score > bestFinished) bestFinished = score
                 }
             }
 
@@ -137,7 +139,9 @@ class Transliterator(
             scores = nextScores
             var alive = false
             for (slot in 0 until width) {
-                if (nextTokens[slot] == tokenizer.eosId.toLong()) {
+                // A live beam can only lose score, so it is hopeless once it is
+                // behind the best finished hypothesis.
+                if (scores[slot] < bestFinished) {
                     scores[slot] = Double.NEGATIVE_INFINITY
                 } else if (scores[slot] > Double.NEGATIVE_INFINITY) {
                     alive = true
@@ -150,13 +154,19 @@ class Transliterator(
             for (slot in 0 until width) {
                 if (scores[slot] == Double.NEGATIVE_INFINITY) continue
                 val sequence = tokens.copyOfRange(slot * prefixLength, (slot + 1) * prefixLength)
-                finished.add(Pair(scores[slot] / maxOf(sequence.size, 1), sequence.map { it.toInt() }.toIntArray()))
+                finished.add(Pair(scores[slot], sequence.map { it.toInt() }.toIntArray()))
             }
         }
 
-        return finished.sortedByDescending { it.first }
-            .take(nBest)
-            .map { Normalizer.normalizeMalayalam(tokenizer.decodeTarget(it.second)) }
+        val seen = mutableSetOf<String>()
+        val results = mutableListOf<String>()
+        for (item in finished.sortedByDescending { it.first }) {
+            val text = Normalizer.normalizeMalayalam(tokenizer.decodeTarget(item.second))
+            if (!seen.add(text)) continue
+            results.add(text)
+            if (results.size >= nBest) break
+        }
+        return results
     }
 
     fun close() {
