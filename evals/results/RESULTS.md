@@ -4,6 +4,7 @@
 |---|---|---|---|---|
 | rule engine (ours) | 9.2% | 48.8% | 13.6% | 0.10 |
 | our model | 53.3% | 17.1% | 72.2% | 24.49 |
+| our model, no augmentation | 56.3% | 15.4% | 75.6% | 23.74 |
 
 ### Breakdown by test subset
 

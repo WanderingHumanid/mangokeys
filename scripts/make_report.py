@@ -19,6 +19,7 @@ SYSTEM_LABELS = {
     "rules": "rule engine (ours)",
     "indicxlit": "IndicXlit (MIT, 11M)",
     "ours": "our model",
+    "ours_standard_only": "our model, no augmentation",
 }
 
 
@@ -86,26 +87,36 @@ def model_size_mb() -> float:
 def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[dict]:
     """Build the file the web demo reads.
 
-    The demo expects one entry per test file with a systems table, so the
-    model and the rule baseline sit side by side in the same entry.
+    One entry per test file, each with a systems table so that the model, the
+    rule baseline and the model trained without augmentation sit side by side.
     """
-    table: dict[str, dict] = {}
+    files = [test_file]
+    adhoc_file = "test_aksharantar_adhoc.tsv"
+    payloads = []
+
     for name, rows in systems.items():
         for entry in rows:
-            if entry.get("file") != test_file:
+            if entry.get("file") not in files and entry.get("file") != adhoc_file:
                 continue
-            size = f"{model_size_mb()} MB" if name == "ours" else "3 KB"
-            table[SYSTEM_LABELS.get(name, name)] = {
+            label = SYSTEM_LABELS.get(name, name)
+            size = "3 KB" if name == "rules" else f"{model_size_mb()} MB"
+            record = {
                 "top1": entry["top1"],
                 "cer": entry["cer"],
                 "top5": entry.get("top5", 0.0),
                 "ms_per_pair": entry.get("ms_per_pair", 0.0),
                 "size": size,
             }
-            break
-    if not table:
-        return []
-    return [{"file": test_file, "systems": table}]
+            existing = next(
+                (p for p in payloads if p["file"] == entry["file"]),
+                None,
+            )
+            if existing is None:
+                existing = {"file": entry["file"], "systems": {}}
+                payloads.append(existing)
+            existing["systems"][label] = record
+
+    return payloads
 
 
 ABLATION_LABELS = {
@@ -158,6 +169,16 @@ def main() -> None:
         "ours": load(RESULTS / "eval.json"),
         "indicxlit": load(RESULTS / "baseline_indicxlit.json"),
     }
+
+    # The augmented model also has numbers on the adhoc test set.
+    for entry in load(RESULTS / "ablation_e2.json"):
+        if entry.get("file") == "test_aksharantar_adhoc.tsv":
+            systems["ours"].append(entry)
+
+    # The standard-trained model, for the adhoc comparison the demo shows.
+    ablation_e1 = load(RESULTS / "ablation_e1.json")
+    if ablation_e1:
+        systems["ours_standard_only"] = ablation_e1
 
     lines = ["## Results", ""]
     lines += build_table(systems, args.test_file)

@@ -111,16 +111,24 @@ async function loadBenchmarks() {
 function renderBenchmarks(data) {
   const rows = [];
   for (const entry of data) {
+    const label = entry.file === "test_aksharantar_adhoc.tsv" ? "adhoc spelling" : "careful spelling";
     for (const [name, result] of Object.entries(entry.systems ?? {})) {
-      rows.push({ file: entry.file, name, ...result });
+      rows.push({ file: label, name, ...result });
     }
   }
   if (!rows.length) return;
 
   elements.benchBody.innerHTML = "";
+  let currentFile = null;
   for (const row of rows) {
+    if (row.file !== currentFile) {
+      currentFile = row.file;
+      const header = document.createElement("tr");
+      header.innerHTML = `<td colspan="5" style="padding-top:0.6rem;color:#6f6a75">${row.file}</td>`;
+      elements.benchBody.appendChild(header);
+    }
     const tr = document.createElement("tr");
-    if (row.name.toLowerCase().includes("ours")) tr.className = "ours";
+    if (row.name.includes("our model")) tr.className = "ours";
     tr.innerHTML = `
       <td>${row.name}</td>
       <td class="num">${(row.top1 * 100).toFixed(1)}%</td>
@@ -130,7 +138,6 @@ function renderBenchmarks(data) {
     `;
     elements.benchBody.appendChild(tr);
   }
-  elements.benchNote.textContent = data[0].file;
 }
 
 async function update() {
