@@ -73,7 +73,7 @@ motivated the long vowel augmentation rules.
 | Rule-based baseline | ✅ Top-1 9.2%, passes all 67 Mozhi cases |
 | ONNX export, int8 quantization, Python runtime | ✅ parity checked against PyTorch |
 | Browser runtime (ONNX Runtime Web) | ✅ verified in a real browser, agrees with Python |
-| Kotlin runtime (ONNX Runtime Mobile) | ✅ written |
+| Kotlin runtime (ONNX Runtime Mobile) | ✅ builds and passes 4 unit tests against the real model |
 | Static web demo | ✅ working, runs the model in the browser |
 | Error analysis | ✅ 12-class taxonomy, dumped to `evals/results/errors.tsv` |
 | Augmentation ablation | ⏳ running |
@@ -120,6 +120,9 @@ python -m scripts.demo --onnx runs/ml_mini/onnx --tokenizer runs/ml_mini/tokeniz
 python -m scripts.build_demo --checkpoint runs/ml_mini/best.pt --quantize
 python apps/expo-web/serve.py --port 8000
 # then open http://localhost:8000
+
+# 8. Build and test the android runtime
+cd runtime && export ANDROID_HOME=~/Android/Sdk && ./gradlew test
 ```
 
 ## Credits
