@@ -75,7 +75,9 @@ def main() -> None:
 
     # The runtime has to sit next to the page, because the page is served from
     # the demo folder and cannot import from the repository.
-    shutil.copy(ROOT / "runtime" / "js" / "transliterator.js", DEMO / "transliterator.js")
+    shutil.copy(
+        ROOT / "runtime" / "js" / "transliterator.js", DEMO.parent / "transliterator.js"
+    )
     print("copied transliterator.js")
 
     # The page reads the benchmark table from the demo folder, and it has to be
