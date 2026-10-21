@@ -8,8 +8,17 @@
 import * as ort from "./ort/ort.min.mjs";
 import { Transliterator, buildTokenizer } from "./transliterator.js";
 
-const threads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2));
-ort.env.wasm.wasmPaths = "/ort/";
+// The path of the wasm runtime has to be relative to the page. The demo is
+// served from the root on a laptop and from a subdirectory on GitHub Pages,
+// and an absolute path only works in the first case.
+const wasmPath = new URL("./ort/", import.meta.url).href;
+
+// More than one thread needs the cross origin headers, which the demo
+// server sends and a static host does not.
+const threads = self.crossOriginIsolated
+  ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2))
+  : 1;
+ort.env.wasm.wasmPaths = wasmPath;
 ort.env.wasm.numThreads = threads;
 ort.env.wasm.proxy = false;
 

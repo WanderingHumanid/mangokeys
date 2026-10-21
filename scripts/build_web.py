@@ -28,7 +28,15 @@ DEMO = ROOT / "apps" / "expo-web"
 RUNTIME_FILES = ("transliterator.js", "lexicon.js", "ngram.js", "suggest.js")
 
 # The files of the page itself.
-PAGE_FILES = ("index.html", "style.css", "app.js", "worker.js", "keyboard.js", "serve.py")
+PAGE_FILES = (
+    "index.html",
+    "style.css",
+    "app.js",
+    "worker.js",
+    "keyboard.js",
+    "favicon.svg",
+    "serve.py",
+)
 
 # The onnx runtime for the web, copied out of the node modules.
 ORT_FILES = (
