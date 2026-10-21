@@ -3,76 +3,67 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Manglish to Malayalam</title>
+    <meta
+      name="description"
+      content="MangoKeys, a Manglish to Malayalam keyboard. A character level model that runs entirely in the browser."
+    />
+    <title>MangoKeys, a Manglish to Malayalam keyboard</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main>
-      <header>
-        <h1>Manglish to മലയാളം</h1>
-        <p class="tagline">
-          A 5.4 MB character level transliteration model that runs entirely in this browser.
-        </p>
-        <p class="badge" id="status">loading model...</p>
+    <main class="page">
+      <header class="masthead">
+        <h1>MangoKeys</h1>
+        <div class="state">
+          <span class="status" id="status">loading the model</span>
+          <span class="clock" id="clock"></span>
+        </div>
       </header>
 
-      <section class="input-panel">
-        <label for="word">Type in Manglish</label>
-        <input
-          id="word"
-          type="text"
-          autocomplete="off"
-          autocapitalize="off"
+      <section class="compose" aria-label="What you are writing">
+        <textarea
+          id="field"
+          rows="2"
           spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
           placeholder="ente peru"
-        />
-        <div class="examples">
-          <span>try</span>
-          <button data-word="ente peru">ente peru</button>
-          <button data-word="njangalkum">njangalkum</button>
-          <button data-word="sundari">sundari</button>
-          <button data-word="keralathil">keralathil</button>
-          <button data-word="sughamano">sughamano</button>
-          <button data-word="ningalkkum">ningalkkum</button>
-        </div>
+          aria-label="Type in Manglish"
+        ></textarea>
+        <div class="examples" id="examples" aria-label="Examples"></div>
       </section>
 
-      <section class="strip-panel">
-        <span class="label">suggestions</span>
-        <div id="suggestion-strip" class="suggestion-strip"></div>
+      <section class="keyboard" aria-label="The keyboard">
+        <div class="strip" id="strip" role="listbox" aria-label="Suggestions"></div>
+        <div class="keys" id="keys"></div>
       </section>
 
-      <section class="output-panel" id="output">
-        <div class="result">
-          <span class="label">model</span>
-          <p class="native" id="model-output">&nbsp;</p>
-        </div>
-        <div class="result">
-          <span class="label">rule engine</span>
-          <p class="native muted" id="rule-output">&nbsp;</p>
-        </div>
-      </section>
-
-      <section class="benchmarks">
-        <h2>Measured on the Aksharantar Malayalam test set</h2>
+      <section class="results">
+        <h2>Measured on the Aksharantar test set</h2>
+        <p class="caption">12,451 words the model has never seen.</p>
         <table id="bench-table">
           <thead>
             <tr>
-              <th>system</th>
+              <th>System</th>
               <th>Top-1</th>
               <th>CER</th>
-              <th>Top-5</th>
-              <th>size</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
         <p class="note" id="bench-note"></p>
       </section>
+
       <footer>
         <p>
-          Nothing you type leaves this page. The model runs in your browser with WebAssembly.
+          Nothing you type leaves this page. The model runs in your browser
+          with WebAssembly.
         </p>
+        <nav>
+          <a href="https://github.com/WanderingHumanid/mangokeys">the repository</a>
+          <a href="https://github.com/WanderingHumanid/mangokeys/releases/latest">the Android app</a>
+          <a href="https://github.com/WanderingHumanid/mangokeys/blob/main/REPORT.md">the report</a>
+        </nav>
       </footer>
     </main>
 

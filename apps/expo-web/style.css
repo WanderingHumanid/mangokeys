@@ -1,221 +1,462 @@
+/*
+ * The MangoKeys demo.
+ *
+ * The palette is the palette of the Android keyboard, value for value, so
+ * the page and the phone are the same product in two places. The accent is
+ * the default of the app, Ocean, and it does the jobs the app gives it: the
+ * first candidate, the enter key, the caret and the focus ring.
+ */
+
 :root {
-  --ink: #1c1b1f;
-  --muted: #6f6a75;
-  --line: #e3dfe6;
-  --bg: #fbf9fc;
-  --panel: #ffffff;
-  --accent: #7a2e8f;
-  --accent-soft: #f3e9f7;
-  --good: #1d6b4f;
+  --ground: #0f1114;
+  --body: #1b1d21;
+  --strip: #23262b;
+  --key: #31353b;
+  --function: #3a3f46;
+  --field: #17191d;
+  --line: #2b2f35;
+  --line-soft: #24272c;
+  --text: #e8eaed;
+  --muted: #a2a9b2;
+  --faint: #8b939d;
+  --accent: #2c5f8a;
+  --accent-bright: #7fb0de;
+  --accent-wash: rgba(44, 95, 138, 0.18);
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-native: "Noto Sans Malayalam", "Nirmala UI", Kartika, var(--font-ui);
+
+  --radius: 14px;
+  --key-radius: 10px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  padding: 2rem 1rem 4rem;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-main {
-  max-width: 46rem;
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+.page {
+  max-width: 600px;
   margin: 0 auto;
+  padding: 36px 20px 72px;
 }
 
-header h1 {
+/* ------------------------------------------------------------- masthead */
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.masthead h1 {
   margin: 0;
-  font-size: 1.9rem;
-  letter-spacing: -0.01em;
-}
-
-.tagline {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-}
-
-.badge {
-  display: inline-block;
-  margin-top: 0.9rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.8rem;
+  font-size: 19px;
   font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
-.badge.error {
-  background: #fdecec;
-  color: #a12828;
+.state {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
 }
 
-.input-panel,
-.output-panel,
-.strip-panel,
-.candidates,
-.benchmarks {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 1rem 1.1rem;
-  margin-top: 1.2rem;
-}
-
-label,
-.label {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.state .status {
   color: var(--muted);
-  margin-bottom: 0.45rem;
 }
 
-#word {
-  width: 100%;
-  padding: 0.7rem 0.8rem;
-  font-size: 1.15rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+.state .status.bad {
+  color: #e79a9a;
+}
+
+.state .clock:not(:empty)::before {
+  content: "·";
+  margin-right: 8px;
+}
+
+/* --------------------------------------------------------------- compose */
+
+.compose {
+  background: var(--field);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fdfcfe;
-  color: inherit;
+  border-radius: var(--radius);
+  padding: 12px 14px 10px;
+  transition: border-color 420ms ease-out, box-shadow 420ms ease-out;
 }
 
-#word:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+.compose.committed {
+  border-color: var(--accent-bright);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+#field {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-native);
+  font-size: 21px;
+  line-height: 1.45;
+  resize: none;
+  caret-color: var(--accent-bright);
+}
+
+#field:focus {
+  outline: none;
+}
+
+#field::placeholder {
+  color: var(--faint);
 }
 
 .examples {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-top: 0.7rem;
-  font-size: 0.82rem;
-  color: var(--muted);
+  gap: 6px;
+  margin-top: 12px;
 }
 
-.examples button {
-  padding: 0.2rem 0.55rem;
-  border: 1px solid var(--line);
+.example {
+  padding: 4px 10px;
+  border: 0;
   border-radius: 999px;
-  background: #fff;
-  color: var(--ink);
-  font: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  cursor: pointer;
-}
-
-.examples button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.result {
-  padding: 0.35rem 0;
-}
-
-.result + .result {
-  border-top: 1px solid var(--line);
-  margin-top: 0.35rem;
-  padding-top: 0.7rem;
-}
-
-.native {
-  margin: 0;
-  font-size: 1.5rem;
-  line-height: 1.45;
-}
-
-.native.muted {
+  background: var(--key);
   color: var(--muted);
-  font-size: 1.15rem;
-}
-
-.suggestion-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  min-height: 2.2rem;
-}
-
-.suggestion {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fdfcfe;
-  color: var(--ink);
   font: inherit;
-  font-size: 1.05rem;
+  font-size: 12.5px;
   cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
 }
 
-.suggestion:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.example:hover {
+  background: var(--function);
+  color: var(--text);
 }
 
-.candidates ol {
-  margin: 0;
-  padding-left: 1.4rem;
-  font-size: 1.05rem;
+/* -------------------------------------------------------------- keyboard */
+
+.keyboard {
+  margin-top: 18px;
+  padding: 0 8px 10px;
+  background: var(--body);
+  border-radius: 20px;
+  box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.85);
 }
 
-.candidates li {
-  padding: 0.12rem 0;
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 6px;
+  overflow-x: auto;
+  background: var(--strip);
+  border-bottom: 1px solid var(--line);
+  border-radius: 19px 19px 0 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--function) transparent;
 }
 
-.benchmarks h2 {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
+.strip::-webkit-scrollbar {
+  height: 4px;
 }
 
-table {
+.strip::-webkit-scrollbar-thumb {
+  background: var(--function);
+  border-radius: 2px;
+}
+
+.strip-hint {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+.candidate {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--key);
+  color: var(--text);
+  font-family: var(--font-native);
+  font-size: 17px;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.candidate:hover {
+  background: var(--function);
+}
+
+.candidate:active {
+  transform: translateY(1px);
+}
+
+.candidate-first {
+  padding: 6px 18px;
+  border-radius: 18px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.candidate-first:hover {
+  background: #35709f;
+}
+
+.keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.key-row {
+  display: flex;
+  gap: 5px;
+}
+
+.key-row.inset {
+  padding: 0 14px;
+}
+
+.key {
+  flex-basis: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--key-radius);
+  background: var(--key);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+  transition: background 90ms ease, transform 90ms ease;
+}
+
+.key:hover {
+  background: #383d44;
+}
+
+.key:active,
+.key.pressed {
+  background: var(--function);
+  transform: translateY(1px);
+}
+
+.key-function {
+  background: var(--function);
+  color: #c9ced5;
+  font-size: 14px;
+}
+
+.key-function:hover {
+  background: #454b53;
+}
+
+.key-accent {
+  background: var(--accent);
+  color: #fff;
+}
+
+.key-accent:hover {
+  background: #35709f;
+}
+
+.key-space {
+  font-size: 13px;
+  color: var(--muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+/* When there is a candidate to take, the space bar says so quietly. */
+.key-space.key-ready {
+  background: var(--function);
+  color: var(--accent-bright);
+}
+
+.key-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- results */
+
+.results {
+  margin-top: 40px;
+}
+
+.results h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.results .caption {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+#bench-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 13.5px;
 }
 
-th,
-td {
-  text-align: left;
-  padding: 0.4rem 0.5rem;
+#bench-table th {
+  padding: 0 0 8px;
   border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
 }
 
-th {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+#bench-table td {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
   color: var(--muted);
 }
 
-td.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+#bench-table td.num {
+  width: 84px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-tr.ours td {
-  color: var(--good);
-  font-weight: 600;
+#bench-table th:nth-child(2),
+#bench-table th:nth-child(3) {
+  width: 84px;
+  text-align: right;
 }
 
 .note {
-  margin: 0.7rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--faint);
 }
 
+.note:empty {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- footer */
+
 footer {
-  margin-top: 1.6rem;
-  font-size: 0.8rem;
+  margin-top: 44px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+footer p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+footer nav {
+  display: flex;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+footer a {
   color: var(--muted);
-  text-align: center;
+  font-size: 13px;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+footer a:hover {
+  color: var(--text);
+  border-bottom-color: var(--accent-bright);
+}
+
+/* -------------------------------------------------------------- narrower */
+
+@media (max-width: 640px) {
+  .page {
+    padding: 24px 12px 56px;
+  }
+
+  .masthead {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .keyboard {
+    padding: 0 5px 8px;
+    border-radius: 16px;
+  }
+
+  .key {
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .key-row.inset {
+    padding: 0 8px;
+  }
+
+  .candidate {
+    font-size: 16px;
+  }
+
+  #field {
+    font-size: 19px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
 }

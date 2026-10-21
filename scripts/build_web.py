@@ -39,6 +39,8 @@ ORT_FILES = (
 
 
 def copy(source: Path, target: Path) -> None:
+    if source.resolve() == target.resolve():
+        return
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(source, target)
 

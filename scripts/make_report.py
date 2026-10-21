@@ -116,6 +116,25 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
                 payloads.append(existing)
             existing["systems"][label] = record
 
+    # The word list is the layer the keyboard adds on top of the model, so
+    # the demo shows it as its own system.
+    suggestions = load(RESULTS / "suggestions.json")
+    if isinstance(suggestions, dict):
+        suggestions = [suggestions]
+    if suggestions:
+        with_list = suggestions[0].get("with_word_list")
+        if with_list:
+            for payload in payloads:
+                if payload["file"] != test_file:
+                    continue
+                payload["systems"]["our model with the word list"] = {
+                    "top1": with_list["top1"],
+                    "cer": with_list["cer"],
+                    "top5": with_list.get("top5", 0.0),
+                    "ms_per_pair": 0.0,
+                    "size": f"{model_size_mb()} MB",
+                }
+
     return payloads
 
 
