@@ -26,10 +26,10 @@ class TyperConfig:
     DELIMITERS: dict[int, str] = None  # Initialized in __post_init__
 
     # Timing and Debounce settings (seconds)
-    BACKSPACE_DELAY: float = 0.002
-    PASTE_DELAY: float = 0.015
-    RESTORE_CLIPBOARD_DELAY: float = 0.20
-    INPUT_POLL_TIMEOUT: float = 0.1
+    BACKSPACE_DELAY: float = 0.003
+    PASTE_DELAY: float = 0.025
+    RESTORE_CLIPBOARD_DELAY: float = 0.50
+    INPUT_POLL_TIMEOUT: float = 0.05
 
     # Audio/Visual feedback
     BEEP_ON_TOGGLE: bool = True
@@ -48,13 +48,21 @@ class TyperConfig:
 
     # Default paths for ML model search (relative to repository root)
     ONNX_SEARCH_DIRS: tuple[str, ...] = (
+        "assets/release/model",
         "runs/demo/onnx-int8",
         "runs/ml_mini/onnx",
+        "assets/release/prefix",
     )
     TOKENIZER_SEARCH_PATHS: tuple[str, ...] = (
+        "assets/release/model/tokenizer.json",
         "runs/demo/onnx-int8/tokenizer.json",
         "runs/ml_mini/tokenizer.json",
     )
+
+    # Visualizer integration settings
+    VISUALIZER_HOST: str = "127.0.0.1"
+    VISUALIZER_PORT: int = 5000
+    BROADCAST_TO_VISUALIZER: bool = True
 
     def __post_init__(self) -> None:
         if self.DELIMITERS is None:

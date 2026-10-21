@@ -2,8 +2,14 @@
 
 from typer.config import DEFAULT_CONFIG, TyperConfig
 from typer.engine import DesktopTransliterator, TransliterationResult
-from typer.injector import KeystrokeInjector
-from typer.listener import KeyboardWatcher, find_keyboard_devices
+
+try:
+    from typer.injector import KeystrokeInjector
+    from typer.listener import KeyboardWatcher, find_keyboard_devices
+except ImportError:
+    KeystrokeInjector = None  # type: ignore
+    KeyboardWatcher = None  # type: ignore
+    find_keyboard_devices = None  # type: ignore
 
 __all__ = [
     "DEFAULT_CONFIG",

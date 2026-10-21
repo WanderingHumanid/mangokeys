@@ -3,227 +3,174 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MangoKeys // Neural Transformer Visualizer</title>
+  <title>MangoKeys // Neural Visualizer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="cyberpunk-theme">
-  <!-- Subtle Neon Background Mesh -->
-  <div class="bg-glow bg-glow-cyan"></div>
-  <div class="bg-glow bg-glow-purple"></div>
-  <div class="grid-overlay"></div>
+<body>
+  <!-- Ambient background lighting -->
+  <div class="glow-bg glow-cyan"></div>
+  <div class="glow-bg glow-purple"></div>
 
-  <div class="app-container">
-    <!-- Top Header -->
-    <header class="cyber-header">
-      <div class="header-branding">
-        <div class="logo-orb">
-          <span class="orb-core"></span>
-          <span class="orb-ring"></span>
-        </div>
-        <div class="title-group">
-          <h1 class="brand-title">MANGO<span class="accent-cyan">KEYS</span> <span class="title-sub">// NEURAL VISUALIZER</span></h1>
-          <p class="brand-tagline">Real-Time Transformer Attention & Beam Search Telemetry</p>
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="brand">
+        <span class="brand-icon">🥭</span>
+        <div class="brand-text">
+          <h1 class="brand-title">Mango<span class="accent-cyan">Keys</span></h1>
+          <span class="brand-badge">Visualizer</span>
         </div>
       </div>
 
-      <div class="header-meta">
-        <div class="meta-badge model-spec">
-          <span class="badge-dot pulse-cyan"></span>
-          <span class="badge-label">ARCH:</span>
-          <span class="badge-val">Seq2Seq (5.37M Params, 4+4 Layers, d=256)</span>
+      <div class="status-pills">
+        <div class="pill pill-status" id="wsPill">
+          <span class="dot pulse-green"></span>
+          <span id="wsStatusText">Connected</span>
         </div>
-        <div class="meta-badge live-fps">
-          <span class="badge-dot pulse-green"></span>
-          <span class="badge-label">RENDER:</span>
-          <span class="badge-val" id="fpsDisplay">60 FPS</span>
+        <div class="pill pill-engine">
+          <span class="pill-label">ENGINE:</span>
+          <span class="pill-value" id="engineBadge">RuleEngine (Native)</span>
         </div>
-        <div class="meta-badge latency-badge">
-          <span class="badge-label">LATENCY:</span>
-          <span class="badge-val" id="latencyDisplay">0.0 ms</span>
+        <div class="pill pill-latency">
+          <span class="pill-label">LATENCY:</span>
+          <span class="pill-value text-green" id="latencyBadge">⚡ 0.08 ms</span>
         </div>
       </div>
     </header>
 
-    <!-- Control & Input Stage -->
-    <section class="control-stage glass-panel">
-      <!-- Input Row -->
-      <div class="input-row">
-        <div class="input-wrapper">
-          <span class="input-prefix">ROMAN&gt;</span>
+    <!-- Main Content Area -->
+    <main class="content-grid">
+      <!-- Search & Quick Chips Bar -->
+      <section class="card input-card">
+        <div class="search-bar">
+          <span class="search-prefix">INPUT &gt;</span>
           <input 
             type="text" 
             id="textInput" 
-            class="cyber-input" 
-            value="namaskaram" 
-            placeholder="Type Manglish word (e.g. namaskaram)..." 
+            class="main-input" 
+            value="ente" 
+            placeholder="Type any Manglish word (e.g. namaskaram, ente, malayalam)..." 
             autocomplete="off" 
             spellcheck="false"
           >
-          <button id="clearInputBtn" class="clear-btn" title="Clear input">&times;</button>
+          <button id="clearBtn" class="icon-btn" title="Clear">&times;</button>
         </div>
 
-        <div class="beam-selector-group">
-          <label for="beamSelect" class="control-label">BEAM WIDTH:</label>
-          <select id="beamSelect" class="cyber-select">
-            <option value="1">1 (Greedy)</option>
-            <option value="2">2</option>
-            <option value="4" selected>4 (Default)</option>
-            <option value="6">6 (Deep)</option>
-          </select>
-        </div>
-
-        <!-- Attention Head Selector -->
-        <div class="head-selector-group">
-          <span class="control-label">ATTENTION HEAD:</span>
-          <div class="head-pill-group" id="headSelector">
-            <button class="head-pill active" data-head="-1">ALL (AVG)</button>
-            <button class="head-pill" data-head="0">HEAD 1</button>
-            <button class="head-pill" data-head="1">HEAD 2</button>
-            <button class="head-pill" data-head="2">HEAD 3</button>
-            <button class="head-pill" data-head="3">HEAD 4</button>
+        <div class="quick-chips">
+          <span class="chips-title">QUICK SAMPLES:</span>
+          <div class="chips-list" id="chipsList">
+            <button class="chip active" data-word="ente">ente <span class="chip-ml">എന്റെ</span></button>
+            <button class="chip" data-word="namaskaram">namaskaram <span class="chip-ml">നമസ്കാരം</span></button>
+            <button class="chip" data-word="malayalam">malayalam <span class="chip-ml">മലയാളം</span></button>
+            <button class="chip" data-word="sukhamano">sukhamano <span class="chip-ml">സുഖമാണോ</span></button>
+            <button class="chip" data-word="kerala">kerala <span class="chip-ml">കേരളം</span></button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Quick Samples Row -->
-      <div class="sample-chips-row">
-        <span class="chips-label">SAMPLE WORDS:</span>
-        <div class="chips-container" id="sampleChips">
-          <button class="chip active" data-word="namaskaram">namaskaram <span class="chip-native">നമസ്കാരം</span></button>
-          <button class="chip" data-word="ente">ente <span class="chip-native">എന്റെ</span></button>
-          <button class="chip" data-word="malayalam">malayalam <span class="chip-native">മലയാളം</span></button>
-          <button class="chip" data-word="kerala">kerala <span class="chip-native">കേരളം</span></button>
-          <button class="chip" data-word="sukhamano">sukhamano <span class="chip-native">സുഖമാണോ</span></button>
-          <button class="chip" data-word="manassilayo">manassilayo <span class="chip-native">മനസ്സിലായോ</span></button>
-        </div>
-      </div>
-
-      <!-- Dual Playback Mode & Stepper Controls -->
-      <div class="playback-bar">
-        <div class="mode-toggles">
-          <button id="modeLiveBtn" class="mode-toggle active">
-            <span class="toggle-icon">⚡</span> LIVE TYPING
-          </button>
-          <button id="modeStepBtn" class="mode-toggle">
-            <span class="toggle-icon">⏱</span> STEP-BY-STEP INSPECTOR
-          </button>
-        </div>
-
-        <div class="stepper-controls" id="stepperControls">
-          <button id="prevStepBtn" class="ctrl-btn" title="Step Back">⏮ PREV</button>
-          <button id="playPauseBtn" class="ctrl-btn play-btn" title="Play/Pause">▶ PLAY</button>
-          <button id="nextStepBtn" class="ctrl-btn" title="Step Next">NEXT ⏭</button>
-
-          <div class="step-scrubber-container">
-            <span class="scrub-label" id="stepInfo">STEP 0 / 0</span>
-            <input type="range" id="stepSlider" class="cyber-slider" min="0" max="0" value="0">
-          </div>
-
-          <div class="speed-group">
-            <span class="speed-label">SPEED:</span>
-            <select id="speedSelect" class="cyber-select speed-select">
-              <option value="0.25">0.25x</option>
-              <option value="0.5">0.5x</option>
-              <option value="1.0" selected>1.0x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2.0">2.0x</option>
-            </select>
+      <!-- Primary Translation Hero Display -->
+      <section class="card hero-card">
+        <div class="hero-header">
+          <span class="section-tag">LIVE TRANSLITERATION</span>
+          <div class="view-toggles">
+            <button id="viewRibbonBtn" class="toggle-btn active">Ribbon Flow</button>
+            <button id="viewMatrixBtn" class="toggle-btn">Attention Matrix</button>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- Main Visual Stage: Transformer Cross-Attention Web -->
-    <main class="main-stage">
-      <div class="panel-header">
-        <div class="panel-title-wrap">
-          <h2 class="panel-title">CROSS-ATTENTION ENERGY WEB & LAYER PIPELINE</h2>
-          <span class="panel-subtitle">Dynamic Bezier Attention Rays &bull; Mathematical Softmax Weights (0.00 &rarr; 1.00)</span>
+        <div class="hero-body">
+          <div class="word-pair">
+            <div class="word-col">
+              <span class="col-caption">MANGLISH LATIN</span>
+              <div class="word-display text-cyan" id="heroSourceWord">ente</div>
+            </div>
+            <div class="arrow-divider">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <div class="word-col">
+              <span class="col-caption">MALAYALAM UNICODE</span>
+              <div class="word-display text-malayalam" id="heroTargetWord">എന്റെ</div>
+            </div>
+          </div>
         </div>
-        <div class="ray-legend">
-          <span class="legend-item"><span class="legend-dot cyan"></span> Source Latin Tokens</span>
-          <span class="legend-item"><span class="legend-dot purple"></span> Target Malayalam Tokens</span>
-          <span class="legend-item"><span class="legend-line glow-ray"></span> Active Energy Flow</span>
-        </div>
-      </div>
+      </section>
 
-      <div class="canvas-container glass-panel" id="canvasContainer">
-        <canvas id="attentionCanvas"></canvas>
-        <!-- Floating Interactive Tooltip -->
-        <div id="attnTooltip" class="cyber-tooltip"></div>
+      <!-- Interactive Token Cross-Attention Stage -->
+      <section class="card visual-card">
+        <div class="card-title-row">
+          <div>
+            <h2 class="card-title">Cross-Attention Alignment</h2>
+            <p class="card-desc">Character-level mapping between Latin letters and Malayalam glyphs</p>
+          </div>
+          <div class="token-legend">
+            <span class="legend-badge"><span class="legend-dot cyan"></span> Source Characters</span>
+            <span class="legend-badge"><span class="legend-dot purple"></span> Target Glyphs</span>
+          </div>
+        </div>
+
+        <!-- Ribbon Flow Container -->
+        <div class="attention-stage" id="ribbonStage">
+          <!-- Source Token Strip -->
+          <div class="token-strip source-strip" id="srcTokenStrip">
+            <!-- Dynamically populated via JS -->
+          </div>
+
+          <!-- SVG Ribbons Canvas -->
+          <div class="svg-ribbon-wrapper" id="svgRibbonWrapper">
+            <svg id="attentionSvg" class="attention-svg"></svg>
+          </div>
+
+          <!-- Target Token Strip -->
+          <div class="token-strip target-strip" id="tgtTokenStrip">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- Heatmap Grid Container (Hidden by default) -->
+        <div class="heatmap-stage" id="heatmapStage" style="display: none;">
+          <div class="heatmap-scroll">
+            <div class="heatmap-grid" id="heatmapGrid">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Split: Candidates & Live Desktop Keystroke Stream -->
+      <div class="bottom-split">
+        <!-- Candidates Panel -->
+        <section class="card half-card">
+          <div class="card-title-row compact">
+            <h3 class="card-title">Predictions & Confidence</h3>
+            <span class="badge-mini">Beam = 4</span>
+          </div>
+          <div class="candidates-list" id="candidatesList">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </section>
+
+        <!-- Live Desktop Feed -->
+        <section class="card half-card">
+          <div class="card-title-row compact">
+            <h3 class="card-title">Live Desktop Activity Stream</h3>
+            <span class="badge-mini live-pulse">● Live Sync</span>
+          </div>
+          <div class="desktop-feed" id="desktopFeed">
+            <div class="feed-empty">Waiting for desktop typing events... (type anywhere on your desktop)</div>
+          </div>
+        </section>
       </div>
     </main>
 
-    <!-- Bottom Split Panels -->
-    <section class="bottom-split-section">
-      <!-- Left Panel: Live Beam Search Tree -->
-      <div class="split-panel glass-panel">
-        <div class="panel-header compact">
-          <div class="panel-title-wrap">
-            <h3 class="panel-title compact">LIVE BEAM SEARCH EXPLORATION TREE</h3>
-            <span class="panel-subtitle">Real-Time Branching &bull; Cyan: Active Path &bull; Amber: Pruned</span>
-          </div>
-          <div class="beam-stats" id="beamStats">
-            <span class="stat-badge">BEAM: k=4</span>
-          </div>
-        </div>
-
-        <div class="tree-canvas-wrapper" id="treeContainer">
-          <canvas id="beamTreeCanvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Right Panel: Softmax Vocabulary Distribution & Layer Activations -->
-      <div class="split-panel glass-panel">
-        <div class="panel-header compact">
-          <div class="panel-title-wrap">
-            <h3 class="panel-title compact">SOFTMAX PREDICTION & LAYER ACTIVATIONS</h3>
-            <span class="panel-subtitle">Next-Token Logits &bull; 4 Encoder + 4 Decoder Magnitudes</span>
-          </div>
-        </div>
-
-        <div class="side-metrics-container">
-          <!-- Softmax Bar Chart -->
-          <div class="metrics-subblock">
-            <div class="subblock-title">TOP NEXT-TOKEN CANDIDATES (SOFTMAX)</div>
-            <div class="softmax-bars" id="softmaxBars">
-              <!-- Dynamically rendered via JS -->
-            </div>
-          </div>
-
-          <!-- Layer Activation Gauges -->
-          <div class="metrics-subblock">
-            <div class="subblock-title">LAYER ACTIVATION GAUGES (L2 NORM)</div>
-            <div class="activation-meters-grid">
-              <div class="layer-col">
-                <span class="col-head">ENCODER LAYERS</span>
-                <div class="meter-row" id="encMeters">
-                  <!-- E0-E3 bars -->
-                </div>
-              </div>
-              <div class="layer-col">
-                <span class="col-head">DECODER LAYERS</span>
-                <div class="meter-row" id="decMeters">
-                  <!-- D0-D3 bars -->
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Footer -->
-    <footer class="cyber-footer">
-      <div class="footer-left">
-        <span class="system-status"><span class="status-dot"></span> WEBSOCKET CONNECTED: /ws</span>
-      </div>
-      <div class="footer-right">
-        <span>MANGO KEYS &copy; 2026 &bull; CHARACTER-LEVEL SEQ2SEQ TRANSFORMER</span>
-      </div>
+    <footer class="footer">
+      <span>MangoKeys Linux Desktop Daemon &bull; Real-Time Transliteration</span>
+      <span>Ultra-Fast WebSocket Server on :5000</span>
     </footer>
   </div>
 

@@ -33,7 +33,17 @@ class KeystrokeInjector:
     def __init__(self, config: TyperConfig = DEFAULT_CONFIG) -> None:
         self.config = config
         self._uinput: evdev.UInput | None = None
-        self._has_wayland = bool(os.environ.get("WAYLAND_DISPLAY") and shutil.which("wl-copy"))
+
+        # Resolve target desktop user & uid for clipboard operations under sudo
+        self._target_user = os.environ.get("SUDO_USER") or os.environ.get("USER") or "vishnunandan555"
+        self._target_uid = os.environ.get("SUDO_UID") or str(os.getuid())
+        if self._target_uid == "0" and os.path.exists("/run/user/1000"):
+            self._target_uid = "1000"
+
+        # Check Wayland presence (environment variable or active session socket)
+        wayland_socket = Path(f"/run/user/{self._target_uid}/wayland-0")
+        has_wayland_socket = wayland_socket.exists() or bool(os.environ.get("WAYLAND_DISPLAY"))
+        self._has_wayland = bool(has_wayland_socket and shutil.which("wl-copy"))
         self._has_xclip = bool(shutil.which("xclip"))
         self._has_xsel = bool(shutil.which("xsel"))
         self._restore_timer: threading.Timer | None = None
@@ -68,34 +78,86 @@ class KeystrokeInjector:
 
     # ----------------------------------------------------------- Clipboard Ops
 
+    def _run_clipboard_cmd(
+        self,
+        base_cmd: list[str],
+        input_text: str | None = None,
+        timeout: float = 0.25,
+        capture_output: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute a clipboard command with proper Wayland user session environment."""
+        env = os.environ.copy()
+        if "XDG_RUNTIME_DIR" not in env:
+            env["XDG_RUNTIME_DIR"] = f"/run/user/{self._target_uid}"
+        if "WAYLAND_DISPLAY" not in env:
+            env["WAYLAND_DISPLAY"] = "wayland-0"
+
+        # When setting clipboard with wl-copy, wl-copy forks a background daemon to serve
+        # clipboard data. If capture_output=True is passed, Python waits forever on the
+        # inherited stdout/stderr pipes, causing a timeout and killing wl-copy!
+        # Therefore, we only capture output when reading (wl-paste), not when copying.
+        stdout_dest = subprocess.PIPE if capture_output else subprocess.DEVNULL
+        stderr_dest = subprocess.PIPE if capture_output else subprocess.DEVNULL
+
+        if os.geteuid() == 0 and self._target_user and self._target_user != "root":
+            cmd = [
+                "sudo", "-u", self._target_user,
+                f"XDG_RUNTIME_DIR={env['XDG_RUNTIME_DIR']}",
+                f"WAYLAND_DISPLAY={env['WAYLAND_DISPLAY']}",
+            ] + base_cmd
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    input=input_text,
+                    text=True,
+                    stdout=stdout_dest,
+                    stderr=stderr_dest,
+                    timeout=timeout,
+                    close_fds=True,
+                )
+            except Exception:
+                fallback = [
+                    "runuser", "-u", self._target_user,
+                    "-w", "XDG_RUNTIME_DIR,WAYLAND_DISPLAY,PATH", "--",
+                    "env",
+                    f"XDG_RUNTIME_DIR={env['XDG_RUNTIME_DIR']}",
+                    f"WAYLAND_DISPLAY={env['WAYLAND_DISPLAY']}",
+                ] + base_cmd
+                proc = subprocess.run(
+                    fallback,
+                    input=input_text,
+                    text=True,
+                    stdout=stdout_dest,
+                    stderr=stderr_dest,
+                    timeout=timeout,
+                    close_fds=True,
+                )
+            return proc
+        else:
+            return subprocess.run(
+                base_cmd,
+                input=input_text,
+                text=True,
+                stdout=stdout_dest,
+                stderr=stderr_dest,
+                timeout=timeout,
+                env=env,
+                close_fds=True,
+            )
+
     def get_clipboard(self) -> str | None:
         """Read the current text content of the system clipboard."""
         try:
             if self._has_wayland:
-                proc = subprocess.run(
-                    ["wl-paste", "-n"],
-                    capture_output=True,
-                    text=True,
-                    timeout=0.15,
-                )
+                proc = self._run_clipboard_cmd(["wl-paste", "-n"], timeout=0.25, capture_output=True)
                 if proc.returncode == 0:
                     return proc.stdout
             elif self._has_xclip:
-                proc = subprocess.run(
-                    ["xclip", "-selection", "clipboard", "-o"],
-                    capture_output=True,
-                    text=True,
-                    timeout=0.15,
-                )
+                proc = self._run_clipboard_cmd(["xclip", "-selection", "clipboard", "-o"], timeout=0.25, capture_output=True)
                 if proc.returncode == 0:
                     return proc.stdout
             elif self._has_xsel:
-                proc = subprocess.run(
-                    ["xsel", "--clipboard", "--output"],
-                    capture_output=True,
-                    text=True,
-                    timeout=0.15,
-                )
+                proc = self._run_clipboard_cmd(["xsel", "--clipboard", "--output"], timeout=0.25, capture_output=True)
                 if proc.returncode == 0:
                     return proc.stdout
         except Exception:
@@ -106,33 +168,16 @@ class KeystrokeInjector:
         """Copy text to the system clipboard."""
         try:
             if self._has_wayland:
-                proc = subprocess.run(
-                    ["wl-copy", "-n", text],
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=0.3,
-                )
+                proc = self._run_clipboard_cmd(["wl-copy", "-n", "--", text], timeout=0.25, capture_output=False)
                 return proc.returncode == 0
             elif self._has_xclip:
-                proc = subprocess.run(
-                    ["xclip", "-selection", "clipboard"],
-                    input=text,
-                    text=True,
-                    capture_output=True,
-                    timeout=0.3,
-                )
+                proc = self._run_clipboard_cmd(["xclip", "-selection", "clipboard"], input_text=text, timeout=0.25, capture_output=False)
                 return proc.returncode == 0
             elif self._has_xsel:
-                proc = subprocess.run(
-                    ["xsel", "--clipboard", "--input"],
-                    input=text,
-                    text=True,
-                    capture_output=True,
-                    timeout=0.3,
-                )
+                proc = self._run_clipboard_cmd(["xsel", "--clipboard", "--input"], input_text=text, timeout=0.25, capture_output=False)
                 return proc.returncode == 0
-        except Exception:
+        except Exception as e:
+            print(f"\033[91m[Typer Clipboard Exception]\033[0m {e}", file=sys.stderr)
             pass
         return False
 
@@ -177,19 +222,24 @@ class KeystrokeInjector:
         if not self._uinput:
             return
 
-        # Give the target application a small fraction of a millisecond to prepare
+        # Give the target application time to finish erasing and prepare for paste
         if self.config.PASTE_DELAY > 0:
             time.sleep(self.config.PASTE_DELAY)
 
         # Press Ctrl + V
         self._uinput.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 1)
         self._uinput.syn()
+        time.sleep(0.005)
         self._uinput.write(ecodes.EV_KEY, ecodes.KEY_V, 1)
         self._uinput.syn()
+
+        # Hold briefly so Wayland compositor registers keypress combination
+        time.sleep(0.010)
 
         # Release V + Ctrl
         self._uinput.write(ecodes.EV_KEY, ecodes.KEY_V, 0)
         self._uinput.syn()
+        time.sleep(0.005)
         self._uinput.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 0)
         self._uinput.syn()
 
@@ -216,9 +266,6 @@ class KeystrokeInjector:
         stashed_clipboard = self.get_clipboard() if restore_clipboard else None
 
         # 2. Text to inject
-        # In passive desktop snooping, the user's delimiter (e.g. Space) has already
-        # reached the window. We erase typed_len + 1 characters, then paste the
-        # replacement plus the delimiter.
         if self.config.ERASE_DELIMITER and delimiter_char:
             backspace_count = typed_len + len(delimiter_char)
             text_to_paste = replacement_text + delimiter_char
@@ -226,10 +273,17 @@ class KeystrokeInjector:
             backspace_count = typed_len
             text_to_paste = replacement_text
 
-        # 3. Copy to clipboard
-        self.set_clipboard(text_to_paste)
+        # 3. Copy to clipboard with safety guard
+        ok = self.set_clipboard(text_to_paste)
+        if not ok:
+            print(
+                f"\033[91m[Typer Warning]\033[0m Clipboard copy failed for {replacement_text!r}. "
+                f"Aborting replacement to protect typed text.",
+                file=sys.stderr,
+            )
+            return
 
-        # 4. Erase Latin characters
+        # 4. Erase Latin characters only AFTER clipboard successfully holds replacement
         self.send_backspaces(backspace_count)
 
         # 5. Paste Malayalam Unicode

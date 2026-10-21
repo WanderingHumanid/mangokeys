@@ -11,6 +11,7 @@ import argparse
 import datetime
 import os
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -145,6 +146,36 @@ class TyperDaemon:
         )
         sys.stdout.flush()
 
+        # Non-blocking broadcast to local visualizer server if active
+        if getattr(self.config, "BROADCAST_TO_VISUALIZER", True):
+            self._broadcast_to_visualizer(word, result)
+
+    def _broadcast_to_visualizer(self, word: str, result: TransliterationResult) -> None:
+        """Asynchronously notify local visualizer server of transliterated word."""
+        def _post():
+            try:
+                import json
+                import urllib.request
+                url = f"http://{self.config.VISUALIZER_HOST}:{self.config.VISUALIZER_PORT}/api/desktop-event"
+                payload = json.dumps({
+                    "word": word,
+                    "top_candidate": result.top_candidate,
+                    "candidates": result.candidates,
+                    "latency_ms": result.latency_ms,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=0.25):
+                    pass
+            except Exception:
+                pass
+
+        threading.Thread(target=_post, daemon=True).start()
+
     def on_mode_toggled(self, active: bool) -> None:
         """Called when Right-Alt is pressed to toggle Manglish mode."""
         ts = timestamp_str()
@@ -206,7 +237,7 @@ class TyperDaemon:
         # 3. Locate keyboard device
         if self.device_path:
             try:
-                self.active_device = evdev.InputDevice(self.device_path)
+                self.active_devices = [evdev.InputDevice(self.device_path)]
             except Exception as err:
                 print(f"{RED}Error: Cannot open specified device {self.device_path}: {err}{RESET}")
                 return
@@ -224,7 +255,7 @@ class TyperDaemon:
                 print(f"{YELLOW}Tip: Run with 'python3 typer/run.py --dry-run' to test transliteration logic.{RESET}")
                 return
 
-            self.active_device = available_devices[0]
+            self.active_devices = available_devices
 
         # 4. Initialize injector
         try:
@@ -236,8 +267,8 @@ class TyperDaemon:
 
         # 5. Display banner
         print_banner(self.engine.model_desc, mode_active=True)
-        dev_info = f"{self.active_device.path} ({self.active_device.name})"
-        print(f"{timestamp_str()} Listening on {CYAN}{dev_info}{RESET}")
+        dev_desc = ", ".join(f"{d.name} ({d.path})" for d in self.active_devices)
+        print(f"{timestamp_str()} Listening on {len(self.active_devices)} keyboard(s): {CYAN}{dev_desc}{RESET}")
         sys.stdout.flush()
 
         # 6. Initialize watcher state machine
@@ -248,10 +279,10 @@ class TyperDaemon:
             on_buffer_change=self.on_buffer_updated,
         )
 
-        # 7. Start listening loop
+        # 7. Start listening loop across all active devices
         try:
             self.watcher.listen(
-                device=self.active_device,
+                devices=self.active_devices,
                 stop_event=self.stop_event,
                 grab=self.grab_device,
             )
@@ -271,12 +302,12 @@ class TyperDaemon:
             self.injector.close()
             self.injector = None
 
-        if self.active_device:
+        for dev in getattr(self, "active_devices", []):
             try:
-                self.active_device.close()
+                dev.close()
             except Exception:
                 pass
-            self.active_device = None
+        self.active_devices = []
 
         print(f"\n{YELLOW}🛑 Shutting down MangoKeys Typer...{RESET}")
         print(f"{CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
@@ -352,6 +383,11 @@ Examples:
         action="store_true",
         help="Run comprehensive test suite and exit",
     )
+    parser.add_argument(
+        "--visualizer",
+        action="store_true",
+        help="Simultaneously launch the neural visualizer web server at http://localhost:5000",
+    )
     return parser.parse_args()
 
 
@@ -364,6 +400,24 @@ def main() -> None:
         success = run_all_tests()
         sys.exit(0 if success else 1)
 
+    vis_proc: subprocess.Popen | None = None
+    if args.visualizer:
+        vis_script = _REPO_ROOT / "visualizer" / "server.py"
+        venv_py = _REPO_ROOT / "visualizer" / ".venv" / "bin" / "python"
+        py_bin = str(venv_py) if venv_py.exists() else sys.executable
+        try:
+            vis_proc = subprocess.Popen(
+                [py_bin, str(vis_script), "--port", str(DEFAULT_CONFIG.VISUALIZER_PORT)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            print(
+                f"{timestamp_str()} {MAGENTA}🌐 Visualizer Web Server active at "
+                f"http://localhost:{DEFAULT_CONFIG.VISUALIZER_PORT}{RESET}"
+            )
+        except Exception as err:
+            print(f"{timestamp_str()} {YELLOW}Notice: Could not spawn visualizer: {err}{RESET}")
+
     daemon = TyperDaemon(
         device_path=args.device,
         engine_type=None if args.engine == "auto" else args.engine,
@@ -375,13 +429,19 @@ def main() -> None:
 
     # Register OS signals for clean teardown
     def _sig_handler(sig: int, frame: object) -> None:
+        if vis_proc and vis_proc.poll() is None:
+            vis_proc.terminate()
         daemon.shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _sig_handler)
     signal.signal(signal.SIGTERM, _sig_handler)
 
-    daemon.run()
+    try:
+        daemon.run()
+    finally:
+        if vis_proc and vis_proc.poll() is None:
+            vis_proc.terminate()
 
 
 if __name__ == "__main__":

@@ -42,6 +42,7 @@ class VisualizerServer:
             checkpoint_path=WORKSPACE_ROOT / "runs/ml_mini/best.pt",
             tokenizer_path=WORKSPACE_ROOT / "runs/ml_mini/tokenizer.json",
         )
+        self.active_websockets: set[web.WebSocketResponse] = set()
         self.app = web.Application()
         self._setup_routes()
 
@@ -52,6 +53,7 @@ class VisualizerServer:
         self.app.router.add_get("/api/health", self.handle_health)
         self.app.router.add_get("/api/extract", self.handle_extract_get)
         self.app.router.add_post("/api/extract", self.handle_extract_post)
+        self.app.router.add_post("/api/desktop-event", self.handle_desktop_event)
         self.app.router.add_get("/ws", self.handle_websocket)
 
         assets_dir = STATIC_DIR / "assets"
@@ -106,9 +108,52 @@ class VisualizerServer:
         telemetry = await asyncio.to_thread(self.extractor.trace, text, beam, max_steps)
         return web.json_response(telemetry, headers={"Access-Control-Allow-Origin": "*"})
 
+    async def handle_desktop_event(self, request: web.Request) -> web.Response:
+        """Receive word transliteration event from typer and broadcast to browser UI."""
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+
+        word = str(data.get("word", "")).strip()
+        top_candidate = str(data.get("top_candidate", ""))
+        candidates = data.get("candidates", [])
+        latency_ms = float(data.get("latency_ms", 0.0))
+
+        if not word:
+            return web.json_response({"status": "ignored"}, headers={"Access-Control-Allow-Origin": "*"})
+
+        telemetry = await asyncio.to_thread(self.extractor.trace, word, 4, 24)
+        broadcast_msg = {
+            "type": "desktop_sync",
+            "word": word,
+            "top_candidate": top_candidate,
+            "candidates": candidates,
+            "latency_ms": latency_ms,
+            "telemetry": telemetry,
+        }
+
+        # Broadcast asynchronously to all connected websockets
+        dead_ws = set()
+        for ws in self.active_websockets:
+            if not ws.closed:
+                try:
+                    await ws.send_json(broadcast_msg)
+                except Exception:
+                    dead_ws.add(ws)
+            else:
+                dead_ws.add(ws)
+
+        self.active_websockets.difference_update(dead_ws)
+        return web.json_response(
+            {"status": "broadcasted", "clients": len(self.active_websockets)},
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+
     async def handle_websocket(self, request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse(heartbeat=30.0)
         await ws.prepare(request)
+        self.active_websockets.add(ws)
 
         # Send greeting / readiness info
         await ws.send_json({
@@ -140,6 +185,7 @@ class VisualizerServer:
                 elif msg.type == WSMsgType.ERROR:
                     print(f"[WebSocket] Connection closed with exception: {ws.exception()}")
         finally:
+            self.active_websockets.discard(ws)
             await ws.close()
 
         return ws

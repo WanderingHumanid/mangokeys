@@ -239,35 +239,52 @@ class KeyboardWatcher:
 
     def listen(
         self,
-        device: evdev.InputDevice,
+        devices: list[evdev.InputDevice] | evdev.InputDevice,
         stop_event: threading.Event | None = None,
         grab: bool = False,
     ) -> None:
-        """Listen to keyboard events from the specified device until stopped."""
+        """Listen to keyboard events from all specified devices simultaneously."""
         self._running = True
-        grabbed = False
+        if isinstance(devices, evdev.InputDevice):
+            dev_list = [devices]
+        else:
+            dev_list = list(devices)
 
+        if not dev_list:
+            return
+
+        grabbed_devs = []
         if grab:
-            try:
-                device.grab()
-                grabbed = True
-            except Exception:
-                grabbed = False
+            for d in dev_list:
+                try:
+                    d.grab()
+                    grabbed_devs.append(d)
+                except Exception:
+                    pass
+
+        fd_map = {d.fd: d for d in dev_list}
 
         try:
             while self._running and (stop_event is None or not stop_event.is_set()):
-                # Use select with timeout so we can periodically check stop_event
-                r, _, _ = select.select([device.fd], [], [], self.config.INPUT_POLL_TIMEOUT)
+                # Use select to poll all active keyboards simultaneously
+                r, _, _ = select.select(list(fd_map.keys()), [], [], self.config.INPUT_POLL_TIMEOUT)
                 if not r:
                     continue
 
-                for event in device.read():
-                    if event.type == ecodes.EV_KEY:
-                        self.process_key(event.code, event.value)
+                for fd in r:
+                    dev = fd_map.get(fd)
+                    if not dev:
+                        continue
+                    try:
+                        for event in dev.read():
+                            if event.type == ecodes.EV_KEY:
+                                self.process_key(event.code, event.value)
+                    except Exception:
+                        pass
         finally:
-            if grabbed:
+            for d in grabbed_devs:
                 try:
-                    device.ungrab()
+                    d.ungrab()
                 except Exception:
                     pass
             self._running = False
