@@ -1,0 +1,32 @@
+{
+  "files": {
+    "lexicon/index.bin": {
+      "bytes": 5236244,
+      "sha256": "85920359a8c1fc7369c9ac1492ed057c1778c8a08eaab888e82e7d3e0db5cfaf"
+    },
+    "lexicon/words.txt": {
+      "bytes": 2146551,
+      "sha256": "3c54b43f134f311d947dba44d56c4e65427f49cccf8d52ecccb085ee3ec351f1"
+    },
+    "model/decoder.onnx": {
+      "bytes": 3650960,
+      "sha256": "c982a09d595421c97cb218c1676903b5213bed33cea8619c4b4605207c679f9b"
+    },
+    "model/encoder.onnx": {
+      "bytes": 2417253,
+      "sha256": "d6dc39ce895a0fc553bb313667097630cade438f27cf8700e042ea78597aeb54"
+    },
+    "model/tokenizer.json": {
+      "bytes": 1463,
+      "sha256": "164bca9936c1130cac0e19241e5fbf04b7346a6ff6319915da4220b0b27ef769"
+    },
+    "prefix/decoder.onnx": {
+      "bytes": 3650960,
+      "sha256": "0dba9314834b5ec0d187f70ed1ad4a0460eb76f513c82bdd6d8916f1dd523d35"
+    },
+    "prefix/encoder.onnx": {
+      "bytes": 2417253,
+      "sha256": "e33eff80d12351985d15b48eee3914fce1c3827d3e652b904300ee10f9c8ef0d"
+    }
+  }
+}

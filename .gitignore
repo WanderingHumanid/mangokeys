@@ -27,6 +27,10 @@ data/processed/
 models/
 !model/configs/*
 
+# The bundle that the release builds against is committed on purpose. A tag
+# build has to find the model without training it first. See docs/RELEASING.md.
+!assets/release/**
+
 # ---- Node / web ----
 node_modules/
 .next/
