@@ -152,7 +152,7 @@ The most important number in this entire document:
 
 Your model must show the same cliff, then show that your augmentation closes it. That is a complete ML story:
 
-```
+```text
 Dakshina + Aksharantar, no augmentation   →  adhoc CER  ~20-24%   (reproduces the cliff)
         + our augmentation pipeline       →  adhoc CER  ~10-13%   (the contribution)
         + morphological post-processor    →  adhoc CER  ~9-11%    (bonus)
@@ -279,9 +279,9 @@ Published Bi-LSTM baseline: **CER 7.4% / 22.7%**. **This is the benchmark your p
 
 **IndicXlit** (`ai4bharat/IndicXlit`, MIT, ~11M params) — a trained, ONNX-exportable transliterator covering 21 Indic languages.
 
-| Model | Params | Dakshina-ml Top-1 | AK native Top-1 | AK NE Top-1 |
-|---|---|---|---|---|
-| **IndicXlit v1.0** | 11M | **63.56** | 64.73 | 33.93 |
+| Model              | Params | Dakshina-ml Top-1 | AK native Top-1 | AK NE Top-1 |
+| ------------------ | ------ | ----------------- | --------------- | ----------- |
+| **IndicXlit v1.0** | 11M    | **63.56**         | 64.73           | 33.93       |
 
 **Run this in Week 1, before writing a single line of training code.** If your trained model doesn't beat it, you ship it and your project becomes "we benchmarked the ecosystem and found where the gap is" — which is *also* a valid project, but a weaker one. Knowing this number in Week 1 costs you 30 minutes and can save you 5 weeks.
 
@@ -366,7 +366,7 @@ rules in §5.2 were aimed at the right things:
 
 The Mozhi 2.0 spec publishes a **rule-set and test cases** (`mozhi-documentation.digitalmalayali.in`). Turn those into an automated conformance suite. Your model should agree with the rule engine wherever the scheme is unambiguous.
 
-```
+```text
 Vowels    a  aa  i  ii  u  uu  R  RR  e  E  ai  o  O  au  Ll  Lll  am  aH
 Cons.     k  kh  g  gh  ng   |  ch chh j jh nj   |  T Th D Dh N
           th thh d dh n       |  p ph b bh m       |  y r l v
@@ -389,7 +389,7 @@ This gives you a **qualitative** eval set that no public dataset matches, and it
 
 ## 5. Data pipeline
 
-```
+```text
 Dakshina ml/            Aksharantar mal/        Your collected set
 (lexicon + romanized)   (4.1M pairs)            (500–2,000 adhoc)
         │                     │                        │
@@ -515,7 +515,7 @@ This is where your project lives. The rules below are derived from how Malayalis
 
 **Parameter budget (worked out):**
 
-```
+```text
 Embeddings       (45 + 80) × 256            =  32,000
 Encoder layer    attn 4×(256×256)+bias      = 263,168
                  ffn  2×(256×512)+bias      = 263,680
@@ -590,7 +590,7 @@ Ezhuthola's `MalayalamEngine.transliterate()` works in three steps:
 Those 300 candidates are then **ranked by a frequency list**. That last step is where a learned
 model earns its keep.
 
-```
+```text
 user types "sneham"
         │
         ▼
@@ -743,7 +743,7 @@ Full protocol in [`docs/EVAL_PROTOCOL.md`](docs/EVAL_PROTOCOL.md). Summary:
 
 ### 9.2 Report format
 
-```
+```text
 set                  n       Top-1   Top-5    CER      WER     RT-acc
 test-standard        12500   0.XXX   0.XXX    0.0XX    0.0XX   0.XXX
 test-adhoc           N       0.XXX   0.XXX    0.0XX    0.0XX   0.XXX
@@ -868,7 +868,7 @@ Two mature open-source shells exist. **Do not write an `InputMethodService` from
 **The play — and it is now much cheaper than it looks.** Because Ezhuthola's engine is a pure
 rule engine with no ML (§4.7), swapping in a model is a **one-function change**:
 
-```
+```text
 Ezhuthola:  MalayalamEngine.transliterate()  →  300 candidates  →  MalayalamSuggester ranks
 Your fork:  MalayalamEngine.transliterate()  →  300 candidates  →  YOUR model ranks  ← 1 function
 ```
