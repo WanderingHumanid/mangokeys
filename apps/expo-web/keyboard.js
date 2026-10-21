@@ -73,7 +73,7 @@ export class OnScreenKeyboard {
       this.key(this.numbers ? "abc" : "123", "function", "numbers", 1.2),
     );
     last.appendChild(this.key(",", "letter", "char", 1));
-    last.appendChild(this.key("space", "letter", "space", 4.4));
+    last.appendChild(this.key("space", "space", "space", 4.4));
     last.appendChild(this.key(".", "letter", "char", 1));
     last.appendChild(this.key("enter", "accent", "enter", 1.4, ICONS.enter));
     this.root.appendChild(last);

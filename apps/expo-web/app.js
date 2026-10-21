@@ -98,9 +98,15 @@ function type(letter) {
   refresh();
 }
 
+/** The candidate the space bar takes. It is the first one in the strip. */
+function firstSuggestion() {
+  const first = elements.strip.querySelector(".candidate");
+  return first ? first.textContent : null;
+}
+
 function typeSpace() {
   const word = currentWord();
-  const best = state.candidates[0];
+  const best = firstSuggestion();
   if (word && best) replaceWord(best);
   const field = elements.field;
   const caret = field.selectionStart ?? field.value.length;
@@ -178,6 +184,11 @@ function showStrip(words) {
     elements.strip.appendChild(button);
   }
   keyboard.setSpaceActive(true);
+  // The edge only fades when there is more to scroll to.
+  elements.strip.classList.toggle(
+    "overflowing",
+    elements.strip.scrollWidth > elements.strip.clientWidth + 1,
+  );
 }
 
 // ----------------------------------------------------------------- the model
@@ -329,6 +340,15 @@ function renderBenchmarks(data) {
       <td class="num">${(result.cer * 100).toFixed(1)}%</td>
     `;
     elements.benchBody.appendChild(row);
+  }
+
+  // The word list is what makes the difference, and it only knows part of
+  // the words. The page says so rather than hide it.
+  const coverage = entry.dictionary_coverage;
+  if (typeof coverage === "number") {
+    elements.benchNote.textContent =
+      `The word list knows ${Math.round(coverage * 100)}% of the words in the test set ` +
+      "and almost all of the common words. The rest is where the keyboard is wrong.";
   }
 }
 

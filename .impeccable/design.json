@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T23:10:00Z",
+  "title": "Design System: MangoKeys",
+  "extensions": {
+    "colorMeta": {
+      "ground": { "role": "neutral", "displayName": "Ground", "canonical": "#101215", "tonalRamp": ["#08090b", "#0c0e11", "#101215", "#171a1e", "#202328", "#2b2f35", "#3a3f46", "#8b939d"] },
+      "body": { "role": "neutral", "displayName": "Keyboard Body", "canonical": "#1b1d21", "tonalRamp": ["#0d0e10", "#121417", "#1b1d21", "#23262b", "#2b2f35", "#3a3f46", "#767d87", "#e8eaed"] },
+      "surface": { "role": "neutral", "displayName": "Strip Surface", "canonical": "#23262b", "tonalRamp": ["#0f1114", "#16181d", "#23262b", "#2b2f35", "#3a3f46", "#767d87", "#a2a9b2", "#e8eaed"] },
+      "key": { "role": "neutral", "displayName": "Key", "canonical": "#31353b", "tonalRamp": ["#131518", "#1b1d21", "#26292e", "#31353b", "#3a3f46", "#6c737c", "#a2a9b2", "#e8eaed"] },
+      "function": { "role": "neutral", "displayName": "Function", "canonical": "#3a3f46", "tonalRamp": ["#15171a", "#1e2126", "#31353b", "#3a3f46", "#454b53", "#767d87", "#a2a9b2", "#e8eaed"] },
+      "line": { "role": "neutral", "displayName": "Divider", "canonical": "#2b2f35", "tonalRamp": ["#101215", "#191c20", "#24272c", "#2b2f35", "#3a3f46", "#767d87", "#a2a9b2", "#e8eaed"] },
+      "text": { "role": "neutral", "displayName": "Text", "canonical": "#e8eaed", "tonalRamp": ["#101215", "#3a3f46", "#767d87", "#a2a9b2", "#c4c8ce", "#e8eaed", "#f2f3f5", "#ffffff"] },
+      "accent": { "role": "primary", "displayName": "Ocean", "canonical": "#2c5f8a", "tonalRamp": ["#0d1f2c", "#16354f", "#1e4869", "#2c5f8a", "#35709f", "#4a8cc0", "#7fb0de", "#c3d9ec"] },
+      "accent-bright": { "role": "primary", "displayName": "Ocean Light", "canonical": "#7fb0de", "tonalRamp": ["#0d1f2c", "#16354f", "#1e4869", "#2c5f8a", "#35709f", "#4a8cc0", "#7fb0de", "#c3d9ec"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Wordmark", "purpose": "The name of the product, once, at the top of the page." },
+      "native": { "displayName": "Native Script", "purpose": "The Malayalam in the compose field and in the candidates." },
+      "label": { "displayName": "Quiet Label", "purpose": "The state of the model, the captions and the table headers. Never uppercase." }
+    },
+    "shadows": [
+      { "name": "panel", "value": "0 12px 28px -18px rgba(0, 0, 0, 0.85)", "purpose": "The keyboard panel, the one object that floats above the page." }
+    ],
+    "motion": [
+      { "name": "press", "value": "90ms ease", "purpose": "A key that is pressed. A step lighter and a lift of one pixel." },
+      { "name": "state", "value": "140ms ease", "purpose": "Chips, candidates and links changing state." },
+      { "name": "ready", "value": "160ms ease", "purpose": "The space bar taking the accent when there is a candidate." },
+      { "name": "commit", "value": "420ms ease-out", "purpose": "The panel taking the accent border when a word is committed." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "640px" },
+      { "name": "large", "value": "1100px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Letter Key",
+      "kind": "button",
+      "refersTo": "key",
+      "description": "A letter of the keyboard. No border, one step above the keyboard body.",
+      "html": "<button class=\"ds-key\">q</button>",
+      "css": ".ds-key { background: #31353b; color: #e8eaed; border: 0; border-radius: 10px; height: 44px; min-width: 44px; font-family: system-ui, sans-serif; font-size: 17px; cursor: pointer; transition: background 90ms ease, transform 90ms ease; } .ds-key:hover { background: #383d44; } .ds-key:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Function Key",
+      "kind": "button",
+      "refersTo": "key-function",
+      "description": "A key that does something other than type a letter. The shift, the backspace and the numbers.",
+      "html": "<button class=\"ds-key ds-key-function\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 20V5.5\"/><path d=\"M6.5 11 12 5.5 17.5 11\"/></svg></button>",
+      "css": ".ds-key-function { background: #3a3f46; color: #c9ced5; display: inline-flex; align-items: center; justify-content: center; } .ds-key-function svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Enter Key",
+      "kind": "button",
+      "refersTo": "key-accent",
+      "description": "The one key that commits a line. It carries the accent.",
+      "html": "<button class=\"ds-key ds-key-accent\"><svg viewBox=\"0 0 24 24\"><path d=\"M9 10 5 14l4 4\"/><path d=\"M5 14h11a4 4 0 0 0 4-4V5.5\"/></svg></button>",
+      "css": ".ds-key-accent { background: #2c5f8a; color: #ffffff; } .ds-key-accent:hover { background: #35709f; }"
+    },
+    {
+      "name": "Candidate",
+      "kind": "chip",
+      "refersTo": "candidate",
+      "description": "A word the keyboard offers. The first one is the one the space bar takes.",
+      "html": "<button class=\"ds-candidate\">പേരു</button><button class=\"ds-candidate ds-candidate-first\">എൻ്റെ</button>",
+      "css": ".ds-candidate { background: #3a3f46; color: #e8eaed; border: 0; border-radius: 12px; padding: 6px 14px; font-family: \"Noto Sans Malayalam\", \"Nirmala UI\", Kartika, system-ui, sans-serif; font-size: 17px; cursor: pointer; transition: background 140ms ease; } .ds-candidate:hover { background: #454b53; } .ds-candidate-first { background: #2c5f8a; color: #ffffff; border-radius: 18px; padding: 6px 18px; } .ds-candidate-first:hover { background: #35709f; }"
+    },
+    {
+      "name": "Compose Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Where the word is written. The Malayalam lands here.",
+      "html": "<textarea class=\"ds-field\" placeholder=\"ente peru\"></textarea>",
+      "css": ".ds-field { width: 100%; min-height: 52px; padding: 12px 14px; background: #23262b; border: 1px solid #24272c; border-radius: 14px; color: #e8eaed; font-family: \"Noto Sans Malayalam\", \"Nirmala UI\", Kartika, system-ui, sans-serif; font-size: 21px; line-height: 1.45; resize: none; caret-color: #7fb0de; } .ds-field:focus { outline: 2px solid #7fb0de; outline-offset: 2px; }"
+    },
+    {
+      "name": "Example Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A word that fills the field when it is tapped.",
+      "html": "<button class=\"ds-chip\">ente peru</button>",
+      "css": ".ds-chip { background: #31353b; color: #a2a9b2; border: 0; border-radius: 999px; padding: 4px 10px; font-family: system-ui, sans-serif; font-size: 13px; cursor: pointer; transition: background 140ms ease, color 140ms ease; } .ds-chip:hover { background: #3a3f46; color: #e8eaed; }"
+    },
+    {
+      "name": "Keyboard Panel",
+      "kind": "card",
+      "refersTo": "key",
+      "description": "The strip and the keys. The one object on the page that floats.",
+      "html": "<div class=\"ds-keyboard\"><div class=\"ds-strip\"></div><div class=\"ds-keys\"></div></div>",
+      "css": ".ds-keyboard { background: #1b1d21; border-radius: 20px; padding: 0 8px 10px; box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.85); } .ds-strip { display: flex; gap: 8px; min-height: 52px; padding: 8px 6px; background: #23262b; border-bottom: 1px solid #3a3f46; border-radius: 19px 19px 0 0; overflow-x: auto; } .ds-keys { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; }"
+    },
+    {
+      "name": "Results Table",
+      "kind": "card",
+      "description": "The measured results. No frame, a hairline under the header, none under the last row.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>System</th><th>Top-1</th><th>CER</th></tr></thead><tbody><tr><td>the model</td><td class=\"num\">53.4%</td><td class=\"num\">17.0%</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font-size: 13.5px; } .ds-table th { text-align: left; padding: 0 0 8px; border-bottom: 1px solid #2b2f35; color: #8b939d; font-size: 12px; font-weight: 500; } .ds-table td { padding: 9px 0; border-bottom: 1px solid #24272c; color: #a2a9b2; } .ds-table td.num { width: 84px; text-align: right; color: #e8eaed; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The keyboard on the table",
+    "overview": "MangoKeys is one product in two places: an Android input method and a web demo. They share a model, a word list and a ranking, and they share a face. The world is settled and it is the world's of the app: a near-black ground, four steps of cool neutral lifted by small lightness changes rather than by borders, one accent that does real work, and a density that matches a phone. Nothing is decorated. The voice is plain and technical, the way the report is written.",
+    "keyCharacteristics": [
+      "One ground, four lifts, one accent.",
+      "The accent is a verb: it marks the action the space bar will take.",
+      "Every number on the page is read from a file that an evaluation wrote.",
+      "The Malayalam is the largest type on the page.",
+      "Drawn icons, one stroke weight, never a glyph standing in for a symbol."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "The accent appears on at most three things at once: the first candidate, the enter key and the state of the switch. Its rarity is what makes it mean this one.", "section": "colors" },
+      { "name": "The Lightness Ladder Rule", "body": "A panel is separated from what is behind it by lightness, not by a border.", "section": "colors" },
+      { "name": "The Contrast Floor", "body": "Body text and placeholders sit at 4.5:1 or better against the surface they are on.", "section": "colors" },
+      { "name": "The Native Rule", "body": "The Malayalam is always set in the Malayalam face and never in the interface face.", "section": "typography" },
+      { "name": "The Plain Label Rule", "body": "Labels are sentence case at their own size. There are no small caps, no tracked caps and no kickers.", "section": "typography" },
+      { "name": "The One Shadow Rule", "body": "A shadow means the object floats. Only the keyboard floats.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the candidate strip, the keyboard and the compose field in that order, with the strip directly above the keys.",
+      "Do let the accent mark the first candidate and the enter key, and nothing else on the screen at the same time.",
+      "Do read every number from a file that an evaluation wrote, and say so in the page when the number has a limit.",
+      "Do set the Malayalam in the Malayalam face, at the largest size it is given on the page.",
+      "Do draw the icons."
+    ],
+    "donts": [
+      "Don't add a second accent, a gradient, a glow or a glass effect. The ground is the product.",
+      "Don't put the strip's candidates in the key colour. They would read as keys and the signature would be lost.",
+      "Don't use a glyph font for the shift, the backspace or the enter.",
+      "Don't uppercase the labels, and don't put a small tracked label above a heading.",
+      "Don't claim anything the repository does not measure, including the coverage of the word list."
+    ]
+  }
+}

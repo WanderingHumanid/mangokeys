@@ -8,12 +8,12 @@
  */
 
 :root {
-  --ground: #0f1114;
+  --ground: #101215;
   --body: #1b1d21;
   --strip: #23262b;
   --key: #31353b;
   --function: #3a3f46;
-  --field: #17191d;
+  --field: #23262b;
   --line: #2b2f35;
   --line-soft: #24272c;
   --text: #e8eaed;
@@ -178,7 +178,8 @@ body {
   padding: 8px 6px;
   overflow-x: auto;
   background: var(--strip);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--function);
+  position: relative;
   border-radius: 19px 19px 0 0;
   scrollbar-width: thin;
   scrollbar-color: var(--function) transparent;
@@ -193,6 +194,18 @@ body {
   border-radius: 2px;
 }
 
+/* The candidates fade at the edge, so that it is clear there are more. */
+.strip.overflowing::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, var(--strip));
+  pointer-events: none;
+}
+
 .strip-hint {
   flex: 0 0 auto;
   padding: 0 6px;
@@ -205,7 +218,7 @@ body {
   padding: 6px 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--key);
+  background: var(--function);
   color: var(--text);
   font-family: var(--font-native);
   font-size: 17px;
@@ -364,6 +377,10 @@ body {
   color: var(--muted);
 }
 
+#bench-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 #bench-table td.num {
   width: 84px;
   color: var(--text);
@@ -422,6 +439,18 @@ footer a:hover {
 
 /* -------------------------------------------------------------- narrower */
 
+@media (min-width: 1100px) {
+  /* A bigger screen gets a bigger keyboard, with the same proportions. */
+  .page {
+    max-width: 720px;
+  }
+
+  .key {
+    height: 54px;
+    font-size: 18px;
+  }
+}
+
 @media (max-width: 640px) {
   .page {
     padding: 24px 12px 56px;
@@ -435,11 +464,6 @@ footer a:hover {
   .keyboard {
     padding: 0 5px 8px;
     border-radius: 16px;
-  }
-
-  .key {
-    height: 40px;
-    font-size: 16px;
   }
 
   .key-row.inset {

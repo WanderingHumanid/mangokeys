@@ -134,6 +134,11 @@ def build_demo_payload(systems: dict[str, list[dict]], test_file: str) -> list[d
                     "ms_per_pair": 0.0,
                     "size": f"{model_size_mb()} MB",
                 }
+                # The page says how much of the test set the word list knows,
+                # because that is the limit of what the keyboard can promise.
+                coverage = suggestions[0].get("dictionary_coverage")
+                if coverage is not None:
+                    payload["dictionary_coverage"] = coverage
 
     return payloads
 
