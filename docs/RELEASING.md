@@ -108,8 +108,18 @@ cd runtime
 export ANDROID_HOME=$HOME/Android/Sdk
 ./gradlew :app:assembleRelease
 cd ..
-# the APK is in apps/android/build/outputs/apk/release/app-release.apk
+# the APKs are in apps/android/build/outputs/apk/release
 ```
+
+One file is made for every processor, and one for all of them:
+
+| File | Size | For |
+|---|---|---|
+| `app-universal-release.apk` | 86 MB | every phone, this is the one to publish |
+| `app-arm64-v8a-release.apk` | 33 MB | any phone from 2017 onwards |
+| `app-armeabi-v7a-release.apk` | 28 MB | the older phones |
+| `app-x86_64-release.apk` | 36 MB | the emulators |
+| `app-x86-release.apk` | 36 MB | the older emulators |
 
 To create the release page by hand, use the GitHub web interface: go to
 Releases, Draft a new release, choose the tag, and upload the APK. Or use
@@ -119,7 +129,7 @@ the `gh` command line tool:
 gh release create v0.01 \
   --title "MangoKeys v0.01" \
   --notes-file docs/RELEASE_NOTES.md \
-  apps/android/build/outputs/apk/release/app-release.apk
+  apps/android/build/outputs/apk/release/app-universal-release.apk
 ```
 
 ## The web demo

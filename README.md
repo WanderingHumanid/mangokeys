@@ -89,7 +89,8 @@ https://github.com/WanderingHumanid/mangokeys/releases/latest
 
 Download `mangokeys-v0.01.apk`, open it, and allow the install from this
 source. Android will warn you about the unknown source, which is what every
-sideloaded app does. Then:
+sideloaded app does. If your phone is from 2017 or later, the smaller
+`mangokeys-v0.01-arm64.apk` is the same app with less in it. Then:
 
 1. Open the keyboard settings of Android.
 2. Pick MangoKeys under the list of installed keyboards.
@@ -104,7 +105,7 @@ To build it yourself:
 cd runtime
 export ANDROID_HOME=$HOME/Android/Sdk
 ./gradlew :app:assembleDebug
-adb install -r ../apps/android/build/outputs/apk/debug/app-debug.apk
+adb install -r ../apps/android/build/outputs/apk/debug/app-universal-debug.apk
 ```
 
 The model files the build needs are committed in `assets/release`, so a clean
@@ -522,7 +523,7 @@ more than one thread, which is why the model is fast in the browser.
 cd runtime
 export ANDROID_HOME=$HOME/Android/Sdk
 ./gradlew :app:assembleDebug
-adb install -r ../apps/android/build/outputs/apk/debug/app-debug.apk
+adb install -r ../apps/android/build/outputs/apk/debug/app-universal-debug.apk
 ```
 
 Then enable MangoKeys in the keyboard settings of Android. The full

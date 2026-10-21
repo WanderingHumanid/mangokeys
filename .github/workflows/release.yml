@@ -66,8 +66,17 @@ jobs:
 
       - name: Collect the files
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          OUT="apps/android/build/outputs/apk/release"
           mkdir -p dist
-          cp apps/android/build/outputs/apk/release/app-release.apk dist/mangokeys-${{ inputs.tag || github.ref_name }}.apk
+          # The universal file works on every phone and is the one the
+          # release notes point at. The smaller ones are for the people who
+          # know which processor their phone has.
+          cp "$OUT/app-universal-release.apk" "dist/mangokeys-$VERSION.apk"
+          cp "$OUT/app-arm64-v8a-release.apk" "dist/mangokeys-$VERSION-arm64.apk"
+          cp "$OUT/app-armeabi-v7a-release.apk" "dist/mangokeys-$VERSION-armeabi-v7a.apk"
+          cp "$OUT/app-x86_64-release.apk" "dist/mangokeys-$VERSION-x86_64.apk"
+          cp "$OUT/app-x86-release.apk" "dist/mangokeys-$VERSION-x86.apk"
           cd apps/expo-web && zip -qr ../../dist/mangokeys-web-demo.zip . -x "node_modules/*"
           cd ../..
           ls -lh dist

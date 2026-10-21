@@ -102,7 +102,8 @@ jobs:
       - name: Collect the APK
         run: |
           mkdir -p dist
-          cp apps/android/build/outputs/apk/release/app-release.apk dist/mangokeys.apk
+          OUT="apps/android/build/outputs/apk/release"
+          cp "$OUT/app-universal-release.apk" dist/mangokeys.apk
           ls -lh dist
 
       - name: Upload the APK

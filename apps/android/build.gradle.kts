@@ -65,12 +65,29 @@ android {
             }
         }
     }
+
+    // The runtime of onnx ships a native library for every processor, and
+    // they are most of the size of the package. The build makes one file
+    // per processor and one for all of them, so that a phone downloads the
+    // twenty megabytes it needs and not the seventy.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
 }
 
 // The model, the word list and the language model are copied into the
 // package. The default is the committed bundle, so a build on a clean
 // checkout works. The paths can be changed with -PmodelDir, -PlexiconDir
 // and -PlexiconFile.
+//
+// The language model is not in the bundle, because it measured as no help
+// and it is off by default. It is still twelve megabytes, so it is only
+// packed when a build asks for it with -PngramFile.
 val modelDir: String = (project.findProperty("modelDir") as String?)
     ?: rootProject.file("../assets/release/model").path
 val tokenizerFile: String = (project.findProperty("tokenizerFile") as String?)
@@ -78,7 +95,7 @@ val tokenizerFile: String = (project.findProperty("tokenizerFile") as String?)
 val lexiconDir: String = (project.findProperty("lexiconDir") as String?)
     ?: rootProject.file("../assets/release/lexicon").path
 val ngramFile: String = (project.findProperty("ngramFile") as String?)
-    ?: rootProject.file("../data/processed/ngram.txt").path
+    ?: rootProject.file("../assets/release/ngram.txt").path
 val prefixModelDir: String = (project.findProperty("prefixModelDir") as String?)
     ?: rootProject.file("../assets/release/prefix").path
 

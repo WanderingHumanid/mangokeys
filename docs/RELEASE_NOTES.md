@@ -21,7 +21,10 @@ The first public build of MangoKeys, a Manglish to Malayalam keyboard.
 
 ## How to install
 
-1. Download `mangokeys-<version>.apk` from this page.
+1. Download `mangokeys-<version>.apk` from this page. It is the file that
+   works on every phone. If your phone is from 2017 or later, the smaller
+   `mangokeys-<version>-arm64.apk` is the same app with about fifty megabytes
+   less in it.
 2. Open it on your phone and allow the install from this source.
 3. Open the keyboard settings of Android, pick MangoKeys under the list of
    keyboards.

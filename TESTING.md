@@ -261,7 +261,8 @@ export ANDROID_HOME=~/Android/Sdk
 ./gradlew :app:assembleDebug
 ```
 
-The package lands in `apps/android/build/outputs/apk/debug/app-debug.apk`.
+The packages land in `apps/android/build/outputs/apk/debug/`, one for each
+processor and one for all of them. The universal one installs on any device.
 The build copies the assets out of `runs/` and `data/processed/`, so the model,
 the prefix model, the word list and the language model have to be built first
 with steps 3 and 5.
@@ -316,7 +317,7 @@ The phone must show as `device`, not `unauthorized`.
 The same command works for the emulator and for a real phone.
 
 ```bash
-adb install -r apps/android/build/outputs/apk/debug/app-debug.apk
+adb install -r apps/android/build/outputs/apk/debug/app-universal-debug.apk
 ```
 
 The app copies the assets into its own directory the first time it starts.
@@ -477,7 +478,7 @@ cd runtime && ./gradlew test
 | `adb: no devices found` | The phone is not in the USB debugging list, or the prompt was dismissed. Run `adb kill-server && adb start-server` and replug it. |
 | The phone shows `unauthorized` | Accept the prompt on the phone screen. If it does not appear, revoke the USB debugging authorisation in the developer options and replug. |
 | The emulator is very slow | It is running without hardware acceleration. Check that `/dev/kvm` exists and is readable. |
-| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l apps/android/build/outputs/apk/debug/app-debug.apk | grep assets`. |
+| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l apps/android/build/outputs/apk/debug/app-universal-debug.apk | grep assets`. |
 | The wasm runtime uses one thread | The demo was opened over `file://` instead of over http. The cross origin headers are only sent by `serve.py`. |
 | The model output is empty in the app | The `tokenizer.json` in the assets is from a different run than the graphs. Rebuild the demo. |
 
@@ -498,7 +499,7 @@ python -m scripts.build_web --out dist/web                 # the demo folder
 python -m scripts.check_demo --url http://localhost:8000   # browser runtime
 cd runtime && ./gradlew test                               # kotlin runtime
 cd .. && cd runtime && ./gradlew :app:assembleDebug        # android app
-adb install -r apps/android/build/outputs/apk/debug/app-debug.apk
+adb install -r apps/android/build/outputs/apk/debug/app-universal-debug.apk
 adb shell ime enable com.mangokeyboard/.ManglishKeyboardService
 adb shell ime set com.mangokeyboard/.ManglishKeyboardService
 adb shell am start -a android.settings.SETTINGS             # the keyboard on the device

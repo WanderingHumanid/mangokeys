@@ -99,7 +99,7 @@ is enough:
 
 ```bash
 ./gradlew assembleDebug
-adb install app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/debug/app-universal-debug.apk
 ```
 
 If it does go on the store, the things that matter are:
