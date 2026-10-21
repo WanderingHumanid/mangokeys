@@ -351,15 +351,19 @@ adb shell am start -a android.intent.action.VIEW -d "https://example.com"
 What to check, in order:
 
 1. The keyboard appears when a text field is focused.
-2. Typing `ente` puts `ente` in the field, in Manglish, and shows `എൻ്റെ`
+2. The layout is the standard one: three rows of letters, the shift on the
+   left and the backspace on the right, and 123, comma, space, period and
+   enter on the last row.
+3. Typing `ente` puts `ente` in the field, in Manglish, and shows `എൻ്റെ`
    first in the strip.
-3. Tapping `എൻ്റെ` replaces `ente` in the field with `എൻ്റെ`.
-4. The backspace deletes in the field, not in the keyboard.
-5. The space bar commits the top suggestion and then a space.
-6. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
+4. Tapping `എൻ്റെ` replaces `ente` in the field with `എൻ്റെ`.
+5. The backspace deletes in the field, not in the keyboard.
+6. The space bar commits the top suggestion and then a space.
+7. The 123 key shows the numbers and the abc key goes back.
+8. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
    middle of the word and the word list completes it.
-7. The globe key opens the input method picker.
-8. The keys and the strip follow the theme.
+9. The globe key opens the input method picker.
+10. The strip and the keys follow the theme, in the dark theme as well.
 
 The suggestions can be read from the log, which is easier than looking at the
 screen:
@@ -374,26 +378,23 @@ Each line is the suggestion strip after a keystroke:
 I MangoKeys: suggestions: എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
 ```
 
-### 9.7 The settings page
+### 9.7 The application page
 
-The settings page is the launcher activity, and it is also what the system
-opens when the keyboard settings are changed.
+The application of the keyboard has a test bench at the top, so that the
+keyboard can be tried without switching the input method, and the settings
+under it.
 
 ```bash
-adb shell am start -n com.mangokeyboard/.SettingsActivity
+adb shell am start -n com.mangokeyboard/.MainActivity
 ```
 
-It has three parts.
+The test bench is a text field, a line under it that shows what the last word
+would become, and a row of example words. Tap an example and the line fills
+in with the Malayalam. The models are loaded in the background when the page
+opens, so the first answer takes a moment.
 
-**Appearance.** The dark theme, six accent colours, and a custom colour
-picker with three sliders. The keyboard picks the change up the next time it
-is shown, and the first suggestion and the space bar take the accent.
-
-**Behaviour.** Whether the prefix model may complete a half typed word,
-whether the word list is used at all, and how many candidates the search
-keeps.
-
-**About.** What the two models are and what the keyboard does with them.
+Under it are the settings: the dark theme, six accent colours and a custom
+colour picker with three sliders, and the behaviour switches.
 
 The settings are stored in the preferences of the app:
 

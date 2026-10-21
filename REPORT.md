@@ -533,9 +533,9 @@ on every keystroke.
 **The Android app** is an `InputMethodService` called MangoKeys. It behaves
 like an ordinary keyboard: every key goes straight into the text field that
 has the focus, so the backspace, the cursor and the selection belong to the
-application and not to the keyboard. What the keyboard adds is the suggestion
-strip above the keys, and tapping a suggestion replaces the word that is
-being typed with the Malayalam.
+application and not to the keyboard. The layout is the standard one, and the
+suggestion strip above the keys holds the Malayalam. Tapping a suggestion
+replaces the word that is being typed with the Malayalam.
 
 ```
 ente   →  എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
@@ -546,9 +546,10 @@ and the word list first, so the suggestions are there in two milliseconds and
 the model's answer arrives a moment later. The keyboard asks for no
 permissions at all.
 
-The settings page has a dark and a light theme, six accent colours and a
-custom colour picker, and it can turn the word list and the completion on and
-off.
+The application of the keyboard has a test bench, so that the keyboard can be
+tried without switching the input method, and the settings under it: a dark
+and a light theme, six accent colours and a custom colour picker, and the
+switches for the word list, the completion and the number of candidates.
 
 The architecture the plan points at is **rules propose, the model disposes**.
 The rule engine generates a bounded set of well formed candidates and the
