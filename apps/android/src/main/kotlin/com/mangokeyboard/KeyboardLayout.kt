@@ -12,84 +12,126 @@ import android.widget.LinearLayout
 /**
  * The keys of the keyboard.
  *
+ * The layout is the standard one: three rows of letters, the shift on the
+ * left and the backspace on the right, and a last row with the numbers, the
+ * space and the enter. The numbers are a second layer that the 123 key
+ * switches to.
+ *
  * The rows are built in code rather than in a layout file, because a layout
  * file for a keyboard is a thousand lines of almost the same thing.
  */
 object KeyboardLayout {
-    val ROWS = listOf(
+
+    val LETTERS = listOf(
         listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
         listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
         listOf("z", "x", "c", "v", "b", "n", "m"),
     )
 
+    val NUMBERS = listOf(
+        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
+        listOf("@", "#", "$", "%", "&", "*", "-", "+", "/", "("),
+        listOf(".", ",", "?", "!", "'", "\"", ":", ";"),
+    )
+
+    /** The state of the shift key. */
+    enum class Shift { OFF, ON, LOCKED }
+
     fun build(
         context: Context,
         container: LinearLayout,
         palette: Palette,
+        shift: Shift,
+        numbers: Boolean,
         onKey: (String) -> Unit,
-        onSpace: () -> Unit,
+        onShift: () -> Unit,
+        onNumbers: () -> Unit,
+        onLetters: () -> Unit,
         onBackspace: () -> Unit,
         onEnter: () -> Unit,
         onGlobe: () -> Unit,
     ) {
         container.removeAllViews()
         container.setBackgroundColor(palette.background)
-        for (row in ROWS) {
-            container.addView(rowView(context, row, palette, onKey))
+        val rows = if (numbers) NUMBERS else LETTERS
+
+        container.addView(letterRow(context, rows[0], palette, 0, onKey))
+        container.addView(letterRow(context, rows[1], palette, dp(context, 12), onKey))
+
+        val third = LinearLayout(context)
+        third.orientation = LinearLayout.HORIZONTAL
+        third.layoutParams = rowParams()
+        if (numbers) {
+            third.addView(
+                key(context, "abc", 1.4f, palette.function, palette.functionText) { onLetters() },
+            )
+        } else {
+            third.addView(
+                key(context, shiftLabel(shift), 1.4f, palette.function, palette.functionText) {
+                    onShift()
+                },
+            )
         }
-        container.addView(bottomRow(context, palette, onSpace, onBackspace, onEnter, onGlobe))
+        for (label in rows[2]) {
+            third.addView(key(context, label, 1f, palette.key, palette.keyText) { onKey(label) })
+        }
+        third.addView(
+            key(context, "⌫", 1.4f, palette.function, palette.functionText) { onBackspace() },
+        )
+        container.addView(third)
+
+        val last = LinearLayout(context)
+        last.orientation = LinearLayout.HORIZONTAL
+        last.layoutParams = rowParams()
+        last.addView(
+            key(context, if (numbers) "abc" else "123", 1.2f, palette.function, palette.functionText) {
+                if (numbers) onLetters() else onNumbers()
+            },
+        )
+        last.addView(
+            key(context, ",", 1f, palette.key, palette.keyText) { onKey(",") },
+        )
+        last.addView(
+            key(context, "space", 4.4f, palette.key, palette.keyText) { onKey(" ") },
+        )
+        last.addView(
+            key(context, ".", 1f, palette.key, palette.keyText) { onKey(".") },
+        )
+        last.addView(
+            key(context, "↵", 1.4f, palette.accent, palette.accentText) { onEnter() },
+        )
+        container.addView(last)
     }
 
-    private fun rowView(
+    fun shiftLabel(shift: Shift): String = when (shift) {
+        Shift.OFF -> "⇧"
+        Shift.ON -> "⇧"
+        Shift.LOCKED -> "⇪"
+    }
+
+    private fun letterRow(
         context: Context,
         row: List<String>,
         palette: Palette,
+        inset: Int,
         onKey: (String) -> Unit,
     ): View {
         val line = LinearLayout(context)
         line.orientation = LinearLayout.HORIZONTAL
-        line.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        )
+        line.layoutParams = rowParams()
+        if (inset > 0) {
+            line.setPadding(inset, 0, inset, 0)
+        }
         for (label in row) {
-            line.addView(
-                key(context, label, 1f, palette.key, palette.keyText) {
-                    onKey(label)
-                },
-            )
+            line.addView(key(context, label, 1f, palette.key, palette.keyText) { onKey(label) })
         }
         return line
     }
 
-    private fun bottomRow(
-        context: Context,
-        palette: Palette,
-        onSpace: () -> Unit,
-        onBackspace: () -> Unit,
-        onEnter: () -> Unit,
-        onGlobe: () -> Unit,
-    ): View {
-        val line = LinearLayout(context)
-        line.orientation = LinearLayout.HORIZONTAL
-        line.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        )
-        line.addView(
-            key(context, "globe", 1f, palette.key, palette.keyText) { onGlobe() },
-        )
-        line.addView(
-            key(context, "⌫", 1f, palette.key, palette.keyText) { onBackspace() },
-        )
-        line.addView(
-            key(context, "space", 4f, palette.accent, palette.accentText) { onSpace() },
-        )
-        line.addView(
-            key(context, "↵", 1.4f, palette.accent, palette.accentText) { onEnter() },
-        )
-        return line
-    }
+    private fun rowParams(): LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+    )
 
     private fun key(
         context: Context,
@@ -101,30 +143,26 @@ object KeyboardLayout {
     ): View {
         val button = Button(context)
         button.text = label
-        button.textSize = 16f
+        button.textSize = 17f
         button.setTextColor(textColor)
         button.isAllCaps = false
+        button.gravity = Gravity.CENTER
+        button.setPadding(0, 0, 0, 0)
+        button.setBackgroundColor(Color.TRANSPARENT)
+        button.background = rounded(color)
         button.setOnClickListener { onClick() }
 
-        val background = GradientDrawable()
-        background.setColor(color)
-        background.cornerRadius = 12f
-        background.setStroke(1, shade(color))
-        button.background = background
-
-        val params = LinearLayout.LayoutParams(0, dp(context, 46), weight)
+        val params = LinearLayout.LayoutParams(0, dp(context, 44), weight)
         params.setMargins(dp(context, 2), dp(context, 2), dp(context, 2), dp(context, 2))
         button.layoutParams = params
         return button
     }
 
-    private fun shade(color: Int): Int {
-        val factor = 0.85
-        return Color.rgb(
-            (Color.red(color) * factor).toInt(),
-            (Color.green(color) * factor).toInt(),
-            (Color.blue(color) * factor).toInt(),
-        )
+    private fun rounded(color: Int): GradientDrawable {
+        val shape = GradientDrawable()
+        shape.setColor(color)
+        shape.cornerRadius = 10f
+        return shape
     }
 
     private fun dp(context: Context, value: Int): Int {

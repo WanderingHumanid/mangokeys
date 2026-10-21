@@ -36,20 +36,24 @@ class KeyboardSettings(context: Context) {
     /** The colours of the keyboard for the current theme. */
     fun palette(): Palette = if (darkMode) {
         Palette(
-            background = Color.parseColor("#121316"),
-            panel = Color.parseColor("#1D1F23"),
-            key = Color.parseColor("#2A2D33"),
-            keyText = Color.parseColor("#F2F3F5"),
-            panelText = Color.parseColor("#F2F3F5"),
+            background = Color.parseColor("#1B1D21"),
+            panel = Color.parseColor("#23262B"),
+            key = Color.parseColor("#31353B"),
+            function = Color.parseColor("#3A3F46"),
+            keyText = Color.parseColor("#E8EAED"),
+            functionText = Color.parseColor("#C4C8CE"),
+            panelText = Color.parseColor("#E8EAED"),
             accent = accent,
             accentText = readableOn(accent),
         )
     } else {
         Palette(
             background = Color.parseColor("#EDEFF2"),
-            panel = Color.parseColor("#FFFFFF"),
+            panel = Color.parseColor("#F7F8FA"),
             key = Color.parseColor("#FFFFFF"),
+            function = Color.parseColor("#DFE2E7"),
             keyText = Color.parseColor("#1A1C1E"),
+            functionText = Color.parseColor("#3C4043"),
             panelText = Color.parseColor("#1A1C1E"),
             accent = accent,
             accentText = readableOn(accent),
@@ -92,7 +96,9 @@ data class Palette(
     val background: Int,
     val panel: Int,
     val key: Int,
+    val function: Int,
     val keyText: Int,
+    val functionText: Int,
     val panelText: Int,
     val accent: Int,
     val accentText: Int,

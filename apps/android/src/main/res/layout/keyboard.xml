@@ -7,29 +7,33 @@
     android:orientation="vertical">
 
     <HorizontalScrollView
+        android:id="@+id/strip_scroll"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:background="#FFFFFF"
+        android:layout_height="wrap_content"
+        android:background="#F7F8FA"
         android:scrollbars="none">
 
         <LinearLayout
             android:id="@+id/suggestion_strip"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="44dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="4dp" />
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp" />
     </HorizontalScrollView>
 
     <View
+        android:id="@+id/strip_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#DDE0E5" />
+        android:background="#DFE2E7" />
 
     <LinearLayout
         android:id="@+id/keys"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="3dp" />
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 </LinearLayout>

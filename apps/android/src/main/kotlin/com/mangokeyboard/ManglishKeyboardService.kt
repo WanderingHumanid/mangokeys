@@ -31,6 +31,7 @@ import java.io.File
 class ManglishKeyboardService : InputMethodService() {
 
     private lateinit var keyboard: Keyboard
+    private lateinit var view: View
     private lateinit var strip: LinearLayout
     private lateinit var keys: LinearLayout
     private lateinit var settings: KeyboardSettings
@@ -39,11 +40,15 @@ class ManglishKeyboardService : InputMethodService() {
     private var beam = 4
     private var completion = true
     private var wordList = true
+    private var shift = KeyboardLayout.Shift.OFF
+    private var numbers = false
     private var palette = Palette(
         background = android.graphics.Color.parseColor("#EDEFF2"),
-        panel = android.graphics.Color.WHITE,
+        panel = android.graphics.Color.parseColor("#F7F8FA"),
         key = android.graphics.Color.WHITE,
+        function = android.graphics.Color.parseColor("#DFE2E7"),
         keyText = android.graphics.Color.parseColor("#1A1C1E"),
+        functionText = android.graphics.Color.parseColor("#3C4043"),
         panelText = android.graphics.Color.parseColor("#1A1C1E"),
         accent = KeyboardSettings.DEFAULT_ACCENT,
         accentText = android.graphics.Color.WHITE,
@@ -59,7 +64,7 @@ class ManglishKeyboardService : InputMethodService() {
 
     /** Build the model. The settings can change it, so it is built again. */
     private fun buildKeyboard() {
-        val models = copyAssets()
+        val models = ModelAssets(this).directory
         val lexicon = if (settings.wordList) {
             Lexicon().load(File(models, "lexicon"))
         } else {
@@ -79,20 +84,11 @@ class ManglishKeyboardService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
-        val view = layoutInflater.inflate(R.layout.keyboard, null)
+        view = layoutInflater.inflate(R.layout.keyboard, null)
         strip = view.findViewById(R.id.suggestion_strip)
         keys = view.findViewById(R.id.keys)
-        KeyboardLayout.build(
-            this,
-            keys,
-            palette,
-            onKey = { type(it) },
-            onSpace = { space() },
-            onBackspace = { backspace() },
-            onEnter = { enter() },
-            onGlobe = { switchKeyboard() },
-        )
-        applyTheme(view)
+        buildKeys()
+        applyTheme()
         return view
     }
 
@@ -109,23 +105,44 @@ class ManglishKeyboardService : InputMethodService() {
             buildKeyboard()
         }
         palette = settings.palette()
-        applyTheme(inputView())
-        KeyboardLayout.build(
-            this,
-            keys,
-            palette,
-            onKey = { type(it) },
-            onSpace = { space() },
-            onBackspace = { backspace() },
-            onEnter = { enter() },
-            onGlobe = { switchKeyboard() },
-        )
+        shift = KeyboardLayout.Shift.OFF
+        numbers = false
+        buildKeys()
+        applyTheme()
         refresh()
     }
 
     override fun onFinishInput() {
         super.onFinishInput()
         show(emptyList())
+    }
+
+    // ------------------------------------------------------------------ keys
+
+    private fun buildKeys() {
+        KeyboardLayout.build(
+            this,
+            keys,
+            palette,
+            shift,
+            numbers,
+            onKey = { type(it) },
+            onShift = { cycleShift() },
+            onNumbers = { numbers = true; buildKeys() },
+            onLetters = { numbers = false; buildKeys() },
+            onBackspace = { backspace() },
+            onEnter = { enter() },
+            onGlobe = { switchKeyboard() },
+        )
+    }
+
+    private fun cycleShift() {
+        shift = when (shift) {
+            KeyboardLayout.Shift.OFF -> KeyboardLayout.Shift.ON
+            KeyboardLayout.Shift.ON -> KeyboardLayout.Shift.LOCKED
+            KeyboardLayout.Shift.LOCKED -> KeyboardLayout.Shift.OFF
+        }
+        buildKeys()
     }
 
     // ------------------------------------------------------------------ input
@@ -141,7 +158,16 @@ class ManglishKeyboardService : InputMethodService() {
     private fun isWordChar(char: Char): Boolean = char.isLetter() || char == '\'' || char == '-'
 
     private fun type(letter: String) {
-        currentInputConnection?.commitText(letter, 1)
+        val text = when (shift) {
+            KeyboardLayout.Shift.LOCKED -> letter
+            KeyboardLayout.Shift.ON -> letter.uppercase()
+            KeyboardLayout.Shift.OFF -> letter
+        }
+        if (shift == KeyboardLayout.Shift.ON) {
+            shift = KeyboardLayout.Shift.OFF
+            buildKeys()
+        }
+        currentInputConnection?.commitText(text, 1)
         refresh()
     }
 
@@ -232,15 +258,17 @@ class ManglishKeyboardService : InputMethodService() {
             button.text = word
             button.textSize = 16f
             button.isAllCaps = false
+            button.setPadding(dp(14), 0, dp(14), 0)
+            button.setBackgroundColor(android.graphics.Color.TRANSPARENT)
             // The first suggestion is the one the space bar commits, so it
             // gets the accent colour.
-            val colour = if (index == 0) palette.accent else palette.key
-            val text = if (index == 0) palette.accentText else palette.keyText
+            val colour = if (index == 0) palette.accent else palette.panel
+            val text = if (index == 0) palette.accentText else palette.panelText
             button.setTextColor(text)
-            button.background = rounded(colour)
+            button.background = rounded(colour, if (index == 0) 18f else 10f)
             button.setOnClickListener { replaceWord(word) }
             val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40),
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(36),
             )
             params.setMargins(dp(4), 0, dp(4), 0)
             button.layoutParams = params
@@ -248,55 +276,25 @@ class ManglishKeyboardService : InputMethodService() {
         }
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
-
-    private fun rounded(colour: Int): android.graphics.drawable.GradientDrawable {
+    private fun rounded(colour: Int, radius: Float): android.graphics.drawable.GradientDrawable {
         val shape = android.graphics.drawable.GradientDrawable()
         shape.setColor(colour)
-        shape.cornerRadius = 16f
-        shape.setStroke(1, palette.accent)
+        shape.cornerRadius = radius
         return shape
     }
 
     // ------------------------------------------------------------------ theme
 
-    private fun inputView(): View? = window?.window?.decorView?.rootView
-
-    private fun applyTheme(view: View?) {
-        val target = view ?: return
-        target.setBackgroundColor(palette.background)
+    private fun applyTheme() {
+        if (!::view.isInitialized) return
+        view.findViewById<View>(R.id.keyboard_root)?.setBackgroundColor(palette.background)
+        view.findViewById<View>(R.id.strip_scroll)?.setBackgroundColor(palette.panel)
+        view.findViewById<View>(R.id.strip_divider)?.setBackgroundColor(palette.function)
         strip.setBackgroundColor(palette.panel)
+        keys.setBackgroundColor(palette.background)
     }
 
-    // ----------------------------------------------------------------- assets
-
-    private fun copyAssets(): File {
-        val target = File(filesDir, "model")
-        target.mkdirs()
-        for (name in listOf("encoder.onnx", "decoder.onnx", "tokenizer.json")) {
-            copyAsset(name, File(target, name))
-        }
-        val prefix = File(target, "prefix")
-        prefix.mkdirs()
-        for (name in listOf("prefix-encoder.onnx", "prefix-decoder.onnx")) {
-            copyAsset(name, File(prefix, name.removePrefix("prefix-")))
-        }
-        val lexicon = File(target, "lexicon")
-        lexicon.mkdirs()
-        for (name in listOf("words.txt", "index.bin")) {
-            copyAsset("lexicon/$name", File(lexicon, name))
-        }
-        copyAsset("ngram.txt", File(target, "ngram.txt"))
-        return target
-    }
-
-    private fun copyAsset(name: String, target: File) {
-        if (target.exists() && target.length() > 0) return
-        assets.open(name).use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        }
-    }
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val TAG = "MangoKeys"
