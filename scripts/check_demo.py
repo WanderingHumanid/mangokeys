@@ -127,6 +127,16 @@ def main() -> None:
             print("\nthe backspace did not delete")
             raise SystemExit(1)
 
+        # The shift shows the letters in capitals and lights up.
+        page.click("#keys .key[data-action='shift']")
+        page.wait_for_timeout(300)
+        capital = page.locator("#keys .key[data-key='q']").inner_text()
+        lit = page.locator("#keys .key[data-action='shift']").get_attribute("class")
+        print(f"shifted      {capital} ({'lit' if 'active' in lit else 'not lit'})")
+        if capital != "Q" or "active" not in lit:
+            print("\nthe shift does not show the capitals")
+            raise SystemExit(1)
+
         mobile = browser.new_page(viewport={"width": 390, "height": 844})
         mobile.goto(args.url, wait_until="networkidle")
         mobile.wait_for_function(

@@ -273,6 +273,16 @@ body {
   background: #454b53;
 }
 
+/* The shift key is lit while it is on. */
+.key.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.key.active:hover {
+  background: #35709f;
+}
+
 .key-accent {
   background: var(--accent);
   color: #fff;

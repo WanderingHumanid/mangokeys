@@ -55,8 +55,12 @@ object KeyboardLayout {
         container.setBackgroundColor(palette.background)
         val rows = if (numbers) NUMBERS else LETTERS
 
-        container.addView(letterRow(context, rows[0], palette, 0, onKey))
-        container.addView(letterRow(context, rows[1], palette, dp(context, 12), onKey))
+        // The letters are shown in capitals while the shift is on, so that
+        // the keyboard says what it is going to type.
+        val shifted = shift == Shift.ON || shift == Shift.LOCKED
+
+        container.addView(letterRow(context, rows[0], palette, 0, shifted, onKey))
+        container.addView(letterRow(context, rows[1], palette, dp(context, 12), shifted, onKey))
 
         val third = LinearLayout(context)
         third.orientation = LinearLayout.HORIZONTAL
@@ -66,14 +70,22 @@ object KeyboardLayout {
                 key(context, "abc", 1.4f, palette.function, palette.functionText) { onLetters() },
             )
         } else {
+            // The shift key is lit while it is on, the way it is on the
+            // browser demo.
+            val colour = if (shifted) palette.accent else palette.function
+            val text = if (shifted) palette.accentText else palette.functionText
             third.addView(
-                key(context, shiftLabel(shift), 1.4f, palette.function, palette.functionText) {
+                key(context, shiftLabel(shift), 1.4f, colour, text) {
                     onShift()
                 },
             )
         }
         for (label in rows[2]) {
-            third.addView(key(context, label, 1f, palette.key, palette.keyText) { onKey(label) })
+            third.addView(
+                key(context, shownLabel(label, shifted), 1f, palette.key, palette.keyText) {
+                    onKey(label)
+                },
+            )
         }
         third.addView(
             key(context, "⌫", 1.4f, palette.function, palette.functionText) { onBackspace() },
@@ -114,6 +126,7 @@ object KeyboardLayout {
         row: List<String>,
         palette: Palette,
         inset: Int,
+        shifted: Boolean,
         onKey: (String) -> Unit,
     ): View {
         val line = LinearLayout(context)
@@ -123,9 +136,25 @@ object KeyboardLayout {
             line.setPadding(inset, 0, inset, 0)
         }
         for (label in row) {
-            line.addView(key(context, label, 1f, palette.key, palette.keyText) { onKey(label) })
+            line.addView(
+                key(context, shownLabel(label, shifted), 1f, palette.key, palette.keyText) {
+                    onKey(label)
+                },
+            )
         }
         return line
+    }
+
+    /**
+     * The label of a key.
+     *
+     * Only the letters change. The digits, the symbols and the words stay as
+     * they are.
+     */
+    private fun shownLabel(label: String, shifted: Boolean): String {
+        if (!shifted) return label
+        if (label.length != 1 || !label[0].isLowerCase()) return label
+        return label.uppercase()
     }
 
     private fun rowParams(): LinearLayout.LayoutParams = LinearLayout.LayoutParams(

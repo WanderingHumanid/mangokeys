@@ -59,7 +59,17 @@ export class OnScreenKeyboard {
     if (this.numbers) {
       third.appendChild(this.key("abc", "function", "letters", 1.4));
     } else {
-      third.appendChild(this.key("shift", "function", "shift", 1.4, this.shiftIcon()));
+      // The shift key lights up while it is on, the way it does on the
+      // phone.
+      const active = this.shifted();
+      const button = this.key(
+        "shift",
+        active ? "function active" : "function",
+        "shift",
+        1.4,
+        this.shiftIcon(),
+      );
+      third.appendChild(button);
     }
     for (const label of rows[2]) {
       third.appendChild(this.key(label, "letter", "char", 1));
@@ -99,7 +109,7 @@ export class OnScreenKeyboard {
       button.classList.add("key-icon");
       button.innerHTML = icon;
     } else {
-      button.textContent = label;
+      button.textContent = this.displayLabel(label);
     }
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -107,6 +117,24 @@ export class OnScreenKeyboard {
     });
     this.buttons.set(label, button);
     return button;
+  }
+
+  /** The shift is on when it is on, and when it is locked. */
+  shifted() {
+    return this.shift === SHIFT_ON || this.shift === SHIFT_LOCKED;
+  }
+
+  /**
+   * The label of a key.
+   *
+   * The letters are shown in capitals while the shift is on, so that the
+   * keyboard says what it is going to type. Only the letters change, the
+   * digits and the symbols stay as they are.
+   */
+  displayLabel(label) {
+    if (!this.shifted()) return label;
+    if (label.length !== 1 || !/[a-z]/.test(label)) return label;
+    return label.toUpperCase();
   }
 
   press(label, action) {
