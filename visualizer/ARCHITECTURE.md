@@ -7,9 +7,11 @@ A mathematically authentic real-time visualization dashboard for the MangoKeys C
 ## 1. Architectural Philosophy & Mission
 
 ### The Core Objective
+
 Provide complete mathematical transparency into how the character-level Transformer transliterates Manglish into Malayalam. Rather than displaying simulated or decorative graphics, every curve, ribbon, heatmap cell, and tree branch in this visualizer is derived directly from authentic ONNX model inference.
 
 ### Invariant Design Principles
+
 1. **100% Mathematically Authentic Tensors (Zero Fake Animations)**:
    - Cross-attention ribbons are scaled by the authentic softmax attention matrix:
      $$A_{ij} = \text{softmax}\left(\frac{Q_i K_j^T}{\sqrt{d_k}}\right)$$
@@ -26,7 +28,7 @@ Provide complete mathematical transparency into how the character-level Transfor
 
 ## 2. High-Level System Architecture
 
-```
+```text
   +-------------------------------------------------------------------------+
   |                          Unified Desktop Source                         |
   |             (Live Desktop Typer Daemon / Browser Input Field)           |
@@ -67,6 +69,7 @@ Provide complete mathematical transparency into how the character-level Transfor
 ## 3. Subsystem Breakdown
 
 ### 3.1 Neural Extraction Engine (`extractor.py`)
+
 - **Model Topology**: Character-level sequence-to-sequence Transformer with 5.37M parameters (`d_model = 256`, `d_ff = 512`, `n_heads = 4`, 4 encoder layers, 4 decoder layers).
 - **Execution Mechanism**:
   1. *Encoding*: Processes the source Latin string through `encoder.onnx` to generate memory tensor embeddings.
@@ -75,6 +78,7 @@ Provide complete mathematical transparency into how the character-level Transfor
   4. *Beam Exploration*: Maintains active vs. pruned hypothesis branches with cumulative log-likelihood scores.
 
 ### 3.2 Asynchronous Telemetry Server (`server.py`)
+
 - Built on `aiohttp` for non-blocking bi-directional WebSocket communication.
 - **Auto-Venv Re-Execution**: Automatically detects if system Python lacks runtime dependencies (`onnxruntime`, `aiohttp`) and re-executes inside `visualizer/.venv` without requiring manual virtual environment activation.
 - **REST & WebSocket Endpoints**:
@@ -83,6 +87,7 @@ Provide complete mathematical transparency into how the character-level Transfor
   - `/api/health`: Health status, active model path, and memory telemetry.
 
 ### 3.3 Interactive UI Engine (`index.html`, `styles.css`, `visualizer.js`)
+
 - **Cyberpunk Dark Aesthetic**: Obsidian surface (`#07080d`), frosted glass panels (`backdrop-filter: blur(14px)`), electric cyan (`#00f2fe`), neon violet (`#b537f2`), and warning amber (`#ff9e00`).
 - **Interactive SVG Ribbons**: Smooth cubic Bezier paths visualizing attention flux. Allows isolating individual attention heads (Heads 1 through 4) or viewing the cross-head average.
 - **Step Generation Cards**: Sequentially renders each autoregressive prediction step, showing the selected token, its beam score, and the top-4 alternative candidates considered.
@@ -110,27 +115,36 @@ The server emits a structured telemetry payload for every transliteration step:
 ## 5. How to Run
 
 ### Method 1: Via the Unified Launcher (Recommended)
+
 Launch via the interactive terminal dashboard:
+
 ```bash
 python3 launcher.py
 ```
+
 Select **Option 2 (Visualizer Server)** or run both services together:
+
 ```bash
 python3 launcher.py --both
 ```
 
 ### Method 2: Direct Execution
+
 ```bash
 # Launch server on default port 5000
 python3 visualizer/server.py --port 5000
 ```
+
 Open your browser and navigate to:
-```
+
+```text
 http://localhost:5000
 ```
 
 ### Method 3: Headless API Verification
+
 Query the visualizer engine via HTTP GET / POST:
+
 ```bash
 # Check server health
 curl -s http://localhost:5000/api/health

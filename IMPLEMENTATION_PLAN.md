@@ -17,7 +17,7 @@
 The project is built and running. This section records where each part stands.
 
 | Component | State | Where |
-|---|---|---|
+| --- | --- | --- |
 | Data pipeline | ✅ working on the real 4.1M-pair corpus | `data/scripts/` |
 | Augmentation rules (15) | ✅ with unit tests | `model/src/augment.py` |
 | Prefix training pairs | ✅ the model can stop in the middle of a word | `model/src/prefix.py` |
@@ -44,7 +44,7 @@ The project is built and running. This section records where each part stands.
 ### The headline result
 
 | System | Top-1 | CER | Top-5 | Size | ms / word |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
 | **Our model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | **6.1 MB** | 27.4 |
 | **Our model with the word list** | **57.4%** | **15.9%** | - | 6.1 MB | 33 |
@@ -71,7 +71,7 @@ Two models, same architecture, same row count, same epochs, same seed. Only
 the style of the extra rows differs.
 
 | Training data | Standard test set | | Adhoc test set | |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | | Top-1 | CER | Top-1 | CER |
 | standard rows only | **56.2%** | **15.4%** | 6.2% | 49.7% |
 | standard + adhoc rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
@@ -112,7 +112,7 @@ careful spelling and forty points worse at real typing.**
 ## 1. Project at a glance
 
 | | |
-|---|---|
+| --- | --- |
 | **Problem** | Convert Manglish (Roman/Manglish) → മലയാളം. Harder than it looks: real users type in a style no public dataset covers. |
 | **Contribution** | ① A systematic study of the **adhoc typing gap** (CER 7.4% → 22.7%). ② A **targeted augmentation pipeline** that closes it. ③ A compact **5.3M-param model** that fits in 5.4 MB. ④ A working **on-device Android demo** inside a real shipping keyboard. |
 | **Model** | Char-level Transformer encoder-decoder, 4+4 layers, d=256, ffn=512, 4 heads (~5.3M params) |
@@ -142,7 +142,7 @@ That is a defensible, self-contained ML contribution. It has: a problem, a measu
 The most important number in this entire document:
 
 | Test set | Typing style | CER (Bi-LSTM + attention, published) |
-|---|---|---|
+| --- | --- | --- |
 | IndoNLP-2025 **Test Set-1** | standard, careful typing | **7.4%** |
 | IndoNLP-2025 **Test Set-2** | adhoc — vowels dropped, gemination collapsed | **22.7%** |
 
@@ -169,6 +169,7 @@ At the expo, type a word in careful spelling and then type it the way you actual
 ## 3. Scope
 
 ### In scope
+
 - Char-level transliteration model: Manglish → മലയാളം.
 - Data pipeline: download → normalize → filter → augment → split.
 - A **systematic evaluation**: 7 test sets, 4 metrics, 10 buckets, a 11-class error taxonomy.
@@ -181,7 +182,7 @@ At the expo, type a word in careful spelling and then type it the way you actual
 ### Out of scope (and why)
 
 | Cut | Reason |
-|---|---|
+| --- | --- |
 | Reverse model (മലയാളം → Manglish) | Nice-to-have, not the thesis. Add only if you finish early. |
 | Play Store release, AAB, policy, Data Safety | **You don't need it.** Sideload the APK. Saves ~2 weeks and all the legal overhead. |
 | Voice typing, handwriting, stickers, emoji, themes | Not ML. Fork an existing keyboard (§11.1) and inherit them for free. |
@@ -209,7 +210,7 @@ Cut in this order. Each is worth roughly a week.
 ### 4.1 Dakshina (Google) — the brief's dataset, and it's good
 
 | Property | Value |
-|---|---|
+| --- | --- |
 | Repo | `github.com/google-research-datasets/dakshina` — **README only**; the data is in the tarball |
 | Download | `https://storage.googleapis.com/gresearch/dakshina/dakshina_dataset_v1.0.tar` (~9.16 GB, all 12 languages) |
 | Malayalam path | `ml/` → `native_script_wikipedia/`, `lexicons/`, `romanized/` |
@@ -219,7 +220,7 @@ Cut in this order. Each is worth roughly a week.
 **The exact files you need:**
 
 | File | Contents | Count (ml) |
-|---|---|---|
+| --- | --- | --- |
 | `ml/lexicons/ml.translit.sampled.train.tsv` | `native \t romanization \t attestation_count` | 25,000 word types |
 | `ml/lexicons/ml.translit.sampled.dev.tsv` | same | 2,500 word types |
 | `ml/lexicons/ml.translit.sampled.test.tsv` | same | 2,500 word types |
@@ -230,21 +231,24 @@ Cut in this order. Each is worth roughly a week.
 | `ml/native_script_wikipedia/ml.wiki-filt.train.text.shuf.txt.gz` | native Wikipedia | 747.5K sentences |
 
 **Why Dakshina is worth the download time (~9 GB):**
+
 - Its romanizations were **elicited from native speakers** ("attested romanizations"). Aksharantar's *mined* rows were machine-generated and follow a stricter scheme. **Dakshina's roman forms are the closest thing to real Manglish in any public dataset.** This is exactly what you need for the adhoc story.
 - The `attestation_count` column tells you how many annotators agreed on a romanization — use it as a confidence weight and to filter noisy forms.
 - It's the canonical eval set. Every paper in this space reports on it, so you can compare directly.
 
 > **Tip:** you don't need the whole 9 GB tarball. It's a plain `.tar` — you can stream it and extract only the `ml/` subtree:
+>
 > ```bash
 > curl -L https://storage.googleapis.com/gresearch/dakshina/dakshina_dataset_v1.0.tar \
 >   | tar -x --wildcards --no-anchored 'ml/*'
 > ```
+>
 > This avoids storing 9 GB. The `ml/` subtree is a small fraction of it.
 
 ### 4.2 Aksharantar (AI4Bharat) — volume
 
 | Property | Value |
-|---|---|
+| --- | --- |
 | Repo | `huggingface.co/datasets/ai4bharat/Aksharantar` — Malayalam slice `ml.zip`, ~125 MB |
 | Volume (mal-en) | **~4,101K training pairs**; ~7.6K validation; ~12.5K test |
 | Total corpus | 26M pairs / 20 languages |
@@ -256,6 +260,7 @@ Cut in this order. Each is worth roughly a week.
 **Why you need it:** Dakshina gives you ~30K unique Malayalam word types. Aksharantar gives you 4.1M pairs. Together, they let you (a) train a real model, and (b) show a clean ablation on *dataset size*.
 
 **The `src` field is your best experimental lever.** Split your training data by `src`:
+
 - `man` (manually collected) — small, human-written, closest to real typing.
 - `sam`/`wik`/`ind` (mined) — large, machine-generated, standardized scheme.
 
@@ -264,6 +269,7 @@ Run the model on each subset separately. If performance differs a lot, **you hav
 ### 4.3 Evaluation-only — the north star
 
 **IndoNLP-2025 shared task test sets** (accompanying Bajiyo et al., IndoNLP 2025):
+
 - **Test Set-1** — general/standard typing patterns.
 - **Test Set-2** — adhoc typing patterns, most vowel indicators missing.
 
@@ -280,6 +286,7 @@ Published Bi-LSTM baseline: **CER 7.4% / 22.7%**. **This is the benchmark your p
 **Run this in Week 1, before writing a single line of training code.** If your trained model doesn't beat it, you ship it and your project becomes "we benchmarked the ecosystem and found where the gap is" — which is *also* a valid project, but a weaker one. Knowing this number in Week 1 costs you 30 minutes and can save you 5 weeks.
 
 **Also evaluate:**
+
 - **🟢 The Ezhuthola rule engine — use it verbatim, do not build it.** This is your rule-based
   baseline and it already exists, in production, in 3 KB. See §4.7. This is the single most
   convincing comparison in your report, because the baseline is a *real shipping app*, not a toy
@@ -292,7 +299,7 @@ Published Bi-LSTM baseline: **CER 7.4% / 22.7%**. **This is the benchmark your p
 machine learning whatsoever.** Evidence:
 
 | Check | Result |
-|---|---|
+| --- | --- |
 | `gradle/libs.versions.toml` | Only AndroidX / Compose / JUnit. **No ONNX Runtime, no TensorFlow, no TFLite, no ML library.** |
 | `app/src/main/assets/` | `ezhuthola_rules.json` (2,987 B) + word lists + fonts. **No `.onnx` / `.tflite` / `.pt` / model file.** |
 | `CREDITS.md` | Credits word lists, Unicode data, CMUdict, fonts. **No model, no training data, no ML runtime.** |
@@ -304,7 +311,7 @@ machine learning whatsoever.** Evidence:
 **What the rules file contains** (`ezhuthola_rules.json`) — this is the whole scheme in 3 KB:
 
 | Section | Contents |
-|---|---|
+| --- | --- |
 | `independent_vowels` / `vowel_signs` | `a/aa/A`, `i/ee/ii/I`, `u/oo/uu/U`, `e/E/ae`, `ai/ei`, `o/O/oa`, `au/ou` |
 | `consonants` | 50 entries incl. `q`→ഖ, `Sh`/`shh`→ഷ, `zh`→ഴ, `L`→ള, `R`/`rr`→റ, `w`→വ, `f`→ഫ, `z`→സ |
 | `clusters` | `nt`→ന്റ, `nk`→ങ്ക, `nch`→ഞ്ച, `ksh`→ക്ഷ, `x`→ക്സ, `nd`→ണ്ട, `mb`→മ്പ, `nth`→ന്ത, `sht`→ഷ്ട |
@@ -339,7 +346,7 @@ rules in §5.2 were aimed at the right things:
 **Also read, and reuse rather than rebuild:**
 
 | File | Why it matters |
-|---|---|
+| --- | --- |
 | `engine/MalayalamEngine.kt` | The rule engine. Parse → render → expand. Your candidate generator. |
 | `engine/SuffixSplitter.kt` | **This is the "M1 morphology module" from §7.4, already implemented** — with the real sandhi rules: ം-noun `ത്ത` gemination, chillu+vowel, `y`/`v` glides, `യ്` insertion before `ക്ക്` after an അ-ending, and the `ATH` variants (`athth`/`atth`/`ath`). Don't rebuild it. |
 | `engine/MalayalamSuggester.kt` | The frequency-list ranker you are replacing. |
@@ -416,7 +423,7 @@ Get these wrong and you ship invisible broken characters that render as boxes on
 **Trap 1 — Chillu dual encoding.** Malayalam's vowel-less "chillu" forms have two Unicode representations:
 
 | Form | Example | Where it comes from |
-|---|---|---|
+| --- | --- | --- |
 | Legacy (Unicode 5.0) | `ണ` + `്` + `ം` (consonant + virama + ZWJ) | 2019-era Wikipedia → **present in Dakshina** |
 | **Atomic (preferred)** | `ൺ` U+0D7A | `ൻ` U+0D7B, `ർ` U+0D7C, `ൽ` U+0D7D, `ൾ` U+0D7E, `ൿ` U+0D7F, plus historic `ൔ` U+0D54 / `ൕ` U+0D55 / `ൖ` U+0D56 (Unicode 9.0, 2016) |
 
@@ -427,6 +434,7 @@ Unicode's own guidance: *"applications should also be prepared to handle data in
 **Trap 3 — Don't use NFKC.** It destroys the chillu-vs-virama distinction. Use **NFC** only (which handles canonical reordering of Malayalam vowel signs like ൊ ോ ൌ ൗ).
 
 **Trap 4 — Roman case carries meaning.** In Mozhi, `T`/`Th`/`D`/`Dh`/`N` are retroflex ട/ഠ/ഡ/ഢ/ണ; `t`/`th`/`d`/`dh`/`n` are dental ത/ഥ/ദ/ധ/ന. Uppercase is *meaningful*. Manglish users rarely press Shift, so:
+
 - Keep case in the source (don't lowercase unconditionally — it destroys retroflex info).
 - **Augment with case-folded variants** so the model also handles lowercase-only typing.
 - The retroflex/dental confusion is a *feature* of the problem, not a bug to normalize away.
@@ -438,7 +446,7 @@ Unicode's own guidance: *"applications should also be prepared to handle data in
 This is where your project lives. The rules below are derived from how Malayalis actually type, from Mozhi's "Naturalness" goal, and from the observed CER cliff.
 
 | # | Rule | Example | Why |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | A1 | **Inherent-vowel drop** | `sundari` → `sundr`; `kerala` → `keral` | Malayalam's inherent `a` is often not typed. **The single largest cause of the adhoc CER blowup.** |
 | A2 | **Gemination collapse** | `katt` → `kat`; `pannan` → `panan` | Modern Malayalam mostly doesn't geminate; typers write one consonant. |
 | A3 | **Final-consonant drop** | `keralathil` → `keralathl` | Fast typers drop it. |
@@ -462,7 +470,7 @@ This is where your project lives. The rules below are derived from how Malayalis
 ### 5.3 Splits
 
 | Split | Source | Size | Purpose |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `train` | Dakshina lexicon + Aksharantar train + augmented | ~5.5M | Training |
 | `valid` | Aksharantar valid | 7.6K | Early stopping |
 | `test-standard` | Aksharantar test | 12.5K | Held-out general |
@@ -490,7 +498,7 @@ This is where your project lives. The rules below are derived from how Malayalis
 ### 6.2 Config — `ml-mini`
 
 | Hyperparameter | Value | Rationale |
-|---|---|---|
+| --- | --- | --- |
 | Architecture | Transformer enc-dec, pre-norm | Matches IndicXlit's proven recipe (`--layernorm-embedding`, `--decoder-normalize-before`) |
 | Encoder layers | 4 | IndicXlit uses 6; 4 suffices for one language pair |
 | Decoder layers | 4 | — |
@@ -525,7 +533,7 @@ TOTAL                                       ≈ 5,330,768  (5.3M)
 ```
 
 | Precision | Size |
-|---|---|
+| --- | --- |
 | fp32 | 21.3 MB |
 | fp16 | 10.6 MB |
 | **int8 (dynamic, weights)** | **~5.4 MB** ← the demo artifact |
@@ -535,7 +543,7 @@ For reference, IndicXlit is 6+6 layers with ffn=1024 ≈ **11M params** — `ml-
 ### 6.3 Optional CTC variant
 
 | Property | Value |
-|---|---|
+| --- | --- |
 | Architecture | 6-layer encoder + CTC head (no decoder) |
 | Params | ~4.8M |
 | Latency | ~5–10 ms/word (single forward pass) |
@@ -556,7 +564,7 @@ Bonus: **round-trip consistency** (`roman → native → roman == roman`) is a f
 ### 7.1 Decoding
 
 | Setting | Value | Where |
-|---|---|---|
+| --- | --- | --- |
 | Greedy | beam=1 | Live preview, latency-critical path |
 | **Beam search** | **beam = 4–8** | Commit path. IndicXlit uses beam 4; the community ONNX port reports ~6% gain from beam-4 + rescoring |
 | n-best | top 5 | Feeds the suggestion strip |
@@ -604,7 +612,7 @@ user types "sneham"
 **Why this beats a from-scratch seq2seq:**
 
 | | From-scratch seq2seq | Rules → neural rank |
-|---|---|---|
+| --- | --- | --- |
 | Context-sensitive orthography (virama, chillu, anuswaram, `nj`→ഞ്ഞ) | Must be *learned* from data; commonly wrong | Handled **deterministically and correctly** |
 | Ambiguity (ശ/ഷ/സ) | Must be learned | Rules **enumerate** the options; model **picks** |
 | Search space | Beam over the full output vocabulary | Score a bounded set of ≤300 well-formed candidates |
@@ -624,6 +632,7 @@ difference in output is attributable purely to the ranker. That is a clean, airt
 > char-level model and quantify the gain.*
 
 That is a *much* better ML project than "we trained a seq2seq from scratch," because:
+
 - The baseline is a **real, shipping, zero-permission app** — not a toy you wrote.
 - The comparison is apples-to-apples.
 - The demo is a **real app you can install next to yours** and type into.
@@ -647,7 +656,7 @@ Manglish compounds are often typed without spaces: `entepremangalicheyil` for "e
 A pure seq2seq produces `കേരളതിൽ` here. It has no idea that Malayalam postpositions **double the preceding consonant** when they start with `t`. This is **morphology, not transliteration**, and it's the most visible failure a user will spot.
 
 | Option | Approach | Effort | Quality |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **M1 (recommended)** | **Suffix lexicon + sandhi.** Strip a known postposition (`-il`, `-ude`, `-inte`, `-e`, `-um`, `-aayi`, `-ayirunnu`, `-aakki`…) from the roman token, transliterate the stem, apply the gemination rule. | 2–3 days | Very high on common cases |
 | M2 | Augment training data with `stem+suffix` pairs generated from a suffix lexicon | ~1 day + lexicon | High, given a good lexicon |
 | M3 | Full morphological analyzer (SMC's `mlmorph`) | Weeks | Overkill |
@@ -663,7 +672,7 @@ A pure seq2seq produces `കേരളതിൽ` here. It has no idea that Malaya
 ### 8.1 Recipe
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Framework | PyTorch 2.x |
 | Loss | Label-smoothed cross-entropy (ε = 0.1) |
 | Optimizer | AdamW, β = (0.9, 0.98), weight decay 0.01 |
@@ -678,7 +687,7 @@ A pure seq2seq produces `കേരളതിൽ` here. It has no idea that Malaya
 ### 8.2 Hardware
 
 | Stage | Requirement |
-|---|---|
+| --- | --- |
 | Training (5.3M model, 5.5M pairs, ~20 epochs) | Single **RTX 4090 / A100** ≈ 4–8 h, or a **T4 / L4** ≈ 1–2 days. **Colab / Kaggle free T4 is sufficient.** |
 | Ablations + 3 seeds | Same, ×3–4 runs. Still free-tier territory. |
 | Export / quantize / eval | CPU-only laptop, minutes |
@@ -697,7 +706,7 @@ A pure seq2seq produces `കേരളതിൽ` here. It has no idea that Malaya
 Run in order. Each has a **kill criterion**. This table becomes your report's results section.
 
 | # | Experiment | Purpose | Kill criterion |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **E0** | **Baselines**: IndicXlit, **Ezhuthola's rule engine** (use their code, §4.7), (optionally) Bi-LSTM+attn on all eval sets | The numbers you must beat | — |
 | **E1** | `ml-mini` on Dakshina + Aksharantar, **no augmentation** | Reproduce the adhoc cliff | — |
 | **E2** | E1 + full augmentation pipeline | **The main hypothesis** | **If adhoc CER improves < 3 points absolute, the augmentation design is wrong → go to E3 before E4** |
@@ -721,7 +730,7 @@ Full protocol in [`docs/EVAL_PROTOCOL.md`](docs/EVAL_PROTOCOL.md). Summary:
 ### 9.1 Metrics
 
 | Metric | Definition | Why |
-|---|---|---|
+| --- | --- | --- |
 | **CER** | `Σ Levenshtein / Σ len(ref)`, micro-averaged | Primary. Standard in this literature. |
 | **WER** | Word-level error rate | Secondary. |
 | **Top-1** | `fraction(hyp == ref)` exact match | **The headline number** — this is what Dakshina/IndicXlit report. |
@@ -748,7 +757,7 @@ test-manual          N       0.XXX   0.XXX    0.0XX    0.0XX   0.XXX
 ### 9.3 Bucketed breakdown (aggregate CER hides the failures that matter)
 
 | Bucket | Why |
-|---|---|
+| --- | --- |
 | Input length (1–3 / 4–6 / 7–9 / 10+) | Long words accumulate error |
 | Frequency (head / mid / tail) | Memorisation vs. generalisation |
 | **In-vocab vs. OOV** | 🔴 **The most important one.** In the shipped product, in-vocab words hit the dictionary and never reach the model — so the model's real-world quality ≈ its **OOV** performance. Report OOV separately. |
@@ -782,7 +791,7 @@ Two demos. Build the web one first — it is the safe path.
 A single-page app that runs the model **entirely in the browser**. No server, no network, works on the booth laptop with the wifi off.
 
 | Feature | Detail |
-|---|---|
+| --- | --- |
 | **Live transliteration** | Type Manglish → Malayalam, updating per keystroke (debounced 80 ms, in a Web Worker) |
 | **🔴 The killer feature: style toggle** | Toggle *careful spelling* ↔ *how people actually type*. The model's output quality visibly changes. **This single toggle demonstrates your entire project.** |
 | **Rule vs. model diff** | Side-by-side Mozhi-rule output vs. model output, with a character-level diff. Shows where the ML adds value. |
@@ -796,7 +805,7 @@ A single-page app that runs the model **entirely in the browser**. No server, no
 **Effort:** ~9 days.
 
 | Task | Days |
-|---|---|
+| --- | --- |
 | ONNX export + quantize + web smoke test | 1 |
 | Next.js scaffold + worker + tokenizer | 2 |
 | UI: input/output panes, style toggle | 2 |
@@ -809,6 +818,7 @@ A single-page app that runs the model **entirely in the browser**. No server, no
 Proves the model runs **on-device with zero permissions**. Sideload an APK; no Play Store involved.
 
 **What to build:** a minimal `InputMethodService` that:
+
 - Provides a QWERTY key row (or reuses the host keyboard's hardware input).
 - On word boundary, runs the model and shows the top-5 Malayalam candidates in a suggestion strip.
 - Tapping a candidate commits it.
@@ -835,7 +845,7 @@ Proves the model runs **on-device with zero permissions**. Sideload an APK; no P
 ### 11.1 Layered difficulty
 
 | Layer | What | Difficulty | 1 student |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Data pipeline | normalize, augment, split | Medium | 4–6 d |
 | Train the model | train, tune, evaluate | Medium | 5–8 d |
 | ONNX export + quantize | export, parity test, int8 | Low–Med | 1–2 d |
@@ -851,7 +861,7 @@ Proves the model runs **on-device with zero permissions**. Sideload an APK; no P
 Two mature open-source shells exist. **Do not write an `InputMethodService` from scratch for a college project.**
 
 | Option | Licence | Stack | Malayalam support | Notes |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **Ezhuthola** (`com.rr.numio.ezhuthola`) | **GPL-3.0** | Kotlin + Jetpack Compose | Manglish keyboard **already built**; **rule-based** transliteration engine | 3.7 MiB, **zero permissions**, suggestions + morphology + stickers + emoji + clipboard + themes. **Closest to the goal.** ⭐ |
 | **Indic Keyboard** (SMC) | **Apache-2.0** | Java (+JNI) | Transliteration (Mozhi), Phonetic, Inscript, Swanalekha, Mobile Inscript | Full-featured, 23 languages / 54 layouts, AOSP heritage. |
 
@@ -876,6 +886,7 @@ a better ranker to a real open-source keyboard with real users. That is a strong
 ### 11.3 The hard parts, honestly
 
 **Model-side (the interesting problems):**
+
 1. **Adhoc typing style** — the 7.4% → 22.7% cliff. Fixable, but it *is* the project.
 2. **ശ / ഷ / സ ambiguity** — `sh` → ശ or ഷ; `s` → സ or ശ. Nearly unresolvable from the roman form alone. Needs corpus statistics + context.
 3. **Morphology, not transliteration** — `keralathil` → കേരളത്തിൽ needs a separate module (§7.4). **Ezhuthola already implements this** in `SuffixSplitter.kt` — read it, don't rebuild it.
@@ -895,7 +906,7 @@ a better ranker to a real open-source keyboard with real users. That is a strong
 ### 11.4 The honest verdict
 
 | Goal | Difficulty | Time |
-|---|---|---|
+| --- | --- | --- |
 | Prove the model works (web demo) | **Low** | 2–3 weeks |
 | **Demo it in a real Android keyboard** | **Medium** | **1–2 weeks** (forking) or 3–4 weeks (from scratch) |
 | A usable, polished Manglish IME | Medium–High | 6–10 weeks |
@@ -907,7 +918,7 @@ a better ranker to a real open-source keyboard with real users. That is a strong
 ### 11.5 The competitive context (one slide for your report)
 
 | Product | Platform | Transliteration | Offline | Permissions | Notes |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | **Gboard / Google Indic Native Keyboard** | Android | ✅ Neural, 22 Indic langs | Partial | Full access for voice | **The real benchmark.** Glide typing + neural suggestions. Free. |
 | **Manglish Keyboard** (ClusterDev) | Android + iOS | ✅ | ❌ (iOS: server-side) | Full access | 20M+ downloads. Voice, handwriting, stickers. |
 | **Ezhuthola** (Numio) | Android | ✅ **rule-based** (no ML — verified) | ✅ | **None** | GPL-3.0, F-Droid. Closest to our goal. 3.7 MiB. |
@@ -923,7 +934,7 @@ a better ranker to a real open-source keyboard with real users. That is a strong
 ## 12. Tech stack
 
 | Layer | Choice | Why |
-|---|---|---|
+| --- | --- | --- |
 | Training | PyTorch 2.x, CUDA 12.x | ONNX export maturity |
 | Data | Python 3.11, `datasets`, `pandas`, `regex`, **`unicodedata2`** | `unicodedata2` has a newer Unicode DB than the stdlib — matters for chillu handling |
 | Tokenization | **Character-level, hand-rolled** | No subword tokenizer for an abugida |
@@ -941,7 +952,7 @@ a better ranker to a real open-source keyboard with real users. That is a strong
 
 ## 13. Repository layout
 
-```
+```text
 mangokeyboard/
 ├── IMPLEMENTATION_PLAN.md
 ├── README.md
@@ -1007,7 +1018,7 @@ mangokeyboard/
 ## 14. Timeline — 8 weeks
 
 | Week | Focus | Deliverable | Milestone |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **1** | **Baselines first.** Download data, build splits, run **IndicXlit** + **Ezhuthola's rule engine** (port their 3 KB rules; don't build a rule engine) on all eval sets. Write the tokenizer + normalization + unit tests. | `eval.json` v0 (baseline table) | 🔴 **Gate: if we can't beat IndicXlit, we ship it and reframe the project.** |
 | **2** | Implement `seq2seq` + train **E1** (no augmentation). | E1 results, adhoc cliff reproduced | 🔴 **Gate: adhoc CER must be ≥1.5× the standard CER, else the story is wrong.** |
 | **3** | **Augmentation pipeline** (the 15 rules). Train **E2**. | E2 results | 🔴 **Gate: adhoc CER must improve ≥3 points absolute.** |
@@ -1018,9 +1029,11 @@ mangokeyboard/
 | **8** | Poster, `REPORT.md`, demo script, rehearsal, buffer. | **Expo-ready** | — |
 
 **4-week compressed path (if you have only a semester project slot):**
+
 - W1 = baseline + E1 · W2 = augmentation + E2 · W3 = web demo · W4 = report + poster. **Drop the Android demo and the ablations.** E2 vs. E1 is then your whole result — which is still a complete project if the numbers move.
 
 **Rules for a college timeline:**
+
 - **The Week-1 baseline gate is non-negotiable.** It is the cheapest possible check on whether the project is worth doing.
 - **Never let the Android demo push the ML work.** ML first, demo second.
 - **Write `REPORT.md` incrementally**, not in week 8. Every experiment table goes in as you produce it.
@@ -1031,7 +1044,7 @@ mangokeyboard/
 ## 15. Risks
 
 | # | Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | R1 | **Model doesn't beat IndicXlit** | Medium | High | Evaluate IndicXlit in Week 1, *before* writing training code. Reframe as a benchmark study if needed. |
 | R2 | **Augmentation doesn't close the adhoc gap** | Medium | High | E2's kill criterion (≥3 points) forces an early redesign. Fallback: more hand-collected adhoc data (§4.6), or adopt Bajiyo et al.'s pipeline. |
 | R3 | **Team members don't finish their parts** | **High** | High | Assign the demo (week 6–7) to your strongest coder; keep the ML (weeks 1–5) with whoever owns the thesis. **Define interfaces in week 1** — `roman: str → native: str` is the whole contract. |
@@ -1050,7 +1063,7 @@ mangokeyboard/
 For a college academic project, **everything you want to use is permitted.** You just need to attribute correctly and, where share-alike applies, license your redistribution the same way.
 
 | Asset | Licence | How you use it | Obligation |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Dakshina** | **CC BY-SA 4.0** | Training + eval | Attribute Roark et al. + link. If you redistribute the derived data or the data-processing code, use CC BY-SA 4.0. **Compatible with GPL-3.0.** |
 | **Aksharantar** | CC-BY (manual) / CC0 (mined) | Training + eval | Attribute AI4Bharat + the paper. |
 | **IndicXlit** (model) | MIT | Baseline | Include the MIT notice. |
@@ -1073,7 +1086,7 @@ For a college academic project, **everything you want to use is permitted.** You
 ## 17. Cost
 
 | Item | Cost |
-|---|---|
+| --- | --- |
 | GPU (Colab free T4) | **₹0** |
 | GPU (Colab Pro, ~1 month) | **₹900** |
 | GPU (rented L4/4096, ~10 h) | **₹300–800** |
@@ -1091,7 +1104,7 @@ For a college academic project, **everything you want to use is permitted.** You
 College ML projects are usually graded on: problem framing, data work, model choice, evaluation rigor, and communication. Here's where each one lives in this project.
 
 | Grading criterion | Where this project delivers it |
-|---|---|
+| --- | --- |
 | **Problem framing** | A specific, non-obvious failure mode (the adhoc gap) rather than "let's transliterate Malayalam" |
 | **Data understanding** | The chillu/ZWJ/case analysis (§5.1) shows you read the script, not just the CSV |
 | **Data contribution** | The 15-rule augmentation pipeline — a genuine, reproducible methodological contribution |
@@ -1110,7 +1123,7 @@ College ML projects are usually graded on: problem framing, data work, model cho
 ## 19. Open decisions
 
 | # | Decision | Options | Recommendation | Needed by |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | D1 | **Train from scratch or fine-tune IndicXlit?** | From scratch / fine-tune / reuse | **From scratch.** For an ML project, every ablation must be yours, and 5.3M params trains on a free T4. Keep IndicXlit as a baseline row. | W1 |
 | D2 | **Which Android shell?** | Fork Ezhuthola (GPL-3.0) / Indic Keyboard (Apache-2.0) / from scratch | **Ezhuthola** for speed (it's already a Manglish keyboard). Apache-2.0 if a non-GPL release matters. **Never from scratch.** | W6 |
 | D3 | **Scope of the adhoc set you collect yourself** | 200 / 500 / 2,000 words | **500 minimum.** It's your only original data and your most defensible eval set. | W1 |
@@ -1127,7 +1140,7 @@ College ML projects are usually graded on: problem framing, data work, model cho
 ### 20.1 Malayalam character inventory
 
 | Class | Count | Members |
-|---|---|---|
+| --- | --- | --- |
 | Independent vowels | 15 | അ ആ ഇ ഈ ഉ ഊ ഋ ൠ ഌ ൡ എ ഏ ഐ ഒ ഓ ഔ |
 | Consonants | 36 | ക–ഹ |
 | Dependent vowel signs | 15 | ാ ി ീ ു ൂ ൃ ൄ ൅ െ േ ൈ ൊ ോ ൌ ൗ |
@@ -1141,7 +1154,7 @@ College ML projects are usually graded on: problem framing, data work, model cho
 ### 20.2 References
 
 | Ref | Use |
-|---|---|
+| --- | --- |
 | Roark et al., *Dakshina*, LREC 2020 — `aclanthology.org/2020.lrec-1.294` | Dataset spec, eval protocol |
 | Madhani et al., *Aksharantar*, EMNLP Findings 2023 — `aclanthology.org/2023.findings-emnlp.4` | Dataset, IndicXlit, benchmark |
 | Bajiyo et al., *Romanized to Native Malayalam Script Transliteration*, IndoNLP 2025 — `aclanthology.org/2025.indonlp-1.20` · arXiv:2412.09957 | 🔴 **The adhoc-typing baseline** |

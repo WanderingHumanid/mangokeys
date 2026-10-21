@@ -25,7 +25,7 @@ Bajiyo et al. (IndoNLP 2025) measured exactly this on the same task with the
 same model:
 
 | Test set | Typing style | CER |
-|---|---|---|
+| --- | --- | --- |
 | Test Set-1 | standard, careful | **7.4%** |
 | Test Set-2 | adhoc, vowels mostly missing | **22.7%** |
 
@@ -49,7 +49,7 @@ missing distribution, and shows how much of the gap a small model can close.**
 ## 2. What we built
 
 | | |
-|---|---|
+| --- | --- |
 | **Model** | Character level Transformer encoder decoder, 4+4 layers, d=256, ffn=512, 4 heads. **5.37M parameters.** |
 | **Training data** | Aksharantar Malayalam (4.1M pairs) plus 2.45M augmented copies |
 | **Augmentation** | 13 rules that produce the adhoc typing style, each with a unit test |
@@ -70,7 +70,7 @@ input is whatever the user typed.
 ### 3.1 Sources
 
 | Source | Rows | Licence | Role |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Aksharantar `mal` train | 4,100,621 | CC-BY / CC0 | training |
 | Aksharantar `mal` valid | 7,613 | CC-BY / CC0 | validation |
 | Aksharantar `mal` test | 12,451 | CC-BY / CC0 | test, four subsets |
@@ -83,7 +83,7 @@ and `Existing`. That split is what makes the human versus mined experiment in
 
 ### 3.2 The pipeline
 
-```
+```text
 raw ──► normalize ──► filter ──► dedupe ──► split ──► augment
 ```
 
@@ -106,7 +106,7 @@ The thirteen rules are in `model/src/augment.py` and the reasoning behind each
 is in `docs/MANGLISH_STYLE_NOTES.md`. In short:
 
 | Rule | Example | Why |
-|---|---|---|
+| --- | --- | --- |
 | drop inherent vowels | `sundari` → `sundri` | the vowel of a consonant in half form is often not typed |
 | drop the i sign | `ningalkkum` → `ngalkkum` | the first sign to go |
 | drop a final u | `cheythu` → `cheyth` | common at the end of a word |
@@ -146,7 +146,7 @@ actually is. The script is `scripts/analyze_corpus.py` and the output is in
 consonant of every training pair:
 
 | Uppercase letter | Share of rows |
-|---|---|
+| --- | --- |
 | T (ട) | 6.6% |
 | D (ഡ) | 2.4% |
 | N (ണ) | 2.3% |
@@ -160,7 +160,7 @@ time. Most typers never hold shift for it.
 actually takes:**
 
 | Roman | Readings |
-|---|---|
+| --- | --- |
 | `t` | ത 65%, ട 35% |
 | `d` | ദ 69%, ഡ 23%, ധ 7% |
 | `r` | ര 65%, റ 35% |
@@ -188,7 +188,7 @@ spellings for the same letter.
 
 ## 4. Model
 
-```
+```text
                     ┌──────────────┐
   roman  ─────────► │   encoder    │  4 layers, d=256, ffn=512, 4 heads
                     └──────┬───────┘
@@ -276,7 +276,7 @@ in the adhoc style.
 The numbers, on the full test sets:
 
 | Training data | Standard test set | | Adhoc test set | |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | | Top-1 | CER | Top-1 | CER |
 | standard rows only | **56.2%** | **15.4%** | 6.2% | 49.7% |
 | standard + adhoc rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
@@ -319,7 +319,7 @@ out of the breakdown is the most interesting thing in this project.
 **The model has solved the letters and has not solved the lengths.**
 
 | Error class | Errors | Share |
-|---|---|---|
+| --- | --- | --- |
 | missing long vowel sign | 1,482 | **25.5%** |
 | missing virama | 1,153 | 19.8% |
 | extra virama | 894 | 15.4% |
@@ -353,7 +353,7 @@ and the letter ambiguities but not the long vowel markers. Two rules were
 added as a result:
 
 | Rule | Example | Why |
-|---|---|---|
+| --- | --- | --- |
 | drop long vowel | `kaalam` → `kalam` | People write കാലം as "kalam" as often as "kaalam" |
 | add long vowel | `kalam` → `kaalam` | The rarer direction, at a lower probability |
 
@@ -370,7 +370,7 @@ afterthought, it is the engine.
 ### 5.4 The named entities are the hard part
 
 | Test subset | Top-1 | CER |
-|---|---|---|
+| --- | --- | --- |
 | AK-Freq, frequent words | 58.0% | 11.9% |
 | Dakshina | 58.7% | 15.4% |
 | AK-NEI, Indian named entities | 28.5% | 41.1% |
@@ -401,7 +401,7 @@ answer to the nearest word in it. We built that, and it works beautifully
 **on the words the list knows** and it *hurts* on the words it does not:
 
 | | Top-1 |
-|---|---|
+| --- | --- |
 | the model alone | 56.8% |
 | the model, snapped to the nearest word in the list | 36.5% |
 | the model, when the list knows the word | 69.2% |
@@ -439,7 +439,7 @@ So the system uses the word list the way the measurements support:
 The result on the Aksharantar test set:
 
 | System | Top-1 | CER |
-|---|---|---|
+| --- | --- | --- |
 | the rule engine | 4.6% | 51.3% |
 | **the model alone** | **53.4%** | **17.0%** |
 | **the model with the word list** | **57.4%** | **15.9%** |
@@ -475,7 +475,7 @@ pairs, and eight epochs.
 **It works, and it costs something.**
 
 | | the transliteration model | the prefix model |
-|---|---|---|
+| --- | --- | --- |
 | Top-1 on the test set | **58.4%** | 49.7% |
 | Character error rate | **11.8%** | 14.7% |
 | The answer is a prefix of the word, after four letters | 33.8% | **72.1%** |
@@ -502,7 +502,7 @@ The completion is limited by the word list, not by the model. The list knows
 54% of the words in the test set, and it knows them very unevenly:
 
 | Test subset | The word list knows the word |
-|---|---|
+| --- | --- |
 | Dakshina, a dictionary of common words | 97% |
 | AK-Freq, the frequent words of the corpus | 19% |
 | AK-NEI, Indian named entities | 20% |
@@ -540,7 +540,7 @@ suggestion strip above the keys holds the Malayalam. Tapping a suggestion
 replaces the word that is being typed with the Malayalam and leaves a
 single space after it, so the next word can be typed straight away.
 
-```
+```text
 ente   →  എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
 ```
 

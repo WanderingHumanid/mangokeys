@@ -53,7 +53,7 @@ The first public prototype.
 ### Measured
 
 | System | Top-1 | CER |
-|---|---|---|
+| --- | --- | --- |
 | the rule engine | 9.2% | 48.8% |
 | the model alone | 53.4% | 17.0% |
 | the model with the word list | 57.4% | 15.9% |

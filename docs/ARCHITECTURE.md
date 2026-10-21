@@ -2,7 +2,7 @@
 
 ## The shape of the thing
 
-```
+```text
                       ┌──────────────────────────┐
    data/raw/           │  data/scripts/           │
    ───────────────►   │   download · normalize   │
@@ -61,7 +61,7 @@ already an input because it depends on the source length.
 
 ## The data pipeline
 
-```
+```text
 raw ──► normalize ──► filter ──► dedupe ──► split ──► augment
 ```
 
@@ -81,7 +81,7 @@ raw ──► normalize ──► filter ──► dedupe ──► split ──
 The plan proposes that a rule engine proposes candidates and the model ranks
 them. The shipped code has the two halves but not yet joined.
 
-```
+```text
                  ┌──────────────────────────┐
    Manglish ───► │  rule engine             │  3 KB of tables
                  │  parse → render → expand  │  up to N candidates
@@ -141,7 +141,7 @@ Full details are documented in [`visualizer/ARCHITECTURE.md`](../visualizer/ARCH
 ## What is measured where
 
 | Question | Tool |
-|---|---|
+| --- | --- |
 | Is the model better than the rules? | `scripts/run_baselines.py` and `model/evaluate.py` |
 | Does the ONNX runtime match PyTorch? | `scripts/check_parity.py` |
 | Which augmentation rules matter? | `scripts/run_ablations.py` |

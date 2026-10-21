@@ -38,7 +38,7 @@ downloaded, and no module asks for a permission on the phone.
 ### Where the pieces live
 
 | Module | Folder | What it is |
-|---|---|---|
+| --- | --- | --- |
 | Data pipeline | `data/` | download, clean, augment, split |
 | Model | `model/` | tokenizer, seq2seq, training, evaluation, ONNX export |
 | Lexicon and language model | `model/src/lexicon.py`, `model/src/ngram.py` | the word list and the ranker |
@@ -404,7 +404,7 @@ adb logcat -s MangoKeys
 
 Each line is the suggestion strip after a keystroke:
 
-```
+```text
 I MangoKeys: suggestions: എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
 ```
 
@@ -491,14 +491,14 @@ curl -s "http://localhost:5000/api/extract?text=namaskaram&beam=4"
 ## 11. Troubleshooting
 
 | Symptom | Cause and fix |
-|---|---|
+| --- | --- |
 | The keyboard is not in `ime list -s` | The service did not ask for the `BIND_INPUT_METHOD` permission. The log says `Skipping input method`. |
 | The keyboard does not show up when a field is focused | The input method was not selected. Run `adb shell ime set com.mangokeyboard/.ManglishKeyboardService`. |
 | The suggestions are the old ones | The app kept the old assets. Run `adb shell pm clear com.mangokeyboard` and open the app again. |
 | `adb: no devices found` | The phone is not in the USB debugging list, or the prompt was dismissed. Run `adb kill-server && adb start-server` and replug it. |
 | The phone shows `unauthorized` | Accept the prompt on the phone screen. If it does not appear, revoke the USB debugging authorisation in the developer options and replug. |
 | The emulator is very slow | It is running without hardware acceleration. Check that `/dev/kvm` exists and is readable. |
-| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l apps/android/build/outputs/apk/debug/app-universal-debug.apk | grep assets`. |
+| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l apps/android/build/outputs/apk/debug/app-universal-debug.apk \| grep assets`. |
 | The wasm runtime uses one thread | The demo was opened over `file://` instead of over http. The cross origin headers are only sent by `serve.py`. |
 | The model output is empty in the app | The `tokenizer.json` in the assets is from a different run than the graphs. Rebuild the demo. |
 

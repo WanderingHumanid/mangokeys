@@ -7,9 +7,11 @@ A zero-install, terminal-activated daemon providing system-wide live Manglish-to
 ## 1. Architectural Philosophy & Mission
 
 ### The Core Objective
+
 Enable users to type phonetic Manglish (e.g., `ente`, `namaskaram`) into **any** desktop application—such as Firefox, Chrome, Slack, Discord, VS Code, or terminal emulators—and upon pressing **`Space`** or **`Enter`**, have the typed Latin characters instantaneously erased and replaced inline with authentic Malayalam script (`എന്റെ`, `നമസ്കാരം`).
 
 ### Invariant Design Principles
+
 1. **Zero Permanent System Modification**:
    - No root packages installed into `/usr` or `/etc`.
    - No persistent `systemd` user or root background daemons.
@@ -24,7 +26,7 @@ Enable users to type phonetic Manglish (e.g., `ente`, `namaskaram`) into **any**
 
 ## 2. End-to-End Execution Flow
 
-```
+```text
                       +---------------------------------------+
                       |       User Hardware Keyboard(s)       |
                       +---------------------------------------+
@@ -70,16 +72,19 @@ Enable users to type phonetic Manglish (e.g., `ente`, `namaskaram`) into **any**
 ## 3. Subsystem Breakdown
 
 ### 3.1 Concurrent Hardware Keyboard Discovery (`listener.py`)
+
 - **Capability Bitmask Filtering**: Scans all `/dev/input/event*` devices, inspects kernel bitmasks for `EV_KEY`, and verifies presence of alphanumeric typing keys (`KEY_A`–`KEY_Z`, `KEY_SPACE`, `KEY_ENTER`).
 - **Feedback Loop Prevention**: Automatically ignores mice, power switches, and virtual keyboards belonging to MangoKeys or `uinput`.
 - **Multiplexed Polling**: Uses a non-blocking `select.select()` poll loop to monitor multiple physical keyboards (e.g., built-in laptop keyboard and external USB/Bluetooth mechanical keyboard) simultaneously.
 
 ### 3.2 Typing State Machine (`listener.py`)
+
 - **Word Buffer**: Accumulates printable Latin characters while tracking modifier keys (`Shift`, `Caps Lock`).
 - **Retroflex Consonant Mapping**: Preserves case states so capitalized letters accurately map to Malayalam retroflex consonants (`T` $\to$ ട, `D` $\to$ ഡ, `N` $\to$ ണ, `L` $\to$ ള, `R` $\to$ റ).
 - **Buffer Invalidation**: Automatically clears when non-word keys (arrow keys, mouse clicks, page up/down) are pressed to prevent accidental out-of-context injections.
 
 ### 3.3 Atomic Keystroke Replacement (`injector.py`)
+
 - **The Indic Unicode Injection Challenge**: Standard keyboard controllers cannot emit arbitrary Unicode code points for complex Indic scripts directly via keycodes because layouts lack keys for multi-byte conjuncts and viramas.
 - **The Clipboard Injection Solution**:
   1. *Stash*: Captures existing clipboard content via `wl-paste` (Wayland) or `xclip` / `xsel` (X11).
@@ -90,6 +95,7 @@ Enable users to type phonetic Manglish (e.g., `ente`, `namaskaram`) into **any**
 - **Pipe Deadlock Prevention**: Subprocess calls are isolated with closed standard file descriptors (`DEVNULL`), preventing background Wayland clipboard brokers from deadlocking the process.
 
 ### 3.4 Transliteration Engine (`engine.py`)
+
 - **Deterministic Baseline (`RuleEngine`)**: Shipped with zero external dependencies, executing in ~0.05 ms per word.
 - **Neural ONNX Upgrade**: Seamlessly loads `encoder.onnx` and `decoder.onnx` character-level Transformer models from `assets/release/model/` when ONNX Runtime is available.
 
@@ -100,14 +106,19 @@ Enable users to type phonetic Manglish (e.g., `ente`, `namaskaram`) into **any**
 Linux protects `/dev/input/event*` and `/dev/uinput` from unprivileged snooping. MangoKeys provides two clean methods for access:
 
 ### Option A: POSIX Access Control Lists (Recommended)
+
 Grant hardware permissions directly to your desktop user without needing to run the daemon as root:
+
 ```bash
 sudo setfacl -m u:$USER:rw /dev/uinput /dev/input/event*
 ```
+
 *Note: The unified `launcher.py` script automatically configures this with a single prompt.*
 
 ### Option B: Direct Sudo
+
 Run the script directly with root privileges:
+
 ```bash
 sudo python3 typer/run.py
 ```
@@ -130,16 +141,21 @@ sudo python3 typer/run.py
 ## 6. How to Run
 
 ### Method 1: Via the Unified Launcher (Recommended)
+
 Launch via the interactive terminal dashboard:
+
 ```bash
 python3 launcher.py
 ```
+
 Select **Option 1 (Typer Daemon)** or pass the headless flag:
+
 ```bash
 python3 launcher.py --typer
 ```
 
 ### Method 2: Direct Execution
+
 ```bash
 # Direct run (requires ACL or sudo)
 python3 typer/run.py
@@ -152,7 +168,9 @@ python3 typer/run.py --dry-run
 ```
 
 ### Method 3: Automated Self-Tests
+
 Verify the state machine, buffer management, hotkeys, and transliteration engine:
+
 ```bash
 python3 typer/test_typer.py
 ```

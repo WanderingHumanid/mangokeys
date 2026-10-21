@@ -13,20 +13,20 @@ apart. The project measures that gap, closes it with an augmentation
 pipeline, and ships the result as a working keyboard that runs entirely on
 the device.
 
-```
+```text
 ente peru  ->  എൻ്റെ പേരു
 ```
 
 | | |
-|---|---|
+| --- | --- |
 | Model | Character level transformer encoder decoder, 5.37 million parameters |
 | Training data | 4.1 million pairs from Aksharantar, rewritten by 13 augmentation rules |
 | Accuracy | 57.4% top-1, 15.9% character error rate, on a 12,451 word test set |
-| Runs on | Android 7 and up, and any browser with WebAssembly |
+| Runs on | Android 7+, Linux Desktops (Wayland & X11), and browsers with WebAssembly |
 | Size | 6 MB per model, 19 MB of model files in the app |
 | Permissions | none |
 
-Four interactive targets and tools are published from this repository:
+Five interactive targets and tools are published from this repository:
 
 - **The Linux desktop typer** (`typer/`) is a zero-install, terminal-activated daemon
   that enables system-wide Manglish-to-Malayalam typing across all desktop apps
@@ -69,11 +69,13 @@ python3 launcher.py
 ```
 
 It provides an interactive menu:
+
 1. **MangoKeys Desktop Typer Daemon**: System-wide background typing.
 2. **Neural Transformer Visualizer**: Web visualizer on `http://localhost:5000`.
 3. **Launch Both Services**: Automatically grants hardware input ACLs and runs both concurrently.
 
 You can also run headless with streaming logs:
+
 ```bash
 python3 launcher.py --both --debug
 ```
@@ -106,6 +108,7 @@ python3 visualizer/server.py --port 5000
 ```
 
 Open `http://localhost:5000` in your browser. Type words into the prompt or type into any desktop window to see:
+
 - Real cross-attention Bezier ribbons across all 4 attention heads or isolated per head.
 - Step-by-step decoder generation cards showing candidate logits and beam branch scores.
 - Interactive token-to-token attention heatmap matrix.
@@ -117,7 +120,7 @@ See [`visualizer/ARCHITECTURE.md`](visualizer/ARCHITECTURE.md) for full telemetr
 
 The demo runs the same model as the app. The Pages workflow publishes it at
 
-```
+```text
 https://wanderinghumanid.github.io/mangokeys
 ```
 
@@ -150,7 +153,7 @@ Then open `http://localhost:8000`.
 
 The APK is on the release page.
 
-```
+```text
 https://github.com/WanderingHumanid/mangokeys/releases/latest
 ```
 
@@ -214,7 +217,7 @@ whether the word list knows the word, whether a candidate is a completion or
 a variation, and the frequency of the word in the corpus. The weights were
 fitted on the validation split by coordinate descent, not chosen by hand.
 
-```
+```text
    keystroke
        |
        v
@@ -246,7 +249,7 @@ spelling cannot end up on both sides of the split.
 ### The whole system
 
 | System | Top-1 | CER | Top-5 | Size |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Rule engine | 9.2% | 48.8% | 13.6% | 3 KB |
 | **Model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | 6.1 MB |
 | **Model with the word list** | **57.4%** | **15.9%** | **73.3%** | 6.1 MB |
@@ -261,7 +264,7 @@ The test set is four different kinds of word, and they are not equally
 hard.
 
 | Test subset | What it is | Top-1 | CER |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Dakshina | a dictionary of common words | 58.5% | 15.4% |
 | AK-Freq | the frequent words of the corpus | 58.3% | 11.8% |
 | AK-NEI | Indian named entities | 29.6% | 40.3% |
@@ -277,7 +280,7 @@ Two models, the same architecture, the same number of rows, the same number
 of epochs and the same seed. Only the style of the extra rows differs.
 
 | Training data | Careful spelling | | Real typing | |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | | Top-1 | CER | Top-1 | CER |
 | careful spelling only | **56.2%** | **15.4%** | 6.2% | 49.7% |
 | careful spelling plus augmented rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
@@ -289,7 +292,7 @@ That is the difference between a keyboard that works and one that does not.
 ### The two models
 
 | | The transliteration model | The prefix model |
-|---|---|---|
+| --- | --- | --- |
 | Top-1 on the test set | **58.4%** | 49.7% |
 | Character error rate | **11.8%** | 14.7% |
 | The answer is a prefix of the word, after four letters | 33.8% | **72.1%** |
@@ -304,7 +307,7 @@ going, and the word list completes the answer.
 ### Speed
 
 | Path | Time per word |
-|---|---|
+| --- | --- |
 | The rules and the word list only, on every keystroke | 2.9 ms |
 | The word list with the model's candidates | 6.6 ms |
 | The model, int8, beam 4, on a desktop cpu | 27.4 ms |
@@ -327,7 +330,7 @@ which word the user meant.
 ### The data
 
 | Source | Rows | Licence | Role |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Aksharantar `mal` train | 4,100,621 | CC-BY / CC0 | training |
 | Aksharantar `mal` valid | 7,613 | CC-BY / CC0 | validation |
 | Aksharantar `mal` test | 12,451 | CC-BY / CC0 | test, four subsets |
@@ -339,7 +342,7 @@ carries a `source` field, which splits it into `IndicCorp` (mined),
 
 The pipeline is:
 
-```
+```text
 raw -> normalize -> filter -> dedupe -> split -> augment
 ```
 
@@ -369,7 +372,7 @@ Real Manglish typing is not ISO 15919. The thirteen rules in
 behind each one is in [`docs/MANGLISH_STYLE_NOTES.md`](docs/MANGLISH_STYLE_NOTES.md).
 
 | Rule | Example | Why |
-|---|---|---|
+| --- | --- | --- |
 | Drop inherent vowels | `sundari` -> `sundri` | the vowel of a consonant in half form is often not typed |
 | Drop the i sign | `ningalkkum` -> `ngalkkum` | the first sign to go |
 | Drop a final u | `cheythu` -> `cheyth` | common at the end of a word |
@@ -410,7 +413,7 @@ baseline from 9.2% and 48.8% CER to the numbers above, a 51% relative
 improvement with no model involved.
 
 | Roman letter | The readings it actually takes |
-|---|---|
+| --- | --- |
 | `t` | ത 65%, ട 35% |
 | `d` | ദ 69%, ഡ 23%, ധ 7% |
 | `r` | ര 65%, റ 35% |
@@ -429,7 +432,7 @@ A character level transformer encoder decoder, written from scratch in
 `model/src/seq2seq.py`.
 
 | | |
-|---|---|
+| --- | --- |
 | Encoder | 4 layers, pre-norm, 4 heads, d_model 256, feed forward 512 |
 | Decoder | 4 layers, masked self attention, cross attention, GELU |
 | Positions | sinusoidal, fixed |
@@ -496,7 +499,7 @@ checker that helps on the words it covers and does damage on the ones it
 does not.
 
 | | Top-1 |
-|---|---|
+| --- | --- |
 | The model alone | 56.8% |
 | The model, snapped to the nearest word in the list | 36.5% |
 | The model, when the list knows the word | 69.2% |
@@ -514,7 +517,7 @@ Six signals and six weights, fitted on the validation split with coordinate
 descent by `scripts/tune_suggestions.py`.
 
 | Signal | Weight | What it means |
-|---|---|---|
+| --- | --- | --- |
 | `model` | 1.0 | the score the model gave the candidate |
 | `known` | 4.0 | the word list knows this word |
 | `completion` | 0.0 | the candidate completes the model's answer |
@@ -548,7 +551,7 @@ relative to genuinely unseen typing habits.
 ## Technologies
 
 | Part | What it is |
-|---|---|
+| --- | --- |
 | The model | PyTorch, written from scratch, no transformer library |
 | The data | Hugging Face datasets for the download, plain text files after it |
 | The training | A single script, `model/train.py`, with length bucketing and mixed precision |
@@ -574,7 +577,7 @@ npm ci
 Python 3.11 or newer. A recent JDK and the Android SDK for the app. No GPU is
 needed for anything except training the model from scratch.
 
-### The web demo
+### Building the web demo
 
 ```bash
 python -m scripts.build_web --out dist/web
@@ -584,7 +587,7 @@ python dist/web/serve.py --port 8000
 The demo server sends the two headers that let the WebAssembly runtime use
 more than one thread, which is why the model is fast in the browser.
 
-### The Android app
+### Building the Android app
 
 ```bash
 cd runtime
@@ -644,7 +647,7 @@ run, so a run can be repeated exactly.
 
 ## The repository
 
-```
+```text
 launcher.py  unified interactive terminal dashboard & service manager
 typer/       system-wide Linux desktop live transliteration daemon (Wayland & X11)
 visualizer/  authentic real-time ONNX Transformer attention & decoder visualizer
@@ -666,7 +669,7 @@ docs/        the architecture, the protocol, the latency, the release guide
 ## Documentation
 
 | Document | What is in it |
-|---|---|
+| --- | --- |
 | [`REPORT.md`](REPORT.md) | The full write up of the project, with every measurement |
 | [`TESTING.md`](TESTING.md) | How to test every part of it, module by module |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | The plan the project was built from, and its status |
