@@ -13,6 +13,17 @@ from pathlib import Path
 
 ROMAN, NATIVE = "roman", "native"
 BUCKET = "bucket"
+ADHOC = "adhoc"
+
+
+def is_augmented(parts: list[str]) -> bool:
+    """Whether a row is an augmented copy of another row.
+
+    The training file marks the augmented rows with adhoc in the third
+    column. The test files use that column for the bucket label instead, so
+    only the marker itself is treated as an augmented row.
+    """
+    return len(parts) > 2 and parts[2] == ADHOC
 
 
 def write_pairs(path: str | Path, pairs: Iterable[dict]) -> int:

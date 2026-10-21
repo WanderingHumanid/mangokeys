@@ -10,7 +10,8 @@ The flow of one keystroke is:
 2. the model gives a better answer, in a few milliseconds
 3. both answers are looked up in the word list, which turns them into real
    words
-4. the language model and the corpus frequency rank the result
+4. the words are ranked by how close they are to the answer, how common
+   they are and how natural they sound
 
 The rules and the model are both proposers. Nothing is thrown away before the
 ranking, because the rules know things the model does not and the other way
@@ -37,6 +38,7 @@ class Candidate:
     model_score: float = 0.0
     lm_score: float = 0.0
     count: int = 0
+    distance: int = 0
     total: float = 0.0
 
 
@@ -44,9 +46,14 @@ class Candidate:
 class Weights:
     """How much each signal counts in the final ranking."""
 
+    # The score the model gave the answer.
     model: float = 1.0
+    # How close the word is to the answer the rules or the model gave.
+    proximity: float = 2.0
+    # How natural the word sounds.
     language: float = 1.0
-    frequency: float = 0.2
+    # How common the word is.
+    frequency: float = 0.5
     # A word that the word list does not know has to earn its place.
     unknown: float = -2.0
     # A candidate that came from the rules rather than from the model starts
@@ -111,14 +118,17 @@ class SuggestionEngine:
             return
 
         pool[text] = Candidate(text=text, source=source, model_score=score)
-        for word in self.lexicon.expand(text, limit=4):
+        for word, distance in self.lexicon.expand(text, limit=4):
             if word == text:
                 continue
             neighbour = pool.get(word)
             if neighbour is None:
-                pool[word] = Candidate(text=word, source=source, model_score=score)
+                pool[word] = Candidate(
+                    text=word, source=source, model_score=score, distance=distance
+                )
             else:
                 neighbour.model_score = max(neighbour.model_score, score)
+                neighbour.distance = min(neighbour.distance, distance)
 
     def _score(self, candidate: Candidate) -> None:
         """Work out the final score of one candidate."""
@@ -127,6 +137,7 @@ class SuggestionEngine:
             candidate.lm_score = self.ngram.mean_score(candidate.text)
         candidate.total = (
             self.weights.model * candidate.model_score
+            + self.weights.proximity * -candidate.distance
             + self.weights.language * candidate.lm_score
             + self.weights.frequency * math.log1p(candidate.count)
         )

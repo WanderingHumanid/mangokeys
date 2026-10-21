@@ -47,11 +47,11 @@ def test_complete_returns_the_commonest_first():
 
 
 def test_expand_returns_the_exact_word_first():
-    assert lexicon().expand("കേരളം")[0] == "കേരളം"
+    assert lexicon().expand("കേരളം")[0] == ("കേരളം", 0)
 
 
 def test_expand_fixes_a_wrong_vowel():
-    assert "കേരളം" in lexicon().expand("കെരളം")
+    assert "കേരളം" in [word for word, _ in lexicon().expand("കെരളം")]
 
 
 def test_count_reports_the_corpus_frequency():

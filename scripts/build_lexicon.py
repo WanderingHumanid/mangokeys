@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from data.scripts.pairs import is_augmented  # noqa: E402
 from model.src.lexicon import Lexicon  # noqa: E402
 
 
@@ -29,7 +30,7 @@ def count_words(path: Path) -> Counter[str]:
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 2:
                 continue
-            if len(parts) > 2 and parts[2] != "standard":
+            if is_augmented(parts):
                 continue
             counts[parts[1]] += 1
     return counts
@@ -41,13 +42,31 @@ def main() -> None:
     parser.add_argument("--out", default="data/processed/lexicon")
     parser.add_argument("--limit", type=int, default=250000, help="words to keep")
     parser.add_argument("--distance", type=int, default=2)
+    parser.add_argument(
+        "--keep",
+        nargs="*",
+        default=[],
+        help="files whose words are always kept, whatever their count",
+    )
     args = parser.parse_args()
 
     start = time.time()
     counts = count_words(Path(args.train))
     print(f"corpus vocabulary: {len(counts)} words in {time.time() - start:.0f}s")
 
-    lexicon = Lexicon.from_counts(dict(counts), limit=args.limit, max_distance=args.distance)
+    keep: set[str] = set()
+    for path in args.keep:
+        with Path(path).open(encoding="utf-8") as handle:
+            for line in handle:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) >= 2:
+                    keep.add(parts[1])
+    if keep:
+        print(f"keeping {len(keep)} extra words")
+
+    lexicon = Lexicon.from_counts(
+        dict(counts), limit=args.limit, max_distance=args.distance, keep=keep
+    )
     print(f"lexicon: {len(lexicon)} words, edit distance {args.distance}")
 
     lexicon.save(args.out)

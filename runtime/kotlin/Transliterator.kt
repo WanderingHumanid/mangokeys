@@ -57,6 +57,11 @@ class Transliterator(
 
     /** Returns the top n Malayalam candidates for a Manglish word. */
     fun candidates(roman: String, nBest: Int = 5): List<String> {
+        return scoredCandidates(roman, nBest).map { it.first }
+    }
+
+    /** Returns the top n candidates with the score the model gave them. */
+    fun scoredCandidates(roman: String, nBest: Int = 5): List<Pair<String, Double>> {
         val clean = Normalizer.normalizeRoman(roman)
         if (clean.isEmpty()) return emptyList()
 
@@ -159,11 +164,11 @@ class Transliterator(
         }
 
         val seen = mutableSetOf<String>()
-        val results = mutableListOf<String>()
+        val results = mutableListOf<Pair<String, Double>>()
         for (item in finished.sortedByDescending { it.first }) {
             val text = Normalizer.normalizeMalayalam(tokenizer.decodeTarget(item.second))
             if (!seen.add(text)) continue
-            results.add(text)
+            results.add(Pair(text, item.first))
             if (results.size >= nBest) break
         }
         return results

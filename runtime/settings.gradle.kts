@@ -17,3 +17,6 @@ rootProject.name = "mangokeyboard"
 
 include(":android")
 project(":android").projectDir = file("android")
+
+include(":app")
+project(":app").projectDir = file("../apps/android")

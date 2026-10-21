@@ -16,6 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from data.scripts.pairs import is_augmented  # noqa: E402
 from model.src.ngram import CharNgram  # noqa: E402
 
 
@@ -26,7 +27,7 @@ def read_natives(path: Path):
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 2:
                 continue
-            if len(parts) > 2 and parts[2] != "standard":
+            if is_augmented(parts):
                 continue
             yield parts[1]
 
@@ -44,7 +45,7 @@ def common_words(path: Path, limit: int):
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 2:
                 continue
-            if len(parts) > 2 and parts[2] != "standard":
+            if is_augmented(parts):
                 continue
             counts[parts[1]] += 1
     ordered = sorted(counts, key=lambda word: (-counts[word], word))

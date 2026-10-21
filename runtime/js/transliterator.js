@@ -103,6 +103,11 @@ export class Transliterator {
   }
 
   async candidates(roman, nBest = 5) {
+    const scored = await this.scoredCandidates(roman, nBest);
+    return scored.map((item) => item.text);
+  }
+
+  async scoredCandidates(roman, nBest = 5) {
     const clean = normalizeRoman(roman);
     if (!clean) return [];
 
@@ -216,7 +221,7 @@ export class Transliterator {
       const text = normalizeMalayalam(this.decodeTarget(item.sequence));
       if (seen.has(text)) continue;
       seen.add(text);
-      results.push(text);
+      results.push({ text, score: item.score });
       if (results.length >= nBest) break;
     }
     return results;

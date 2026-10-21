@@ -1,11 +1,15 @@
 /**
  * The model runs in a worker so that the page stays responsive while it
- * thinks. The rule engine on the main thread gives an instant preview and the
- * worker fills in the real candidates a moment later.
+ * thinks. The rules and the word list run on the main thread, so the
+ * suggestion strip is never empty, and the worker fills in the answer of the
+ * model a moment later.
  */
 
 import * as ort from "./ort/ort.min.mjs";
 import { Transliterator, buildTokenizer } from "./transliterator.js";
+import { Lexicon } from "./lexicon.js";
+import { CharNgram } from "./ngram.js";
+import { SuggestionEngine } from "./suggest.js";
 
 const threads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2));
 ort.env.wasm.wasmPaths = "/ort/";
@@ -17,10 +21,12 @@ let pending = null;
 let running = false;
 
 async function load() {
-  const [encoder, decoder, tokenizerPayload] = await Promise.all([
+  const [encoder, decoder, tokenizerPayload, lexicon, ngram] = await Promise.all([
     ort.InferenceSession.create("./models/encoder.onnx"),
     ort.InferenceSession.create("./models/decoder.onnx"),
     fetch("./models/tokenizer.json").then((response) => response.json()),
+    Lexicon.load("./models/lexicon"),
+    CharNgram.load("./models/ngram.txt").catch(() => null),
   ]);
   const tokenizer = buildTokenizer(tokenizerPayload);
   engine = new Transliterator({ encoder, decoder }, tokenizer, ort, {
@@ -28,8 +34,11 @@ async function load() {
     maxTgt: 64,
     beam: 4,
   });
+  ranker = new SuggestionEngine(lexicon, ngram);
   return threads;
 }
+
+let ranker = null;
 
 async function handle({ id, roman, nBest }) {
   if (!engine) {
@@ -51,9 +60,18 @@ async function handle({ id, roman, nBest }) {
   try {
     const words = roman.split(/\s+/).filter((word) => word.length);
     const last = words[words.length - 1] ?? "";
-    const candidates = last ? await engine.candidates(last, nBest) : [];
+    const scored = last ? await engine.scoredCandidates(last, nBest) : [];
+    const candidates = scored.map((item) => item.text);
+    const scores = scored.map((item) => item.score);
+    const ranked = ranker.suggest(last, candidates, scores);
     const text = await engine.transliterate(roman);
-    self.postMessage({ id, text, candidates, ms: performance.now() - started });
+    self.postMessage({
+      id,
+      text,
+      candidates,
+      ranked: ranked.map((item) => item.text),
+      ms: performance.now() - started,
+    });
   } catch (error) {
     self.postMessage({ id, error: String(error) });
   }

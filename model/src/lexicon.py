@@ -155,6 +155,10 @@ class Lexicon:
 
     def nearest(self, word: str, limit: int = 8) -> list[str]:
         """The real words closest to a string, the best match first."""
+        return [text for text, _ in self.nearest_with_distance(word, limit)]
+
+    def nearest_with_distance(self, word: str, limit: int = 8) -> list[tuple[str, int]]:
+        """The real words closest to a string, with the distance to them."""
         if not word:
             return []
         items = letters(word)
@@ -169,7 +173,7 @@ class Lexicon:
             found.items(),
             key=lambda pair: (pair[1], -self.counts[pair[0]], self.words[pair[0]]),
         )
-        return [self.words[word_index] for word_index, _ in ranked[:limit]]
+        return [(self.words[word_index], distance) for word_index, distance in ranked[:limit]]
 
     def complete(self, prefix: str, limit: int = 8) -> list[str]:
         """The real words that start with a native prefix, the commonest first."""
@@ -189,28 +193,34 @@ class Lexicon:
                     break
         return out
 
-    def expand(self, text: str, limit: int = 8) -> list[str]:
-        """The real words around a string, the exact one first.
+    def expand(self, text: str, limit: int = 8) -> list[tuple[str, int]]:
+        """The real words around a string, with how far they are from it.
 
         This is what the keyboard uses to turn a model output into a list of
-        words that exist.
+        words that exist. The exact word comes first, then the words that
+        start with it, then the words that are one or two edits away.
         """
         if not text:
             return []
-        out: list[str] = []
+        out: list[tuple[str, int]] = []
+        seen: set[str] = set()
         if text in self._word_ids:
-            out.append(text)
-        for word in self.complete(text, limit=limit * 2):
-            if word not in out:
-                out.append(word)
+            out.append((text, 0))
+            seen.add(text)
+        for word in self.complete(text, limit * 2):
+            if word in seen:
+                continue
+            seen.add(word)
+            out.append((word, 1))
+            if len(out) >= limit:
+                return out
+        for word, distance in self.nearest_with_distance(text, limit * 2):
+            if word in seen:
+                continue
+            seen.add(word)
+            out.append((word, distance))
             if len(out) >= limit:
                 break
-        if len(out) < limit:
-            for word in self.nearest(text, limit=limit * 2):
-                if word not in out:
-                    out.append(word)
-                if len(out) >= limit:
-                    break
         return out[:limit]
 
     # ----------------------------------------------------------------- storage
@@ -264,10 +274,19 @@ class Lexicon:
         counts: dict[str, int],
         limit: int = 0,
         max_distance: int = 2,
+        keep: set[str] | None = None,
     ) -> "Lexicon":
-        """Build a lexicon from native words and their corpus counts."""
+        """Build a lexicon from native words and their corpus counts.
+
+        The commonest words are kept. The words in `keep` are always kept,
+        whatever their count, because a real dictionary holds the words that
+        people type rather than the words that the corpus repeats.
+        """
+        keep = keep or set()
         words = sorted(counts, key=lambda word: (-counts[word], word))
         if limit:
-            words = words[:limit]
+            chosen = set(words[:limit])
+            chosen.update(keep)
+            words = sorted(chosen, key=lambda word: (-counts[word], word))
         values = [counts[word] for word in words]
         return cls(words, values, max_distance=max_distance)

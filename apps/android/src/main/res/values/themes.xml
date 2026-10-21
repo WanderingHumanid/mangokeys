@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Manglish" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#2C5F8A</item>
+        <item name="android:colorAccent">#2C5F8A</item>
+    </style>
+</resources>

@@ -1,0 +1,9 @@
+{
+  "top1": 0.9075,
+  "weights": {
+    "model": 0.5,
+    "proximity": 1.0,
+    "language": 0.0,
+    "frequency": 0.25
+  }
+}
