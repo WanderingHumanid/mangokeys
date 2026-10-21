@@ -33,6 +33,9 @@ The project is built and running. This section records where each part stands.
 | Kotlin runtime | ✅ builds and passes the unit tests against the real model | `runtime/kotlin/` |
 | The Android input method | ✅ an `InputMethodService`, no permissions | `apps/android/` |
 | Static web demo with a suggestion strip | ✅ working, screenshot verified | `apps/expo-web/` |
+| Linux desktop transliteration daemon | ✅ live system-wide typing (Wayland & X11) | `typer/` |
+| Real-time neural visualizer | ✅ authentic ONNX attention & decoder visualizer | `visualizer/` |
+| Unified service launcher | ✅ interactive TUI & headless streaming log monitor | `launcher.py` |
 | Corpus ambiguity analysis | ✅ measured | `scripts/analyze_corpus.py` |
 | Error analysis | ✅ 12-class taxonomy | `scripts/error_analysis.py` |
 | Augmentation ablation | ✅ measured, E1 and E2 | `scripts/run_ablations.py` |

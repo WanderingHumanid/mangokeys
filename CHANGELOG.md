@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.02 (In Development)
+
+### Desktop & Inspection Tools
+
+- **Linux Desktop Typer Daemon (`typer/`)**:
+  - System-wide live transliteration across all Linux applications (Wayland & X11).
+  - Concurrent multi-keyboard listening on `/dev/input/event*` with automatic capability discovery.
+  - Atomic inline replacement via virtual `/dev/uinput` backspaces + clipboard injection (`wl-copy`/`xclip`) with safe pipe isolation.
+  - Zero permanent modifications: unhooks on `Ctrl+C` with no background systemd services.
+  - Non-root execution via POSIX ACLs (`setfacl`).
+  - 12-stage automated self-test suite covering state machines, injection, and fallbacks.
+- **Neural Transformer Visualizer (`visualizer/`)**:
+  - 100% mathematically authentic ONNX inference running `encoder.onnx` and `decoder.onnx` from `assets/release/model/`.
+  - Real multi-head cross-attention tensors, layer L2 norm magnitudes, beam search tree, and vocabulary softmax logits.
+  - Dynamic 0-FLOP idle standby mode to conserve compute when not typing.
+  - Cyberpunk glassmorphic UI with SVG Bezier ribbons, multi-head toggles, step-by-step decoder cards, and attention heatmap matrix.
+  - Real-time desktop synchronization feed connecting the visualizer directly to the desktop typer.
+- **Unified Launcher (`launcher.py`)**:
+  - Interactive terminal control center to launch Typer, Visualizer, or both concurrently.
+  - Headless `--debug` streaming log mode with graceful Ctrl+C handling.
+  - Automatic `setfacl` permission escalation.
+
 ## v0.01
 
 The first public prototype.

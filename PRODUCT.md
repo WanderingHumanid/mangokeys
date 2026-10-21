@@ -6,10 +6,10 @@
 
 web
 
-The keyboard itself is an Android input method, so the same product has two
-surfaces: the native app and the browser demo. The browser demo is the one
-this file describes. The two share the model, the word list and the ranking,
-and the demo is the web presentation of the app.
+The keyboard itself is an Android input method, so the product spans four
+surfaces: the native Android app, the browser demo, the system-wide Linux desktop
+typer daemon, and the real-time neural transformer visualizer. The surfaces share
+the model, the word list and the transliteration engine.
 
 ## Stack
 

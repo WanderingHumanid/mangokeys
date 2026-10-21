@@ -26,8 +26,16 @@ ente peru  ->  എൻ്റെ പേരു
 | Size | 6 MB per model, 19 MB of model files in the app |
 | Permissions | none |
 
-Two builds are published from this repository.
+Four interactive targets and tools are published from this repository:
 
+- **The Linux desktop typer** (`typer/`) is a zero-install, terminal-activated daemon
+  that enables system-wide Manglish-to-Malayalam typing across all desktop apps
+  (Wayland & X11) with sub-millisecond replacement latency.
+- **The neural transformer visualizer** (`visualizer/`) is a 100% mathematically authentic
+  cyberpunk dashboard visualizing real ONNX multi-head cross-attention ribbons,
+  decoder generation steps, and attention heatmaps in real time.
+- **The unified launcher** (`launcher.py`) provides an interactive terminal control center
+  to run, inspect, and stream logs from the typer daemon and visualizer simultaneously.
 - **The web demo** runs the model in your browser with ONNX Runtime Web.
   Nothing is uploaded, there is no server, and it works with the network off.
 - **The Android app** is a full input method that writes into any app on the
@@ -36,6 +44,11 @@ Two builds are published from this repository.
 ## Contents
 
 - [Try it](#try-it)
+  - [The unified launcher](#the-unified-launcher)
+  - [The Linux desktop typer](#the-linux-desktop-typer)
+  - [The neural transformer visualizer](#the-neural-transformer-visualizer)
+  - [The web demo](#the-web-demo)
+  - [The Android app](#the-android-app)
 - [How it works](#how-it-works)
 - [Results](#results)
 - [The machine learning](#the-machine-learning)
@@ -46,6 +59,59 @@ Two builds are published from this repository.
 - [Credits](#credits)
 
 ## Try it
+
+### The unified launcher
+
+The fastest way to run and monitor MangoKeys desktop tools is the interactive terminal launcher:
+
+```bash
+python3 launcher.py
+```
+
+It provides an interactive menu:
+1. **MangoKeys Desktop Typer Daemon**: System-wide background typing.
+2. **Neural Transformer Visualizer**: Web visualizer on `http://localhost:5000`.
+3. **Launch Both Services**: Automatically grants hardware input ACLs and runs both concurrently.
+
+You can also run headless with streaming logs:
+```bash
+python3 launcher.py --both --debug
+```
+
+### The Linux desktop typer
+
+Type Manglish into any Linux application (browsers, Slack, Discord, terminal, text editors) and have it replaced inline with Malayalam when you press Space or Enter:
+
+```bash
+# Direct launch (auto-detects keyboard)
+sudo python3 typer/run.py
+
+# Or grant user ACL once and run without sudo
+sudo setfacl -m u:$USER:rw /dev/uinput /dev/input/event*
+python3 typer/run.py
+```
+
+- Tap **`Right-Alt`** at any time to toggle between Manglish mode and normal English pass-through mode.
+- Press **`Esc`** to cancel the current word buffer.
+- Press **`Ctrl+C`** to cleanly unhook devices and exit.
+
+See [`typer/ARCHITECTURE.md`](typer/ARCHITECTURE.md) for full architecture and operation details.
+
+### The neural transformer visualizer
+
+Inspect authentic character-level Transformer attention and autoregressive decoding in real time:
+
+```bash
+python3 visualizer/server.py --port 5000
+```
+
+Open `http://localhost:5000` in your browser. Type words into the prompt or type into any desktop window to see:
+- Real cross-attention Bezier ribbons across all 4 attention heads or isolated per head.
+- Step-by-step decoder generation cards showing candidate logits and beam branch scores.
+- Interactive token-to-token attention heatmap matrix.
+- Automatic 0-FLOP idle standby state when you pause typing.
+
+See [`visualizer/ARCHITECTURE.md`](visualizer/ARCHITECTURE.md) for full telemetry and architecture specifications.
 
 ### The web demo
 
@@ -579,6 +645,9 @@ run, so a run can be repeated exactly.
 ## The repository
 
 ```
+launcher.py  unified interactive terminal dashboard & service manager
+typer/       system-wide Linux desktop live transliteration daemon (Wayland & X11)
+visualizer/  authentic real-time ONNX Transformer attention & decoder visualizer
 model/       the model, the training, the evaluation and the export
   src/       tokenizer, normalization, seq2seq, data, decode, metrics, rules,
              augment, lexicon, ngram, prefix, suggest
@@ -589,7 +658,7 @@ runtime/     python, js and kotlin inference
 apps/        expo-web (the demo) and android (the input method)
 scripts/     the parity check, the baselines, the ablations, the tuning, the builds
 evals/       the adhoc test set, the Mozhi conformance cases, the results
-tests/       108 unit tests
+tests/       108 unit tests (plus 12 typer self-tests)
 assets/      the model bundle that the release builds against
 docs/        the architecture, the protocol, the latency, the release guide
 ```
@@ -601,7 +670,9 @@ docs/        the architecture, the protocol, the latency, the release guide
 | [`REPORT.md`](REPORT.md) | The full write up of the project, with every measurement |
 | [`TESTING.md`](TESTING.md) | How to test every part of it, module by module |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | The plan the project was built from, and its status |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The design of the system and of the runtimes |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The design of the system, runtimes, and desktop daemons |
+| [`typer/ARCHITECTURE.md`](typer/ARCHITECTURE.md) | Linux Desktop live transliteration daemon architecture and operational guide |
+| [`visualizer/ARCHITECTURE.md`](visualizer/ARCHITECTURE.md) | Real-time ONNX Transformer visualizer architecture and telemetry specifications |
 | [`docs/EVAL_PROTOCOL.md`](docs/EVAL_PROTOCOL.md) | How the numbers are produced |
 | [`docs/LATENCY.md`](docs/LATENCY.md) | Where the time went and what it is now |
 | [`docs/MANGLISH_STYLE_NOTES.md`](docs/MANGLISH_STYLE_NOTES.md) | The reasoning behind every augmentation rule |

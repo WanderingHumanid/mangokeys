@@ -27,10 +27,13 @@
                                   │  best.pt + tokenizer.json
                                   ▼
    ┌───────────────────────────────────────────────────────────────┐
-   │  runtime/                                                     │
+   │  runtime/ & desktop tools                                     │
    │    python/transliterator.py    reference, onnxruntime         │
    │    js/transliterator.js        onnxruntime-web, in a browser  │
-   │    kotlin/Transliterator.kt    onnxruntime-mobile, on a phone  │
+   │    kotlin/Transliterator.kt    onnxruntime-mobile, on a phone │
+   │    typer/                      system-wide Linux desktop daemon│
+   │    visualizer/                 real-time ONNX visualizer      │
+   │    launcher.py                 unified terminal control center │
    └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -98,6 +101,42 @@ The measurement on the Aksharantar test set shows the problem clearly: the
 rules get Top-1 6.1% and CER 57.3%, and they get the ambiguity classes in
 `docs/MANGLISH_STYLE_NOTES.md` exactly wrong, because the roman text does not
 carry the information needed to resolve them.
+
+## The Linux Desktop Architecture (`typer/`)
+
+The desktop daemon provides instantaneous, system-wide transliteration without
+modifying system files or installing root systemd services:
+
+1. **Multi-Keyboard Kernel Snooping**: Discovers physical keyboards under
+   `/dev/input/event*` via capability masks and listens concurrently via
+   `select.select()`.
+2. **Typing State Machine**: Tracks characters, modifiers (`Shift`, `Caps Lock`
+   for retroflex consonants like `T` $\to$ ട), and triggers replacement on
+   delimiters (`Space`, `Enter`). `Right-Alt` provides a zero-lag mode toggle.
+3. **Atomic Replacement Pipeline**: Stashes existing clipboard state, copies
+   transliterated Malayalam to clipboard, emits backspaces via virtual
+   `/dev/uinput`, and pastes with `Ctrl+V`. Safely isolates background
+   clipboard brokers to prevent Wayland pipe deadlocks.
+4. **POSIX ACL Security**: Grants non-root hardware access directly to `$USER`
+   via `setfacl`, eliminating root authorization issues under Wayland.
+
+Full details are documented in [`typer/ARCHITECTURE.md`](../typer/ARCHITECTURE.md).
+
+## The Real-Time Neural Visualizer Architecture (`visualizer/`)
+
+A live telemetry and inspection platform for the character-level Transformer:
+
+1. **Authentic ONNX Inference**: Runs `encoder.onnx` and `decoder.onnx` from
+   `assets/release/model/` with genuine multi-head attention weights, layer
+   norms, and beam probabilities (no simulated animations).
+2. **Dynamic 0-FLOP Standby**: Senses when typing pauses and enters zero-compute
+   idle mode, waking on the next keystroke.
+3. **Dual Playback Modes**: Supports 60 FPS dynamic live typing or step-by-step
+   interactive token generation with variable-speed scrubbing.
+4. **Visual Interface**: SVG attention ribbons across all 4 heads, step decoder
+   candidate cards, and token alignment heatmaps.
+
+Full details are documented in [`visualizer/ARCHITECTURE.md`](../visualizer/ARCHITECTURE.md).
 
 ## What is measured where
 

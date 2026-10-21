@@ -48,7 +48,10 @@ downloaded, and no module asks for a permission on the phone.
 | Android runtime | `runtime/kotlin/` | the same inference in Kotlin |
 | Android app | `apps/android/` | the input method itself |
 | Web demo | `apps/expo-web/` | the expo page |
-| Tests | `tests/`, `runtime/kotlin-test/` | unit tests |
+| Linux desktop daemon | `typer/` | system-wide Linux typing daemon |
+| Neural visualizer | `visualizer/` | authentic real-time ONNX attention visualizer |
+| Unified launcher | `launcher.py` | terminal control center and log monitor |
+| Tests | `tests/`, `typer/test_typer.py`, `runtime/kotlin-test/` | unit and system tests |
 
 ---
 
@@ -466,11 +469,21 @@ a background thread and the strip is updated from the main thread.
 ## 10. The whole test suite
 
 ```bash
-# Python unit tests
+# Python model and data unit tests
 python -m pytest tests -q
+
+# Linux desktop typer 12-stage self-tests
+python3 typer/test_typer.py
+
+# Typer hardware-free dry-run simulation
+python3 typer/run.py --dry-run
 
 # The Kotlin runtime tests
 cd runtime && ./gradlew test
+
+# Visualizer health and extraction verification (when running)
+curl -s http://localhost:5000/api/health
+curl -s "http://localhost:5000/api/extract?text=namaskaram&beam=4"
 ```
 
 ---
