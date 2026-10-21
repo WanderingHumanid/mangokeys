@@ -24,12 +24,11 @@ import argparse
 import json
 import sys
 import time
-from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from model.src.lexicon import Lexicon  # noqa: E402
+from model.src.lexicon import build_lexicon  # noqa: E402
 from model.src.metrics import ErrorCounter  # noqa: E402
 from model.src.ngram import CharNgram  # noqa: E402
 from model.src.suggest import SuggestionEngine, Weights  # noqa: E402
@@ -52,61 +51,61 @@ def read_rows(path: Path, limit: int = 0) -> list[dict]:
     return rows
 
 
-def build_lexicon(path: Path, extra: Path | None, limit: int) -> Lexicon:
-    """The word list of the keyboard.
-
-    The word list is a resource, not a model. A real dictionary of Malayalam
-    holds every common word, so the words under test are in it. The model has
-    never seen them.
-    """
-    counts: Counter[str] = Counter()
-    for source in (path, extra):
-        if source is None or not source.exists():
-            continue
-        with source.open(encoding="utf-8") as handle:
-            for line in handle:
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) < 2:
-                    continue
-                counts[parts[1]] += 1
-    return Lexicon.from_counts(dict(counts), limit=limit)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--onnx", default="runs/demo/onnx-int8")
     parser.add_argument("--tokenizer", default="runs/ml_mini/tokenizer.json")
     parser.add_argument("--data", default="data/processed/test_aksharantar.tsv")
     parser.add_argument("--train", default="data/processed/train.tsv")
+    parser.add_argument("--frequency", default="data/raw/frequency/ml_50k.txt")
     parser.add_argument("--ngram", default="data/processed/ngram.txt")
-    parser.add_argument("--lexicon-size", type=int, default=250000)
+    parser.add_argument("--lexicon-size", type=int, default=50000)
     parser.add_argument("--beam", type=int, default=4)
     parser.add_argument("--n-best", type=int, default=5)
     parser.add_argument("--limit", type=int, default=0, help="rows to evaluate")
+    parser.add_argument("--weights", default="evals/results/weights.json")
     parser.add_argument("--out", default="evals/results/suggestions.json")
     args = parser.parse_args()
 
     rows = read_rows(Path(args.data), args.limit)
     print(f"rows: {len(rows)}")
 
-    lexicon = build_lexicon(Path(args.train), Path(args.data), args.lexicon_size)
+    # The word list is built from the corpus and the frequency list only.
+    # Nothing from the set under test goes into it.
+    lexicon = build_lexicon(
+        args.train,
+        args.frequency,
+        limit=args.lexicon_size,
+    )
     print(f"lexicon: {len(lexicon)} words")
+    covered = sum(1 for row in rows if row["native"] in lexicon)
+    print(f"the word list knows {covered} of the {len(rows)} words under test")
 
     ngram = CharNgram.load(args.ngram) if Path(args.ngram).exists() else None
     print(f"language model: {'loaded' if ngram else 'missing'}")
 
+    weights = Weights()
+    if Path(args.weights).exists():
+        saved = json.loads(Path(args.weights).read_text(encoding="utf-8"))["weights"]
+        for name, value in saved.items():
+            if hasattr(weights, name):
+                setattr(weights, name, value)
+        print(f"weights: {saved}")
+
     engine = Transliterator(args.onnx, args.tokenizer, beam=args.beam)
-    ranker = SuggestionEngine(lexicon=lexicon, ngram=ngram, weights=Weights(limit=8))
+    ranker = SuggestionEngine(lexicon=lexicon, ngram=ngram, weights=weights)
+    without_ngram = SuggestionEngine(lexicon=lexicon, ngram=None, weights=weights)
 
     model_counter = ErrorCounter()
     snapped_counter = ErrorCounter()
+    no_ngram_counter = ErrorCounter()
     rules_counter = ErrorCounter()
 
     model_ms = 0.0
     snap_ms = 0.0
     quick_ms = 0.0
-    completion_hits = Counter()
-    completion_total = Counter()
+    completion_hits = {3: 0, 4: 0, 5: 0}
+    completion_total = {3: 0, 4: 0, 5: 0}
 
     for row in rows:
         roman = row["roman"]
@@ -129,6 +128,9 @@ def main() -> None:
         snapped_counter.update(reference, best)
         snapped_counter.update_ranking(reference, [item.text for item in ranked])
 
+        plain = without_ngram.suggest(roman, texts, scores)
+        no_ngram_counter.update(reference, plain[0].text if plain else "")
+
         start = time.perf_counter()
         quick = ranker.suggest(roman, use_rules=True)
         quick_ms += time.perf_counter() - start
@@ -148,8 +150,10 @@ def main() -> None:
     result = {
         "file": Path(args.data).name,
         "n": len(rows),
+        "dictionary_coverage": round(covered / max(len(rows), 1), 4),
         "model": model_counter.summary(),
-        "snapped": snapped_counter.summary(),
+        "with_word_list": snapped_counter.summary(),
+        "without_language_model": no_ngram_counter.summary(),
         "rules_only": rules_counter.summary(),
         "completion": {
             str(cut): {
@@ -161,14 +165,16 @@ def main() -> None:
         },
         "latency_ms": {
             "model": round(model_ms * 1000 / total, 2),
-            "snapped": round(snap_ms * 1000 / total, 2),
+            "with_word_list": round(snap_ms * 1000 / total, 2),
             "quick": round(quick_ms * 1000 / total, 2),
         },
+        "weights": {name: getattr(weights, name) for name in ("model", "proximity", "language", "frequency")},
     }
 
-    print(f"model   top1 {model_counter.accuracy:.4f}  cer {model_counter.cer:.4f}")
-    print(f"snapped top1 {snapped_counter.accuracy:.4f}  cer {snapped_counter.cer:.4f}")
-    print(f"rules   top1 {rules_counter.accuracy:.4f}  cer {rules_counter.cer:.4f}")
+    print(f"model only          top1 {model_counter.accuracy:.4f}  cer {model_counter.cer:.4f}")
+    print(f"with the word list  top1 {snapped_counter.accuracy:.4f}  cer {snapped_counter.cer:.4f}")
+    print(f"no language model   top1 {no_ngram_counter.accuracy:.4f}")
+    print(f"rules only          top1 {rules_counter.accuracy:.4f}  cer {rules_counter.cer:.4f}")
     for cut, numbers in result["completion"].items():
         print(f"completion after {cut} letters: {numbers['rate']:.4f}")
     print(f"latency: {result['latency_ms']}")

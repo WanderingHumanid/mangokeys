@@ -1,9 +1,11 @@
 {
-  "top1": 0.9075,
+  "top1": 0.7933,
   "weights": {
-    "model": 0.5,
-    "proximity": 1.0,
+    "model": 1.0,
+    "known": 4.0,
+    "completion": 0.0,
+    "variation": -2.0,
     "language": 0.0,
-    "frequency": 0.25
+    "frequency": 0.0
   }
 }

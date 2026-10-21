@@ -2,10 +2,17 @@
 
     python -m scripts.build_lexicon --out data/processed/lexicon
 
-The counts come from the training corpus. A word that the corpus spells in
-several ways shows up several times, and a word that is written once shows up
-once, so the count is a rough measure of how common a word is. It is good
-enough to put the common words at the top of the suggestion strip.
+The list is built from two sources.
+
+The corpus says which words the model was trained on and how often they were
+written there. The frequency list says which words people really use. The
+corpus misses many of the commonest words of the language, and it gives every
+word about the same count, so the frequency list is what decides the order
+of the list and the count of every word.
+
+The list keeps both spellings. The corpus writes a word in its own way, and
+the frequency list writes it in the standard way, and the model produces the
+corpus spelling.
 """
 
 from __future__ import annotations
@@ -13,34 +20,19 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from data.scripts.pairs import is_augmented  # noqa: E402
-from model.src.lexicon import Lexicon  # noqa: E402
-
-
-def count_words(path: Path) -> Counter[str]:
-    """Count the native words in a training file, ignoring the augmented rows."""
-    counts: Counter[str] = Counter()
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            parts = line.rstrip("\n").split("\t")
-            if len(parts) < 2:
-                continue
-            if is_augmented(parts):
-                continue
-            counts[parts[1]] += 1
-    return counts
+from model.src.lexicon import build_lexicon, count_corpus  # noqa: E402
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train", default="data/processed/train.tsv")
+    parser.add_argument("--frequency", default="data/raw/frequency/ml_50k.txt")
     parser.add_argument("--out", default="data/processed/lexicon")
-    parser.add_argument("--limit", type=int, default=250000, help="words to keep")
+    parser.add_argument("--limit", type=int, default=50000, help="words to keep")
     parser.add_argument("--distance", type=int, default=2)
     parser.add_argument(
         "--keep",
@@ -51,7 +43,7 @@ def main() -> None:
     args = parser.parse_args()
 
     start = time.time()
-    counts = count_words(Path(args.train))
+    counts = count_corpus(args.train)
     print(f"corpus vocabulary: {len(counts)} words in {time.time() - start:.0f}s")
 
     keep: set[str] = set()
@@ -64,8 +56,12 @@ def main() -> None:
     if keep:
         print(f"keeping {len(keep)} extra words")
 
-    lexicon = Lexicon.from_counts(
-        dict(counts), limit=args.limit, max_distance=args.distance, keep=keep
+    lexicon = build_lexicon(
+        args.train,
+        args.frequency,
+        limit=args.limit,
+        max_distance=args.distance,
+        keep=keep,
     )
     print(f"lexicon: {len(lexicon)} words, edit distance {args.distance}")
 

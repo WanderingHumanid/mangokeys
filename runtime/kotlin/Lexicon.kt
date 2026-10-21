@@ -1,6 +1,7 @@
 package com.mangokeyboard.transliterator
 
-import java.io.DataInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.io.File
 
 /**
@@ -13,11 +14,12 @@ import java.io.File
  *
  * The class holds no Android types, so that it can be tested on a desktop.
  */
-class Lexicon private constructor(
-    val words: Array<String>,
-    private val counts: IntArray,
-    private val index: HashMap<Long, IntArray>,
-    private val maxDistance: Int,
+class Lexicon(
+    val words: Array<String> = emptyArray(),
+    private val counts: IntArray = IntArray(0),
+    private val indexKeys: LongArray = LongArray(0),
+    private val indexIds: IntArray = IntArray(0),
+    private val distance: Int = 2,
 ) {
     private val wordIds = HashMap<String, Int>(words.size * 2)
     private val skeletons = Array(words.size) { skeleton(words[it]) }
@@ -73,21 +75,19 @@ class Lexicon private constructor(
         indexBytes: ByteArray,
         maxDistance: Int,
     ): Lexicon {
-        val input = DataInputStream(indexBytes.inputStream())
-        val wordCount = input.readInt()
-        val size = input.readInt()
-        val grouped = HashMap<Long, MutableList<Int>>(size * 2)
-        repeat(size) {
-            val key = input.readLong()
-            val id = input.readInt()
-            grouped.getOrPut(key) { ArrayList() }.add(id)
+        val input = ByteBuffer.wrap(indexBytes).order(ByteOrder.LITTLE_ENDIAN)
+        val wordCount = input.int
+        val size = input.int
+        val keys = LongArray(size)
+        val ids = IntArray(size)
+        for (position in 0 until size) {
+            keys[position] = input.long
+            ids[position] = input.int
         }
         if (wordCount != words.size) {
             throw IllegalStateException("the word list and the index do not match")
         }
-        val index = HashMap<Long, IntArray>(grouped.size * 2)
-        for ((key, ids) in grouped) index[key] = ids.toIntArray()
-        return Lexicon(words.toTypedArray(), counts.toIntArray(), index, maxDistance)
+        return Lexicon(words.toTypedArray(), counts.toIntArray(), keys, ids, maxDistance)
     }
 
     fun contains(word: String): Boolean = wordIds.containsKey(word)
@@ -96,22 +96,48 @@ class Lexicon private constructor(
 
     /** The real words closest to a string, the best match first. */
     fun nearest(word: String, limit: Int = 8): List<String> {
+        return nearestWithDistance(word, limit).map { it.first }
+    }
+
+    /** The real words closest to a string, with the distance to them. */
+    fun nearestWithDistance(word: String, limit: Int = 8): List<Pair<String, Int>> {
         if (word.isEmpty()) return emptyList()
         val items = letters(word)
         val found = HashMap<Int, Int>()
-        for (variant in deletions(items, maxDistance)) {
-            val ids = index[fnv1a(variant)] ?: continue
-            for (id in ids) {
-                val distance = levenshtein(items, letters(words[id]))
-                if (distance > maxDistance) continue
+        for (variant in deletions(items, distance)) {
+            for (id in lookup(fnv1a(variant))) {
+                val gap = levenshtein(items, letters(words[id]))
+                if (gap > distance) continue
                 val known = found[id]
-                if (known == null || distance < known) found[id] = distance
+                if (known == null || gap < known) found[id] = gap
             }
         }
         return found.entries
             .sortedWith(compareBy({ it.value }, { -counts[it.key] }, { words[it.key] }))
             .take(limit)
-            .map { words[it.key] }
+            .map { Pair(words[it.key], it.value) }
+    }
+
+    /** The word ids that the index holds under a key. */
+    private fun lookup(key: Long): IntArray {
+        var low = 0
+        var high = indexKeys.size - 1
+        while (low <= high) {
+            val middle = (low + high) / 2
+            val value = indexKeys[middle]
+            if (value < key) {
+                low = middle + 1
+            } else if (value > key) {
+                high = middle - 1
+            } else {
+                var start = middle
+                while (start > 0 && indexKeys[start - 1] == key) start--
+                var end = middle
+                while (end + 1 < indexKeys.size && indexKeys[end + 1] == key) end++
+                return indexIds.copyOfRange(start, end + 1)
+            }
+        }
+        return IntArray(0)
     }
 
     /** The real words that start with a native prefix, the commonest first. */
@@ -130,35 +156,42 @@ class Lexicon private constructor(
         return out
     }
 
-    /** The real words around a string, the exact one first. */
-    fun expand(text: String, limit: Int = 8): List<String> {
+    /** The real words around a string, with how far they are from it. */
+    fun expand(text: String, limit: Int = 8): List<Pair<String, Int>> {
         if (text.isEmpty()) return emptyList()
-        val out = ArrayList<String>()
-        if (contains(text)) out.add(text)
-        for (word in complete(text, limit * 2)) {
-            if (!out.contains(word)) out.add(word)
-            if (out.size >= limit) break
+        val out = ArrayList<Pair<String, Int>>()
+        val seen = HashSet<String>()
+        if (contains(text)) {
+            out.add(Pair(text, 0))
+            seen.add(text)
         }
-        if (out.size < limit) {
-            for (word in nearest(text, limit * 2)) {
-                if (!out.contains(word)) out.add(word)
-                if (out.size >= limit) break
-            }
+        for (word in complete(text, limit * 2)) {
+            if (!seen.add(word)) continue
+            out.add(Pair(word, 1))
+            if (out.size >= limit) return out
+        }
+        for (item in nearestWithDistance(text, limit * 2)) {
+            if (!seen.add(item.first)) continue
+            out.add(item)
+            if (out.size >= limit) break
         }
         return out.take(limit)
     }
 
     val size: Int get() = words.size
+
+    /** How far the lookup looks from a word. */
+    val maxDistance: Int get() = distance
 }
 
 /** The consonant letters of a word, without the marks and the chillus. */
 fun skeleton(word: String): String {
     val out = StringBuilder()
     for (char in word) {
-        val letter = CHILLU_BASE[char] ?: char.toString()
+        val letter: String = CHILLU_BASE[char] ?: char.toString()
         if (letter.length != 1) continue
         if (MARKS.contains(letter[0])) continue
-        val code = letter[0]
+        val code: Int = letter[0].code
         if (code in 0x0D15..0x0D39) out.append(letter)
     }
     return out.toString()
@@ -232,11 +265,11 @@ private const val SEPARATOR = "\u001F"
 
 private val MARKS = "ാിീുൂൃൄ൅െേൈൊോൌൗ്ം".toSet()
 
-private val CHILLU_BASE = mapOf(
-    "ൺ" to "ണ",
-    "ൻ" to "ന",
-    "ർ" to "ര",
-    "ൽ" to "ല",
-    "ൾ" to "ള",
-    "ൿ" to "ക",
+private val CHILLU_BASE: Map<Char, String> = mapOf(
+    'ൺ' to "ണ",
+    'ൻ' to "ന",
+    'ർ' to "ര",
+    'ൽ' to "ല",
+    'ൾ' to "ള",
+    'ൿ' to "ക",
 )

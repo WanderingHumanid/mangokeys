@@ -1,4 +1,5 @@
 import { Transliterator, buildTokenizer, normalizeRoman } from "./transliterator.js";
+import { ruleConvert } from "./suggest.js";
 
 const MAX_SRC = 48;
 const MAX_TGT = 64;
@@ -8,7 +9,7 @@ const elements = {
   word: document.getElementById("word"),
   modelOutput: document.getElementById("model-output"),
   ruleOutput: document.getElementById("rule-output"),
-  candidates: document.getElementById("candidate-list"),
+  strip: document.getElementById("suggestion-strip"),
   benchBody: document.querySelector("#bench-table tbody"),
   benchNote: document.getElementById("bench-note"),
 };
@@ -17,66 +18,10 @@ let worker = null;
 let timer = null;
 let requestId = 0;
 
-/** A small rule engine, so the page can show what the model adds. */
-const CONSONANTS = {
-  k: "ക", kh: "ഖ", g: "ഗ", gh: "ഘ", ng: "ങ", ch: "ച", chh: "ഛ",
-  j: "ജ", jh: "ഝ", nj: "ഞ", t: "ട", T: "ട", th: "ഠ", D: "ഡ",
-  dh: "ഢ", N: "ണ", thh: "ത", n: "ന", p: "പ", ph: "ഫ", b: "ബ",
-  bh: "ഭ", m: "മ", y: "യ", r: "ര", l: "ല", v: "വ", sh: "ശ",
-  Sh: "ഷ", s: "സ", h: "ഹ", L: "ള", zh: "ഴ", R: "റ", rr: "റ",
-};
-const VOWELS = { a: "അ", aa: "ആ", i: "ഇ", ii: "ഈ", u: "ഉ", uu: "ഊ", e: "എ", ee: "ഏ", ai: "ഐ", o: "ഒ", O: "ഓ", au: "ഔ" };
-const SIGNS = { a: "", aa: "ാ", i: "ി", ii: "ീ", u: "ു", uu: "ൂ", e: "െ", ee: "േ", ai: "ൈ", o: "ൊ", oo: "ോ", au: "ൗ" };
-const CHILLUS = { "ണ": "ൺ", "ന": "ൻ", "ര": "ർ", "ല": "ൽ", "ള": "ൾ", "ക": "ൿ" };
-
-function ruleConvert(text) {
-  const keys = (table) => Object.keys(table).sort((a, b) => b.length - a.length);
-  const vowelKeys = keys(VOWELS);
-  const signKeys = keys(SIGNS);
-  const consonantKeys = keys(CONSONANTS);
-
-  let out = "";
-  let index = 0;
-  while (index < text.length) {
-    const consonant = consonantKeys.find((key) => text.startsWith(key, index));
-    if (consonant) {
-      let base = CONSONANTS[consonant];
-      const doubled = consonant.length === 1 && text[index + 1] === consonant;
-      const advance = doubled ? 2 : consonant.length;
-      if (doubled) base = base + "്" + base;
-      const sign = signKeys.find((key) => text.startsWith(key, index + advance));
-      if (sign !== undefined) {
-        out += base + SIGNS[sign];
-        index += advance + sign.length;
-        continue;
-      }
-      const isLast = index + advance >= text.length;
-      if (isLast && !doubled && base === "മ") {
-        out += "ം";
-      } else if (isLast && !doubled && CHILLUS[base]) {
-        out += CHILLUS[base];
-      } else {
-        out += base + "്";
-      }
-      index += advance;
-      continue;
-    }
-    const vowel = vowelKeys.find((key) => text.startsWith(key, index));
-    if (vowel) {
-      out += VOWELS[vowel];
-      index += vowel.length;
-      continue;
-    }
-    out += text[index];
-    index += 1;
-  }
-  return out;
-}
-
 function startWorker() {
   worker = new Worker("./worker.js", { type: "module" });
   worker.onmessage = (event) => {
-    const { id, candidates, error, ready, threads, text } = event.data;
+    const { id, candidates, error, ready, threads, text, ranked } = event.data;
     if (error) {
       elements.status.textContent = `model error: ${error}`;
       elements.status.classList.add("error");
@@ -89,7 +34,7 @@ function startWorker() {
     if (id !== requestId) return;
     if (!candidates) return;
     elements.modelOutput.textContent = text ?? candidates[0] ?? " ";
-    elements.candidates.innerHTML = candidates.map((c) => `<li>${c}</li>`).join("");
+    showStrip(ranked ?? candidates);
   };
 }
 
@@ -99,12 +44,32 @@ function requestModel(text) {
   worker.postMessage({ id: requestId, roman: text, nBest: 5 });
 }
 
+/** The suggestion strip, the way a keyboard shows it. */
+function showStrip(words) {
+  elements.strip.innerHTML = "";
+  for (const word of words) {
+    const button = document.createElement("button");
+    button.className = "suggestion";
+    button.textContent = word;
+    button.addEventListener("click", () => applySuggestion(word));
+    elements.strip.appendChild(button);
+  }
+}
+
+/** Put the chosen word into the text, in place of the word being typed. */
+function applySuggestion(word) {
+  const value = elements.word.value.replace(/\S+\s*$/, "");
+  elements.word.value = `${value}${word} `;
+  elements.word.focus();
+  update();
+}
+
 function update() {
   const text = normalizeRoman(elements.word.value);
   elements.ruleOutput.textContent = text ? ruleConvert(text) : " ";
   if (!text) {
     elements.modelOutput.textContent = " ";
-    elements.candidates.innerHTML = "";
+    showStrip([]);
     return;
   }
   requestModel(text);

@@ -60,12 +60,12 @@ def main() -> None:
 
         output = page.locator("#model-output").inner_text()
         rules = page.locator("#rule-output").inner_text()
-        candidates = page.locator("#candidate-list").inner_text()
+        suggestions = page.locator("#suggestion-strip button").all_inner_texts()
 
         print(f"input       {args.word}")
         print(f"model       {output}")
         print(f"rules       {rules}")
-        print(f"candidates  {candidates.replace(chr(10), ' | ')}")
+        print(f"suggestions {' | '.join(suggestions)}")
 
         rows = page.locator("#bench-table tbody tr").count()
         print(f"benchmark rows: {rows}")
@@ -96,6 +96,9 @@ def main() -> None:
 
     if not output.strip():
         print("the model produced nothing")
+        raise SystemExit(1)
+    if not suggestions:
+        print("the suggestion strip is empty")
         raise SystemExit(1)
     print("\nthe demo works")
 

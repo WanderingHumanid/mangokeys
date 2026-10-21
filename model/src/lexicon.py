@@ -111,6 +111,7 @@ class Lexicon:
         self.counts = counts
         self.max_distance = max_distance
         self._word_ids = {word: index for index, word in enumerate(words)}
+        self._letter_cache: dict[int, list[str]] = {}
         self._skeletons = [skeleton(word) for word in words]
         self._skeleton_buckets: dict[int, dict[str, list[int]]] = {
             1: defaultdict(list),
@@ -165,7 +166,7 @@ class Lexicon:
         found: dict[int, int] = {}
         for variant in _deletions(items, self.max_distance):
             for word_index in self._index.get(fnv1a(variant), ()):
-                distance = levenshtein(items, letters(self.words[word_index]))
+                distance = levenshtein(items, self._letter_list(word_index))
                 if distance <= self.max_distance and distance < found.get(word_index, 99):
                     found[word_index] = distance
 
@@ -174,6 +175,14 @@ class Lexicon:
             key=lambda pair: (pair[1], -self.counts[pair[0]], self.words[pair[0]]),
         )
         return [(self.words[word_index], distance) for word_index, distance in ranked[:limit]]
+
+    def _letter_list(self, word_index: int) -> list[str]:
+        """The letters of a word, kept so that the lookup stays quick."""
+        cached = self._letter_cache.get(word_index)
+        if cached is None:
+            cached = letters(self.words[word_index])
+            self._letter_cache[word_index] = cached
+        return cached
 
     def complete(self, prefix: str, limit: int = 8) -> list[str]:
         """The real words that start with a native prefix, the commonest first."""
@@ -275,18 +284,117 @@ class Lexicon:
         limit: int = 0,
         max_distance: int = 2,
         keep: set[str] | None = None,
+        order: list[str] | None = None,
     ) -> "Lexicon":
-        """Build a lexicon from native words and their corpus counts.
+        """Build a lexicon from native words and their counts.
 
-        The commonest words are kept. The words in `keep` are always kept,
-        whatever their count, because a real dictionary holds the words that
-        people type rather than the words that the corpus repeats.
+        The words in `order` come first, in that order, and they are always
+        kept. The limit applies to the rest, the commonest first. The words
+        in `keep` are always kept as well.
         """
         keep = keep or set()
-        words = sorted(counts, key=lambda word: (-counts[word], word))
-        if limit:
-            chosen = set(words[:limit])
-            chosen.update(keep)
-            words = sorted(chosen, key=lambda word: (-counts[word], word))
+        counts = {**counts}
+        for word in keep:
+            counts.setdefault(word, 0)
+        order = [word for word in (order or []) if word in counts]
+        seen = set(order)
+        rest = sorted(
+            (word for word in counts if word not in seen),
+            key=lambda word: (-counts[word], word),
+        )
+        chosen = set(order) | set(rest[:limit]) | keep
+        position = {word: index for index, word in enumerate(order + rest)}
+        words = sorted(chosen, key=lambda word: position[word])
         values = [counts[word] for word in words]
         return cls(words, values, max_distance=max_distance)
+
+
+def count_corpus(path: str | Path) -> dict[str, int]:
+    """Count the native words of a training file, ignoring the augmented rows."""
+    counts: dict[str, int] = {}
+    with Path(path).open(encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 2:
+                continue
+            if len(parts) > 2 and parts[2] == "adhoc":
+                continue
+            counts[parts[1]] = counts.get(parts[1], 0) + 1
+    return counts
+
+
+def read_frequency(path: str | Path) -> list[tuple[str, int]]:
+    """Read a frequency list of native words and their counts."""
+    out: list[tuple[str, int]] = []
+    with Path(path).open(encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").rsplit(" ", 1)
+            if len(parts) != 2:
+                continue
+            out.append((parts[0], int(parts[1])))
+    return out
+
+
+def read_dakshina(directory: str | Path) -> dict[str, int]:
+    """Read the Malayalam lexicon of the Dakshina dataset.
+
+    The file has the native word, the romanization and the number of times
+    the pair was seen.
+    """
+    counts: dict[str, int] = {}
+    directory = Path(directory)
+    for name in ("train.tsv", "valid.tsv", "test.tsv"):
+        path = directory / name
+        if not path.exists():
+            continue
+        with path.open(encoding="utf-8") as handle:
+            for number, line in enumerate(handle):
+                if number == 0:
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) < 3:
+                    continue
+                try:
+                    count = int(parts[2])
+                except ValueError:
+                    continue
+                counts[parts[0]] = counts.get(parts[0], 0) + count
+    return counts
+
+
+def build_lexicon(
+    train: str | Path = "data/processed/train.tsv",
+    frequency: str | Path | None = "data/raw/frequency/ml_50k.txt",
+    dakshina: str | Path | None = "data/raw/dakshina",
+    limit: int = 50000,
+    max_distance: int = 2,
+    keep: set[str] | None = None,
+) -> "Lexicon":
+    """Build the word list of the keyboard.
+
+    The list comes from three sources. The corpus says which words the model
+    was trained on. The frequency list of the subtitles and the Malayalam
+    lexicon of the Dakshina dataset say which words people really use, and
+    they decide the count of every word.
+
+    The words of the frequency list come first, then the words of the
+    Dakshina lexicon, then the commonest words of the corpus.
+    """
+    counts = count_corpus(train)
+    order: list[str] = []
+    if frequency is not None and Path(frequency).exists():
+        for word, count in read_frequency(frequency):
+            counts[word] = max(counts.get(word, 0), count)
+            order.append(word)
+    if dakshina is not None and Path(dakshina).exists():
+        for word, count in sorted(read_dakshina(dakshina).items(), key=lambda item: -item[1]):
+            counts[word] = max(counts.get(word, 0), count)
+            if word not in order:
+                order.append(word)
+    return Lexicon.from_counts(
+        counts,
+        limit=limit,
+        max_distance=max_distance,
+        keep=keep,
+        order=order,
+    )

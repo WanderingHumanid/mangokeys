@@ -56,6 +56,7 @@ header h1 {
 
 .input-panel,
 .output-panel,
+.strip-panel,
 .candidates,
 .benchmarks {
   background: var(--panel);
@@ -137,6 +138,29 @@ label,
 .native.muted {
   color: var(--muted);
   font-size: 1.15rem;
+}
+
+.suggestion-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+}
+
+.suggestion {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fdfcfe;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.suggestion:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .candidates ol {

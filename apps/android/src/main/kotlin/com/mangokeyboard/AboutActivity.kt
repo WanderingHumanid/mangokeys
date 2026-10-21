@@ -2,7 +2,6 @@ package com.mangokeyboard
 
 import android.os.Bundle
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 
 /** A short description of what the keyboard is and what it does not do. */
 class AboutActivity : android.app.Activity() {

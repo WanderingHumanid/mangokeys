@@ -64,9 +64,11 @@ export function ruleConvert(text) {
 
 export const DEFAULT_WEIGHTS = {
   model: 1.0,
-  language: 1.0,
-  frequency: 0.2,
-  unknown: -2.0,
+  known: 4.0,
+  completion: 0.0,
+  variation: -2.0,
+  language: 0.0,
+  frequency: 0.0,
   rulePenalty: -12.0,
   limit: 8,
 };
@@ -83,24 +85,57 @@ export class SuggestionEngine {
     if (!text) return [];
 
     const pool = new Map();
-    const offer = (word, source, score) => {
+    const best = modelScores.length ? modelScores[0] : 0;
+
+    const add = (word, source, score) => {
       const known = pool.get(word);
       if (known) {
         known.modelScore = Math.max(known.modelScore, score);
-        return;
+        return known;
       }
-      pool.set(word, { text: word, source, modelScore: score, lmScore: 0, count: 0, total: 0 });
-      for (const neighbour of this.lexicon.expand(word, 4)) {
-        if (neighbour === word) continue;
-        const other = pool.get(neighbour);
-        if (other) other.modelScore = Math.max(other.modelScore, score);
-        else pool.set(neighbour, { text: neighbour, source, modelScore: score, lmScore: 0, count: 0, total: 0 });
+      const candidate = {
+        text: word,
+        source,
+        modelScore: score,
+        lmScore: 0,
+        count: 0,
+        known: false,
+        completion: false,
+        variation: false,
+        total: 0,
+      };
+      pool.set(word, candidate);
+      return candidate;
+    };
+
+    const offer = (word, source, score) => {
+      const candidate = add(word, source, score);
+      // The answer is a real word when the word list knows it. The words
+      // that the model itself proposed get the bonus, because the model is
+      // the better judge of what the user meant.
+      if (source === "model" && this.lexicon.contains(word)) candidate.known = true;
+
+      // The words that start with the answer are the completion. They are
+      // the answer only when the model did not give a whole word.
+      if (!candidate.known) {
+        for (const other of this.lexicon.complete(word, 3)) {
+          if (other === word) continue;
+          const neighbour = add(other, source, score);
+          neighbour.completion = true;
+        }
+      }
+
+      // The words that resemble the answer are the variations.
+      for (const item of this.lexicon.nearestWithDistance(word, 3)) {
+        if (item.word === word) continue;
+        const neighbour = add(item.word, source, score);
+        neighbour.variation = true;
       }
     };
 
     modelCandidates.forEach((word, index) => {
       if (!word) return;
-      offer(word, "model", modelScores[index] ?? 0);
+      offer(word, "model", (modelScores[index] ?? best) - best);
     });
 
     if (useRules) {
@@ -112,9 +147,11 @@ export class SuggestionEngine {
       candidate.lmScore = this.ngram ? this.ngram.meanScore(candidate.text) : 0;
       candidate.total =
         this.weights.model * candidate.modelScore +
+        this.weights.known * (candidate.known ? 1 : 0) +
+        this.weights.completion * (candidate.completion ? 1 : 0) +
+        this.weights.variation * (candidate.variation ? 1 : 0) +
         this.weights.language * candidate.lmScore +
         this.weights.frequency * Math.log1p(candidate.count);
-      if (!candidate.count) candidate.total += this.weights.unknown;
     }
 
     return [...pool.values()]

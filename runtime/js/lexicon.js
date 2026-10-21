@@ -161,6 +161,10 @@ export class Lexicon {
   }
 
   nearest(word, limit = 8) {
+    return this.nearestWithDistance(word, limit).map((item) => item.word);
+  }
+
+  nearestWithDistance(word, limit = 8) {
     if (!word) return [];
     const items = letters(word);
     const found = new Map();
@@ -175,9 +179,14 @@ export class Lexicon {
       }
     }
     return [...found.entries()]
-      .sort((a, b) => a[1] - b[1] || this.counts[b[0]] - this.counts[a[0]] || this.words[a[0]].localeCompare(this.words[b[0]]))
+      .sort(
+        (a, b) =>
+          a[1] - b[1] ||
+          this.counts[b[0]] - this.counts[a[0]] ||
+          this.words[a[0]].localeCompare(this.words[b[0]]),
+      )
       .slice(0, limit)
-      .map(([id]) => this.words[id]);
+      .map(([id, distance]) => ({ word: this.words[id], distance }));
   }
 
   complete(prefix, limit = 8) {
@@ -198,16 +207,22 @@ export class Lexicon {
   expand(text, limit = 8) {
     if (!text) return [];
     const out = [];
-    if (this.contains(text)) out.push(text);
-    for (const word of this.complete(text, limit * 2)) {
-      if (!out.includes(word)) out.push(word);
-      if (out.length >= limit) break;
+    const seen = new Set();
+    if (this.contains(text)) {
+      out.push({ word: text, distance: 0 });
+      seen.add(text);
     }
-    if (out.length < limit) {
-      for (const word of this.nearest(text, limit * 2)) {
-        if (!out.includes(word)) out.push(word);
-        if (out.length >= limit) break;
-      }
+    for (const word of this.complete(text, limit * 2)) {
+      if (seen.has(word)) continue;
+      seen.add(word);
+      out.push({ word, distance: 1 });
+      if (out.length >= limit) return out;
+    }
+    for (const item of this.nearestWithDistance(text, limit * 2)) {
+      if (seen.has(item.word)) continue;
+      seen.add(item.word);
+      out.push(item);
+      if (out.length >= limit) break;
     }
     return out.slice(0, limit);
   }

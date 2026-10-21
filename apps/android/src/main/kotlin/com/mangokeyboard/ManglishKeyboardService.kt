@@ -33,6 +33,7 @@ class ManglishKeyboardService : InputMethodService() {
     private val composing = StringBuilder()
     private val handler = Handler(Looper.getMainLooper())
     private var worker: Thread? = null
+    private var inputView: View? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -51,6 +52,7 @@ class ManglishKeyboardService : InputMethodService() {
 
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard, null)
+        inputView = view
         strip = view.findViewById(R.id.suggestion_strip)
         composingView = view.findViewById(R.id.composing)
 
@@ -116,13 +118,13 @@ class ManglishKeyboardService : InputMethodService() {
     private fun switchKeyboard() {
         val manager = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
                 as android.view.inputmethod.InputMethodManager
-        manager.switchToNextInputMethod(null)
+        manager.showInputMethodPicker()
     }
 
     // ------------------------------------------------------------ suggestions
 
     private fun firstSuggestion(): String? {
-        val view = currentInputView ?: return null
+        val view = inputView ?: return null
         val strip = view.findViewById<LinearLayout>(R.id.suggestion_strip)
         if (strip.childCount == 0) return null
         return (strip.getChildAt(0) as? TextView)?.text?.toString()

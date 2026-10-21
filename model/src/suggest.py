@@ -4,19 +4,22 @@ The model says which word the user probably meant, the word list says which
 words exist, and the language model says which of them is the natural one.
 This module puts the three together and returns a ranked list.
 
-The flow of one keystroke is:
+What the measurements say about the three signals.
 
-1. the rules give an instant answer, in well under a millisecond
-2. the model gives a better answer, in a few milliseconds
-3. both answers are looked up in the word list, which turns them into real
-   words
-4. the words are ranked by how close they are to the answer, how common
-   they are and how natural they sound
+The model is the best judge of what the user meant. It gets the word right
+more often than anything the word list can offer, so its answer comes first
+and the word list never replaces it.
 
-The rules and the model are both proposers. Nothing is thrown away before the
-ranking, because the rules know things the model does not and the other way
-round. A rule answer is not a word the model has never seen, and the model
-resolves the ambiguities that the rules cannot.
+The word list is a good judge of how a word is written. On the words it
+knows, snapping the answer to the nearest word in the list is worth fifteen
+points. On the words it does not know, snapping makes things worse, because
+the nearest word is then a different word. So the words around the answer are
+offered as alternatives, the way a keyboard offers variations.
+
+A word that extends the answer is a special case. When the user has typed
+half a word, the model says "ആശംസക" and the word list says "ആശംസകൾ" is a
+word that starts with it. That is the completion, and it is the reason the
+model is trained on prefixes as well as on whole words.
 """
 
 from __future__ import annotations
@@ -38,7 +41,9 @@ class Candidate:
     model_score: float = 0.0
     lm_score: float = 0.0
     count: int = 0
-    distance: int = 0
+    known: bool = False
+    completion: bool = False
+    variation: bool = False
     total: float = 0.0
 
 
@@ -46,16 +51,18 @@ class Candidate:
 class Weights:
     """How much each signal counts in the final ranking."""
 
-    # The score the model gave the answer.
+    # The score the model gave the answer, relative to its best answer.
     model: float = 1.0
-    # How close the word is to the answer the rules or the model gave.
-    proximity: float = 2.0
+    # A word that the word list knows.
+    known: float = 2.0
+    # A word that extends what the model said.
+    completion: float = 3.0
+    # A word that only resembles what the model said.
+    variation: float = -1.0
     # How natural the word sounds.
-    language: float = 1.0
+    language: float = 0.1
     # How common the word is.
-    frequency: float = 0.5
-    # A word that the word list does not know has to earn its place.
-    unknown: float = -2.0
+    frequency: float = 0.1
     # A candidate that came from the rules rather than from the model starts
     # with this score, so that the model is preferred when nothing else
     # separates the two.
@@ -89,18 +96,19 @@ class SuggestionEngine:
             return []
 
         pool: dict[str, Candidate] = {}
+        best = model_scores[0] if model_scores else 0.0
 
         for index, text in enumerate(model_candidates or []):
             if not text:
                 continue
             score = 0.0
             if model_scores and index < len(model_scores):
-                score = model_scores[index]
-            self._offer(pool, text, "model", score)
+                score = model_scores[index] - best
+            self._add(pool, text, "model", score)
 
         if use_rules:
             for text in self.rules.convert(roman)[:4]:
-                self._offer(pool, text, "rules", self.weights.rule_penalty)
+                self._add(pool, text, "rules", self.weights.rule_penalty)
 
         out = list(pool.values())
         for candidate in out:
@@ -110,25 +118,57 @@ class SuggestionEngine:
 
     # ---------------------------------------------------------------- helpers
 
-    def _offer(self, pool: dict[str, Candidate], text: str, source: str, score: float) -> None:
-        """Add a word to the pool, and the real words around it."""
-        existing = pool.get(text)
-        if existing is not None:
-            existing.model_score = max(existing.model_score, score)
-            return
+    def _add(self, pool: dict[str, Candidate], text: str, source: str, score: float) -> None:
+        """Add an answer and the real words around it."""
+        candidate = pool.get(text)
+        if candidate is None:
+            candidate = Candidate(text=text, source=source, model_score=score)
+            pool[text] = candidate
+        else:
+            candidate.model_score = max(candidate.model_score, score)
 
-        pool[text] = Candidate(text=text, source=source, model_score=score)
-        for word, distance in self.lexicon.expand(text, limit=4):
+        # The answer is a real word when the word list knows it. The words
+        # that the model itself proposed get the bonus, because the model is
+        # the better judge of what the user meant.
+        if text in self.lexicon and source == "model":
+            candidate.known = True
+
+        # The words that start with the answer are the completion. They are a
+        # different thing from the words that merely resemble it, and they
+        # are the answer only when the model did not give a whole word.
+        if not candidate.known:
+            for word in self.lexicon.complete(text, limit=3):
+                if word == text:
+                    continue
+                neighbour = pool.get(word)
+                if neighbour is None:
+                    neighbour = Candidate(
+                        text=word,
+                        source=source,
+                        model_score=score,
+                        completion=True,
+                    )
+                    pool[word] = neighbour
+                else:
+                    neighbour.model_score = max(neighbour.model_score, score)
+                    neighbour.completion = True
+
+        # The words that resemble the answer are the variations.
+        for word, _ in self.lexicon.nearest_with_distance(text, limit=3):
             if word == text:
                 continue
             neighbour = pool.get(word)
             if neighbour is None:
-                pool[word] = Candidate(
-                    text=word, source=source, model_score=score, distance=distance
+                neighbour = Candidate(
+                    text=word,
+                    source=source,
+                    model_score=score,
+                    variation=True,
                 )
+                pool[word] = neighbour
             else:
                 neighbour.model_score = max(neighbour.model_score, score)
-                neighbour.distance = min(neighbour.distance, distance)
+                neighbour.variation = True
 
     def _score(self, candidate: Candidate) -> None:
         """Work out the final score of one candidate."""
@@ -137,23 +177,9 @@ class SuggestionEngine:
             candidate.lm_score = self.ngram.mean_score(candidate.text)
         candidate.total = (
             self.weights.model * candidate.model_score
-            + self.weights.proximity * -candidate.distance
+            + self.weights.known * (1.0 if candidate.known else 0.0)
+            + self.weights.completion * (1.0 if candidate.completion else 0.0)
+            + self.weights.variation * (1.0 if candidate.variation else 0.0)
             + self.weights.language * candidate.lm_score
             + self.weights.frequency * math.log1p(candidate.count)
         )
-        if candidate.count == 0:
-            candidate.total += self.weights.unknown
-
-
-def complete_prefix(
-    lexicon: Lexicon,
-    ngram: CharNgram | None,
-    prefix: str,
-    limit: int = 8,
-) -> list[str]:
-    """The words that start with a native prefix, the best ones first."""
-    words = lexicon.complete(prefix, limit=limit * 4)
-    if not words or ngram is None:
-        return words[:limit]
-    ranked = sorted(words, key=lambda word: (-lexicon.count(word), ngram.mean_score(word)))
-    return ranked[:limit]
