@@ -213,9 +213,10 @@ What to check, in order:
 5. The keys on the page type into the field, the backspace deletes in it and
    the 123 key opens the numbers.
 6. The key you press on your own keyboard lights up on the page.
-7. The table under the keyboard has the three measured systems and the note
+7. The shift key shows the letters in capitals and lights up while it is on.
+8. The table under the keyboard has the three measured systems and the note
    about the coverage of the word list.
-8. The page does not stutter while you type.
+9. The page does not stutter while you type.
 
 To check it from another machine on the same network, use the address of this
 one and make sure the phone or the other computer is on the same network:
@@ -384,10 +385,12 @@ What to check, in order:
 6. The space bar commits the top suggestion and leaves one space. It must
    not leave two.
 7. The 123 key shows the numbers and the abc key goes back.
-8. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
+8. The shift key shows the letters in capitals and lights up while it is on,
+   and it goes back to the small letters after one letter.
+9. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
    middle of the word and the word list completes it.
-9. The globe key opens the input method picker.
-10. The strip and the keys follow the theme, in the dark theme as well.
+10. The globe key opens the input method picker.
+11. The strip and the keys follow the theme, in the dark theme as well.
 
 The suggestions can be read from the log, which is easier than looking at the
 screen:
