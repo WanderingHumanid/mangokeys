@@ -12,9 +12,14 @@ import java.io.File
 class TransliteratorTest {
 
     private fun runtime(): Transliterator {
-        val models = File("../../runs/demo/onnx-int8")
-        val tokenizer = File("../../runs/ml_mini/tokenizer.json")
-        assertTrue("the models are missing, run scripts/build_demo first", models.isDirectory)
+        // The committed bundle, or the build folder of a local run.
+        var models = File("../../assets/release/model")
+        var tokenizer = File("../../assets/release/model/tokenizer.json")
+        if (!models.isDirectory) {
+            models = File("../../runs/demo/onnx-int8")
+            tokenizer = File("../../runs/ml_mini/tokenizer.json")
+        }
+        assertTrue("the models are missing, run scripts.build_release_assets", models.isDirectory)
         return Transliterator(models, tokenizer.readText(), maxSrc = 48, maxTgt = 64, beam = 4)
     }
 

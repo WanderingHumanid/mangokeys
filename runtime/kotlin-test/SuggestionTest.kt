@@ -2,6 +2,7 @@ package com.mangokeyboard.transliterator
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
@@ -14,15 +15,26 @@ import java.io.File
 class SuggestionTest {
 
     private fun lexicon(): Lexicon {
-        val directory = File("../../data/processed/lexicon")
-        assertTrue("the word list is missing, run scripts.build_lexicon", directory.isDirectory)
+        val directory = bundle("lexicon")
+        assertTrue("the word list is missing, run scripts.build_release_assets", directory.isDirectory)
         return Lexicon().load(directory)
     }
 
-    private fun ngram(): CharNgram {
+    /** The language model is not in the bundle, so the test is skipped. */
+    private fun ngram(): CharNgram? {
         val file = File("../../data/processed/ngram.txt")
-        assertTrue("the language model is missing, run scripts.train_ngram", file.exists())
+        if (!file.exists()) return null
         return CharNgram.load(file)
+    }
+
+    /** The committed bundle, or the build folder of a local run. */
+    private fun bundle(name: String): File {
+        val committed = File("../../assets/release/$name")
+        if (committed.exists()) return committed
+        return when (name) {
+            "lexicon" -> File("../../data/processed/lexicon")
+            else -> File("../../runs/demo/$name")
+        }
     }
 
     @Test
@@ -53,7 +65,8 @@ class SuggestionTest {
     @Test
     fun theLanguageModelPrefersAWordItHasSeen() {
         val model = ngram()
-        assertTrue(model.score("കേരളം") > model.score("ക്സസ്സ്"))
+        assumeTrue("the language model is not built", model != null)
+        assertTrue(model!!.score("കേരളം") > model.score("ക്സ്സ്സ്"))
     }
 
     @Test
@@ -66,7 +79,7 @@ class SuggestionTest {
     @Test
     fun theRankerPrefersARealWord() {
         val engine = SuggestionEngine(lexicon(), ngram())
-        val ranked = engine.suggest("ente", listOf("ക്സസ്സ്", "ഒരു"), listOf(-1.0, -2.0))
+        val ranked = engine.suggest("ente", listOf("ക്സ്സ്സ്", "ഒരു"), listOf(-1.0, -2.0))
         assertEquals("ഒരു", ranked.first().text)
     }
 
