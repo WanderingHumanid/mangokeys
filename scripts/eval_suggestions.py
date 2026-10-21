@@ -104,12 +104,14 @@ def main() -> None:
     model_ms = 0.0
     snap_ms = 0.0
     quick_ms = 0.0
-    completion_hits = {3: 0, 4: 0, 5: 0}
-    completion_total = {3: 0, 4: 0, 5: 0}
+    completion_hits = {4: 0, 6: 0}
+    completion_total = {4: 0, 6: 0}
 
-    for row in rows:
+    for number, row in enumerate(rows):
         roman = row["roman"]
         reference = row["native"]
+        if number and number % 1000 == 0:
+            print(f"  {number} of {len(rows)}", flush=True)
 
         start = time.perf_counter()
         scored = engine.scored_candidates(roman, args.n_best)
@@ -136,7 +138,7 @@ def main() -> None:
         quick_ms += time.perf_counter() - start
         rules_counter.update(reference, quick[0].text if quick else "")
 
-        for cut in (3, 4, 5):
+        for cut in (4, 6):
             prefix = roman[:cut]
             if len(prefix) < cut:
                 continue
@@ -161,14 +163,17 @@ def main() -> None:
                 "n": completion_total[cut],
                 "rate": round(completion_hits[cut] / max(completion_total[cut], 1), 4),
             }
-            for cut in (3, 4, 5)
+            for cut in (4, 6)
         },
         "latency_ms": {
             "model": round(model_ms * 1000 / total, 2),
             "with_word_list": round(snap_ms * 1000 / total, 2),
             "quick": round(quick_ms * 1000 / total, 2),
         },
-        "weights": {name: getattr(weights, name) for name in ("model", "proximity", "language", "frequency")},
+        "weights": {
+            name: getattr(weights, name)
+            for name in ("model", "known", "completion", "variation", "language", "frequency")
+        },
     }
 
     print(f"model only          top1 {model_counter.accuracy:.4f}  cer {model_counter.cer:.4f}")

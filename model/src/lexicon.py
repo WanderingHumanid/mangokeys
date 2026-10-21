@@ -106,11 +106,13 @@ class Lexicon:
         counts: list[int],
         max_distance: int = 2,
         index: dict[int, list[int]] | None = None,
+        scan_limit: int = 2000,
     ) -> None:
         self.words = words
         self.counts = counts
         self.max_distance = max_distance
         self._word_ids = {word: index for index, word in enumerate(words)}
+        self.scan_limit = scan_limit
         self._letter_cache: dict[int, list[str]] = {}
         self._skeletons = [skeleton(word) for word in words]
         self._skeleton_buckets: dict[int, dict[str, list[int]]] = {
@@ -195,7 +197,7 @@ class Lexicon:
         depth = min(len(key), 3)
         bucket = self._skeleton_buckets[depth].get(key[:depth], [])
         out: list[str] = []
-        for word_index in bucket:
+        for word_index in bucket[: self.scan_limit]:
             if self._skeletons[word_index].startswith(key):
                 out.append(self.words[word_index])
                 if len(out) >= limit:
@@ -285,6 +287,7 @@ class Lexicon:
         max_distance: int = 2,
         keep: set[str] | None = None,
         order: list[str] | None = None,
+        scan_limit: int = 2000,
     ) -> "Lexicon":
         """Build a lexicon from native words and their counts.
 

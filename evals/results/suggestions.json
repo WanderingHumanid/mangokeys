@@ -1,0 +1,66 @@
+{
+  "file": "test_aksharantar.tsv",
+  "n": 12451,
+  "dictionary_coverage": 0.5412,
+  "model": {
+    "n": 12451,
+    "top1": 0.5343,
+    "cer": 0.1696,
+    "top5": 0.6461,
+    "sub": 8372,
+    "del": 284,
+    "ins": 1027
+  },
+  "with_word_list": {
+    "n": 12451,
+    "top1": 0.5742,
+    "cer": 0.1586,
+    "top5": 0.7333,
+    "sub": 7803,
+    "del": 284,
+    "ins": 971
+  },
+  "without_language_model": {
+    "n": 12451,
+    "top1": 0.5742,
+    "cer": 0.1586,
+    "top5": 0.0,
+    "sub": 7803,
+    "del": 284,
+    "ins": 971
+  },
+  "rules_only": {
+    "n": 12451,
+    "top1": 0.0459,
+    "cer": 0.5132,
+    "top5": 0.0,
+    "sub": 25281,
+    "del": 1744,
+    "ins": 2283
+  },
+  "completion": {
+    "4": {
+      "hit": 618,
+      "n": 12330,
+      "rate": 0.0501
+    },
+    "6": {
+      "hit": 1643,
+      "n": 11062,
+      "rate": 0.1485
+    }
+  },
+  "latency_ms": {
+    "model": 27.04,
+    "with_word_list": 5.88,
+    "quick": 2.57
+  },
+  "weights": {
+    "model": 1.0,
+    "known": 4.0,
+    "completion": 0.0,
+    "variation": -2.0,
+    "language": 0.0,
+    "frequency": 0.0
+  }
+}

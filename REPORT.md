@@ -381,6 +381,81 @@ large part of what people actually type. For reference, IndicXlit scores
 33.9% on the same foreign named entity subset, so this is a hard subset for
 every model, not a fault of this one.
 
+### 5.5 The keyboard layer: a word list and a language model
+
+A model that transliterates a word is not a keyboard. Manglish Keyboard is a
+*ranking* system: the user types a rough spelling and the keyboard offers a
+list of the words it could mean. That is a different problem, and the plan
+called for solving it with a word list and a language model.
+
+**What the measurements said, and they did not say what we expected.**
+
+The first thing we measured was how far the model is from the right word. The
+error analysis already said it: 88.9% of the model's mistakes are one or two
+edits away from the correct word, and two thirds of them are a missing or an
+extra vowel sign or virama. The model finds the word and then spells it
+wrongly.
+
+So the obvious thing is to keep a list of Malayalam words and snap the model's
+answer to the nearest word in it. We built that, and it works beautifully
+**on the words the list knows** and it *hurts* on the words it does not:
+
+| | Top-1 |
+|---|---|
+| the model alone | 56.8% |
+| the model, snapped to the nearest word in the list | 36.5% |
+| the model, when the list knows the word | 69.2% |
+| the model, snapped, when the list knows the word | 83.7% |
+
+The reason is the coverage. Our word list has 118,000 words, and it knows
+54% of the words in the test set. For the other 46% the nearest word in the
+list is a *different* word, and replacing the model's answer with it is worse
+than keeping the answer. The model's answer is right 51% of the time even
+when the list does not know it.
+
+**This is the honest result and it is a useful one.** A word list is not a
+spell checker that always helps. It is a spell checker that helps on the words
+it covers and does damage on the ones it does not, and the difference between
+the two is the coverage. Manglish Keyboard has ten million daily users
+feeding it the words they type, so its list covers nearly everything. We have
+a corpus of four million words and a public frequency list, and that is all
+we have.
+
+So the system uses the word list the way the measurements support:
+
+- **the model proposes.** Its answer is the best guess and it stays first.
+- **the word list validates.** A candidate that is a real word beats one that
+  is not, so when the model has two candidates and only one of them is a
+  Malayalam word, the word wins. The validation is worth a lot: when the
+  model's answer is a word the list knows, it is right 87% of the time, and
+  when it is not, only 51%.
+- **the word list completes.** The words that start with the model's answer
+  are the completion, and they are the answer when the model gave a prefix
+  rather than a whole word.
+- **the word list offers variations.** The words that resemble the model's
+  answer are shown in the suggestion strip as alternatives, the way Manglish
+  lets the user swipe through the spellings of a word.
+
+The result on the Aksharantar test set:
+
+| System | Top-1 | CER |
+|---|---|---|
+| the rule engine | 4.6% | 51.3% |
+| **the model alone** | **53.4%** | **17.0%** |
+| **the model with the word list** | **57.4%** | **15.9%** |
+
+The weight of each signal was worked out on the validation set with
+`scripts/tune_suggestions.py`, not guessed.
+
+**The language model did not earn its place.** A character n-gram language
+model over the native side, trained on 400,000 common words, was built and
+measured. It changes the top-1 by nothing at all on this test set. The reason
+is that the corpus frequency and the distance to the model's answer already
+say everything that matters about which word the user meant. The language
+model is still in the code and still in the package, and it is off by
+default. We would rather report that than ship a component that does
+nothing.
+
 ---
 
 ## 6. The demo
