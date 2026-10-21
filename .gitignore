@@ -33,6 +33,14 @@ models/
 
 # ---- Node / web ----
 node_modules/
+
+# The demo folder is built from the runtime and the model bundle, so the
+# copies in it are not in the repository. Run scripts/build_web.py.
+apps/expo-web/transliterator.js
+apps/expo-web/lexicon.js
+apps/expo-web/ngram.js
+apps/expo-web/suggest.js
+apps/expo-web/ort/
 .next/
 out/
 dist/

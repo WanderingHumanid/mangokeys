@@ -28,6 +28,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - uses: android-actions/setup-android@v3
 
       - name: Install the platform
@@ -64,6 +72,11 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           ./gradlew :app:assembleRelease --console=plain -PversionName="$VERSION"
 
+      - name: Build the web demo
+        run: |
+          npm ci
+          python -m scripts.build_web --out dist/web
+
       - name: Collect the files
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -77,7 +90,7 @@ jobs:
           cp "$OUT/app-armeabi-v7a-release.apk" "dist/mangokeys-$VERSION-armeabi-v7a.apk"
           cp "$OUT/app-x86_64-release.apk" "dist/mangokeys-$VERSION-x86_64.apk"
           cp "$OUT/app-x86-release.apk" "dist/mangokeys-$VERSION-x86.apk"
-          cd apps/expo-web && zip -qr ../../dist/mangokeys-web-demo.zip . -x "node_modules/*"
+          cd dist/web && zip -qr ../mangokeys-web-demo.zip . -x "node_modules/*"
           cd ../..
           ls -lh dist
 
