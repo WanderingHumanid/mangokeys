@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MangoKeys // Neural Visualizer</title>
+  <title>MangoKeys // Neural Transformer Visualizer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Ambient background lighting -->
+  <!-- Ambient background illumination -->
   <div class="glow-bg glow-cyan"></div>
   <div class="glow-bg glow-purple"></div>
 
@@ -21,7 +21,7 @@
         <span class="brand-icon">🥭</span>
         <div class="brand-text">
           <h1 class="brand-title">Mango<span class="accent-cyan">Keys</span></h1>
-          <span class="brand-badge">Visualizer</span>
+          <span class="brand-badge">Neural Visualizer</span>
         </div>
       </div>
 
@@ -31,39 +31,41 @@
           <span id="wsStatusText">Connected</span>
         </div>
         <div class="pill pill-engine">
-          <span class="pill-label">ENGINE:</span>
-          <span class="pill-value" id="engineBadge">RuleEngine (Native)</span>
+          <span class="pill-label">MODEL:</span>
+          <span class="pill-value text-cyan" id="engineBadge">Seq2Seq ONNX (5.37M)</span>
         </div>
         <div class="pill pill-latency">
-          <span class="pill-label">LATENCY:</span>
-          <span class="pill-value text-green" id="latencyBadge">⚡ 0.08 ms</span>
+          <span class="pill-label">STATUS:</span>
+          <span class="pill-value text-green" id="latencyBadge">● Active</span>
         </div>
       </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Grid -->
     <main class="content-grid">
-      <!-- Search & Quick Chips Bar -->
+      <!-- Search & Input Card -->
       <section class="card input-card">
         <div class="search-bar">
-          <span class="search-prefix">INPUT &gt;</span>
+          <span class="search-prefix">MANGLISH &gt;</span>
           <input 
             type="text" 
             id="textInput" 
             class="main-input" 
             value="ente" 
-            placeholder="Type any Manglish word (e.g. namaskaram, ente, malayalam)..." 
+            placeholder="Type any Manglish Latin word (e.g. ente, namaskaram, malayalam)..." 
             autocomplete="off" 
             spellcheck="false"
           >
           <button id="clearBtn" class="icon-btn" title="Clear">&times;</button>
         </div>
 
+        <div id="inputWarning" class="input-warning" style="display: none;"></div>
+
         <div class="quick-chips">
-          <span class="chips-title">QUICK SAMPLES:</span>
+          <span class="chips-title">SAMPLES:</span>
           <div class="chips-list" id="chipsList">
-            <button class="chip active" data-word="ente">ente <span class="chip-ml">എന്റെ</span></button>
-            <button class="chip" data-word="namaskaram">namaskaram <span class="chip-ml">നമസ്കാരം</span></button>
+            <button class="chip active" data-word="ente">ente <span class="chip-ml">എൻ്റെ</span></button>
+            <button class="chip" data-word="namaskaram">namaskaram <span class="chip-ml">നമസ്കരം</span></button>
             <button class="chip" data-word="malayalam">malayalam <span class="chip-ml">മലയാളം</span></button>
             <button class="chip" data-word="sukhamano">sukhamano <span class="chip-ml">സുഖമാണോ</span></button>
             <button class="chip" data-word="kerala">kerala <span class="chip-ml">കേരളം</span></button>
@@ -71,106 +73,128 @@
         </div>
       </section>
 
-      <!-- Primary Translation Hero Display -->
-      <section class="card hero-card">
-        <div class="hero-header">
-          <span class="section-tag">LIVE TRANSLITERATION</span>
-          <div class="view-toggles">
-            <button id="viewRibbonBtn" class="toggle-btn active">Ribbon Flow</button>
-            <button id="viewMatrixBtn" class="toggle-btn">Attention Matrix</button>
-          </div>
-        </div>
+      <!-- Idle Standby Banner (Shown when input is empty) -->
+      <div id="idleBanner" class="card idle-card" style="display: none;">
+        <div class="idle-icon">⚡</div>
+        <div class="idle-title">NEURAL NETWORK ON STANDBY (0 FLOPs)</div>
+        <div class="idle-desc">Transformers only compute when given input tokens. Type a Manglish word above to trigger tensor matrix operations.</div>
+      </div>
 
-        <div class="hero-body">
-          <div class="word-pair">
-            <div class="word-col">
-              <span class="col-caption">MANGLISH LATIN</span>
-              <div class="word-display text-cyan" id="heroSourceWord">ente</div>
-            </div>
-            <div class="arrow-divider">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </div>
-            <div class="word-col">
-              <span class="col-caption">MALAYALAM UNICODE</span>
-              <div class="word-display text-malayalam" id="heroTargetWord">എന്റെ</div>
+      <!-- Active Content Wrapper -->
+      <div id="activeContent">
+        <!-- Hero Transliteration Display -->
+        <section class="card hero-card">
+          <div class="hero-header">
+            <span class="section-tag">AUTHENTIC ONNX TRANSLITERATION</span>
+            <div class="view-toggles">
+              <button id="viewRibbonBtn" class="toggle-btn active">Attention Ribbons</button>
+              <button id="viewMatrixBtn" class="toggle-btn">Attention Heatmap</button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- Interactive Token Cross-Attention Stage -->
-      <section class="card visual-card">
-        <div class="card-title-row">
-          <div>
-            <h2 class="card-title">Cross-Attention Alignment</h2>
-            <p class="card-desc">Character-level mapping between Latin letters and Malayalam glyphs</p>
+          <div class="hero-body">
+            <div class="word-pair">
+              <div class="word-col">
+                <span class="col-caption">MANGLISH (LATIN INPUT)</span>
+                <div class="word-display text-cyan" id="heroSourceWord">ente</div>
+              </div>
+              <div class="arrow-divider">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
+              <div class="word-col">
+                <span class="col-caption">MALAYALAM (NEURAL OUTPUT)</span>
+                <div class="word-display text-malayalam" id="heroTargetWord">എൻ്റെ</div>
+              </div>
+            </div>
           </div>
-          <div class="token-legend">
-            <span class="legend-badge"><span class="legend-dot cyan"></span> Source Characters</span>
-            <span class="legend-badge"><span class="legend-dot purple"></span> Target Glyphs</span>
-          </div>
-        </div>
+        </section>
 
-        <!-- Ribbon Flow Container -->
-        <div class="attention-stage" id="ribbonStage">
-          <!-- Source Token Strip -->
-          <div class="token-strip source-strip" id="srcTokenStrip">
-            <!-- Dynamically populated via JS -->
+        <!-- Step-by-Step Decoder Generation Pipeline -->
+        <section class="card pipeline-card">
+          <div class="card-title-row">
+            <div>
+              <h2 class="card-title">Autoregressive Decoder Steps</h2>
+              <p class="card-desc">Token-by-token character prediction with genuine softmax confidence logits</p>
+            </div>
+            <span class="badge-mini" id="stepCounterBadge">6 Steps to &lt;EOS&gt;</span>
           </div>
 
-          <!-- SVG Ribbons Canvas -->
-          <div class="svg-ribbon-wrapper" id="svgRibbonWrapper">
-            <svg id="attentionSvg" class="attention-svg"></svg>
+          <div class="steps-container" id="stepsContainer">
+            <!-- Dynamically populated step cards -->
+          </div>
+        </section>
+
+        <!-- Interactive Cross-Attention Alignment -->
+        <section class="card visual-card">
+          <div class="card-title-row">
+            <div>
+              <h2 class="card-title">Encoder-Decoder Cross-Attention</h2>
+              <p class="card-desc">Mathematical attention alignment between input Latin letters and generated Malayalam glyphs</p>
+            </div>
+            <div class="token-legend">
+              <span class="legend-badge"><span class="legend-dot cyan"></span> Source Characters (with L2 Norm)</span>
+              <span class="legend-badge"><span class="legend-dot purple"></span> Target Glyphs</span>
+            </div>
           </div>
 
-          <!-- Target Token Strip -->
-          <div class="token-strip target-strip" id="tgtTokenStrip">
-            <!-- Dynamically populated via JS -->
-          </div>
-        </div>
+          <!-- Ribbon Flow Container -->
+          <div class="attention-stage" id="ribbonStage">
+            <div class="token-strip source-strip" id="srcTokenStrip">
+              <!-- Dynamically populated via JS -->
+            </div>
 
-        <!-- Heatmap Grid Container (Hidden by default) -->
-        <div class="heatmap-stage" id="heatmapStage" style="display: none;">
-          <div class="heatmap-scroll">
-            <div class="heatmap-grid" id="heatmapGrid">
+            <div class="svg-ribbon-wrapper" id="svgRibbonWrapper">
+              <svg id="attentionSvg" class="attention-svg"></svg>
+            </div>
+
+            <div class="token-strip target-strip" id="tgtTokenStrip">
               <!-- Dynamically populated via JS -->
             </div>
           </div>
+
+          <!-- Heatmap Grid Container (Hidden by default) -->
+          <div class="heatmap-stage" id="heatmapStage" style="display: none;">
+            <div class="heatmap-scroll">
+              <div class="heatmap-grid" id="heatmapGrid">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom Split: Beam Search Hypotheses & Live Desktop Activity -->
+        <div class="bottom-split">
+          <!-- Real Beam Candidates -->
+          <section class="card half-card">
+            <div class="card-title-row compact">
+              <h3 class="card-title">Beam Search Hypotheses</h3>
+              <span class="badge-mini">Real ONNX Log-Probabilities</span>
+            </div>
+            <div class="candidates-list" id="candidatesList">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </section>
+
+          <!-- Desktop Live Feed -->
+          <section class="card half-card">
+            <div class="card-title-row compact">
+              <h3 class="card-title">Live Desktop Activity Stream</h3>
+              <span class="badge-mini live-pulse">● Live Sync</span>
+            </div>
+            <div class="desktop-feed" id="desktopFeed">
+              <div class="feed-empty">Waiting for desktop typing events... (type in blankslate.io or any window)</div>
+            </div>
+          </section>
         </div>
-      </section>
-
-      <!-- Bottom Split: Candidates & Live Desktop Keystroke Stream -->
-      <div class="bottom-split">
-        <!-- Candidates Panel -->
-        <section class="card half-card">
-          <div class="card-title-row compact">
-            <h3 class="card-title">Predictions & Confidence</h3>
-            <span class="badge-mini">Beam = 4</span>
-          </div>
-          <div class="candidates-list" id="candidatesList">
-            <!-- Dynamically populated via JS -->
-          </div>
-        </section>
-
-        <!-- Live Desktop Feed -->
-        <section class="card half-card">
-          <div class="card-title-row compact">
-            <h3 class="card-title">Live Desktop Activity Stream</h3>
-            <span class="badge-mini live-pulse">● Live Sync</span>
-          </div>
-          <div class="desktop-feed" id="desktopFeed">
-            <div class="feed-empty">Waiting for desktop typing events... (type anywhere on your desktop)</div>
-          </div>
-        </section>
       </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
-      <span>MangoKeys Linux Desktop Daemon &bull; Real-Time Transliteration</span>
-      <span>Ultra-Fast WebSocket Server on :5000</span>
+      <span>MangoKeys &bull; Character-Level Seq2Seq Transformer (5.37M Parameters)</span>
+      <span>Authentic ONNX Runtime Inference &bull; Port 5000</span>
     </footer>
   </div>
 

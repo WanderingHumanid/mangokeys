@@ -1,19 +1,19 @@
 /* ==========================================================================
-   MangoKeys Neural Visualizer - Clean, Ultra-Fast, Sleek CSS
+   MangoKeys Neural Transformer Visualizer - Authentic ONNX Deep Telemetry
    ========================================================================== */
 
 :root {
-  --bg-primary: #0a0e14;
-  --bg-secondary: #121820;
-  --bg-card: rgba(18, 24, 32, 0.75);
-  --bg-card-hover: rgba(26, 34, 46, 0.85);
+  --bg-primary: #080c10;
+  --bg-secondary: #0f151e;
+  --bg-card: rgba(15, 21, 30, 0.75);
+  --bg-card-hover: rgba(22, 30, 42, 0.85);
   --border-color: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(0, 245, 212, 0.4);
 
   --accent-cyan: #00f5d4;
   --accent-purple: #9d4edd;
   --accent-green: #10b981;
-  --accent-yellow: #f59e0b;
+  --accent-amber: #f59e0b;
   --accent-red: #ef4444;
 
   --text-primary: #f8fafc;
@@ -151,6 +151,10 @@ body {
   font-family: var(--font-mono);
 }
 
+.text-cyan {
+  color: var(--accent-cyan);
+}
+
 .text-green {
   color: var(--accent-green);
 }
@@ -191,7 +195,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 10px 18px;
@@ -233,6 +237,16 @@ body {
 
 .icon-btn:hover {
   color: var(--text-primary);
+}
+
+.input-warning {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--accent-amber);
+  font-size: 13px;
 }
 
 /* Quick Chips */
@@ -286,9 +300,42 @@ body {
   color: rgba(0, 245, 212, 0.7);
 }
 
+/* Idle Standby Card */
+.idle-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  gap: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.idle-icon {
+  font-size: 36px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.idle-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+.idle-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.5;
+}
+
 /* Hero Translation Display */
 .hero-card {
   padding: 24px 32px;
+  margin-bottom: 20px;
 }
 
 .hero-header {
@@ -352,14 +399,9 @@ body {
 }
 
 .word-display {
-  font-size: 40px;
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: -0.5px;
-}
-
-.text-cyan {
-  color: var(--accent-cyan);
-  font-family: var(--font-mono);
 }
 
 .text-malayalam {
@@ -374,7 +416,97 @@ body {
   align-items: center;
 }
 
+/* Step-by-Step Decoder Generation Pipeline */
+.pipeline-card {
+  margin-bottom: 20px;
+}
+
+.steps-container {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0 16px 0;
+  scrollbar-width: thin;
+}
+
+.step-card {
+  flex: 0 0 auto;
+  min-width: 150px;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.step-card:hover {
+  border-color: var(--accent-purple);
+  background: rgba(157, 78, 221, 0.05);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.step-conf {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+}
+
+.step-predicted {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-malayalam);
+  color: #ffffff;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.step-predicted.eos {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent-amber);
+}
+
+.step-alts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 6px;
+}
+
+.alt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.alt-char {
+  font-family: var(--font-malayalam);
+}
+
 /* Cross-Attention Visual Stage */
+.visual-card {
+  margin-bottom: 20px;
+}
+
 .card-title-row {
   display: flex;
   align-items: center;
@@ -437,6 +569,13 @@ body {
   z-index: 2;
 }
 
+.token-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .token-pill {
   padding: 8px 16px;
   background: var(--bg-secondary);
@@ -458,6 +597,12 @@ body {
   color: var(--accent-purple);
   font-family: var(--font-malayalam);
   font-size: 18px;
+}
+
+.token-norm {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 .token-pill:hover, .token-pill.active {

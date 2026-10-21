@@ -1,6 +1,6 @@
 /**
  * MangoKeys Real-Time Neural Transformer Visualizer
- * Fast, Clean, Reactive SVG & DOM Engine.
+ * Fast, Authentic ONNX Neural Telemetry Controller.
  */
 
 (function () {
@@ -19,6 +19,9 @@
     textInput: document.getElementById('textInput'),
     clearBtn: document.getElementById('clearBtn'),
     chipsList: document.getElementById('chipsList'),
+    inputWarning: document.getElementById('inputWarning'),
+    idleBanner: document.getElementById('idleBanner'),
+    activeContent: document.getElementById('activeContent'),
     wsPill: document.getElementById('wsPill'),
     wsStatusText: document.getElementById('wsStatusText'),
     engineBadge: document.getElementById('engineBadge'),
@@ -34,6 +37,8 @@
     attentionSvg: document.getElementById('attentionSvg'),
     svgRibbonWrapper: document.getElementById('svgRibbonWrapper'),
     heatmapGrid: document.getElementById('heatmapGrid'),
+    stepsContainer: document.getElementById('stepsContainer'),
+    stepCounterBadge: document.getElementById('stepCounterBadge'),
     candidatesList: document.getElementById('candidatesList'),
     desktopFeed: document.getElementById('desktopFeed'),
   };
@@ -50,7 +55,6 @@
       ws.onopen = () => {
         el.wsPill.classList.remove('disconnected');
         el.wsStatusText.textContent = 'Connected';
-        // Send initial word
         fetchTelemetry(el.textInput.value || 'ente');
       };
 
@@ -85,9 +89,14 @@
   // --- Fetch Telemetry via Fast HTTP Fallback ---
   let fetchTimer = null;
   async function fetchTelemetry(word) {
-    if (!word) return;
+    const trimmed = (word || '').trim();
+    if (!trimmed) {
+      showIdleState();
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/extract?text=${encodeURIComponent(word)}`);
+      const res = await fetch(`/api/extract?text=${encodeURIComponent(trimmed)}`);
       if (res.ok) {
         const data = await res.json();
         renderData(data);
@@ -99,7 +108,15 @@
 
   function debouncedFetch(word) {
     clearTimeout(fetchTimer);
-    fetchTimer = setTimeout(() => fetchTelemetry(word), 60);
+    fetchTimer = setTimeout(() => fetchTelemetry(word), 70);
+  }
+
+  function showIdleState() {
+    el.idleBanner.style.display = 'flex';
+    el.activeContent.style.display = 'none';
+    el.inputWarning.style.display = 'none';
+    el.latencyBadge.textContent = '○ Standby (0 FLOPs)';
+    el.latencyBadge.className = 'pill-value text-muted';
   }
 
   // --- Handle Real-Time Desktop Sync Events ---
@@ -114,7 +131,7 @@
     if (desktopFeedItems.length > 8) desktopFeedItems.pop();
     renderDesktopFeed();
 
-    // Update main display if user isn't actively typing in the search box
+    // Update main display if user isn't actively editing search input
     if (document.activeElement !== el.textInput) {
       el.textInput.value = word;
       if (event.telemetry) {
@@ -127,7 +144,7 @@
 
   function renderDesktopFeed() {
     if (desktopFeedItems.length === 0) {
-      el.desktopFeed.innerHTML = '<div class="feed-empty">Waiting for desktop typing events... (type anywhere on your desktop)</div>';
+      el.desktopFeed.innerHTML = '<div class="feed-empty">Waiting for desktop typing events... (type in blankslate.io or any window)</div>';
       return;
     }
 
@@ -151,36 +168,100 @@
     if (!data) return;
     currentData = data;
 
-    // 1. Update Hero
+    // Check for idle or warning status
+    if (data.status === 'idle' || !data.active) {
+      if (data.is_malayalam_input) {
+        el.inputWarning.textContent = `⚠️ ${data.message}`;
+        el.inputWarning.style.display = 'block';
+      } else {
+        showIdleState();
+      }
+      return;
+    }
+
+    el.inputWarning.style.display = 'none';
+    el.idleBanner.style.display = 'none';
+    el.activeContent.style.display = 'block';
+
+    // 1. Update Hero & Status Badges
     el.heroSourceWord.textContent = data.word || '';
     el.heroTargetWord.textContent = data.top_candidate || '';
-    el.latencyBadge.textContent = `⚡ ${(data.latency_ms || 0.08).toFixed(2)} ms`;
-    el.engineBadge.textContent = data.engine === 'onnx' ? 'Neural ONNX (Seq2Seq)' : 'RuleEngine (Native)';
+    el.latencyBadge.textContent = `⚡ ${(data.latency_ms || 18.0).toFixed(1)} ms`;
+    el.latencyBadge.className = 'pill-value text-green';
+    el.engineBadge.textContent = data.engine || 'Seq2Seq ONNX (5.37M)';
 
-    // 2. Render Tokens & Ribbons
-    renderTokens(data.src_tokens || [], data.tgt_tokens || []);
+    // 2. Render Step-by-Step Decoder Generation Pipeline
+    renderSteps(data.steps || []);
+
+    // 3. Render Tokens & Ribbons
+    renderTokens(data.src_tokens || [], data.src_norms || [], data.tgt_tokens || []);
     drawRibbons(data.src_tokens || [], data.tgt_tokens || [], data.attention_matrix || []);
 
-    // 3. Render Matrix Heatmap
+    // 4. Render Matrix Heatmap
     renderHeatmap(data.src_tokens || [], data.tgt_tokens || [], data.attention_matrix || []);
 
-    // 4. Render Candidates
+    // 5. Render Candidates
     renderCandidates(data.candidates || []);
   }
 
+  // --- Render Decoder Steps Pipeline ---
+  function renderSteps(steps) {
+    if (!steps.length) {
+      el.stepsContainer.innerHTML = '<div class="feed-empty">No decoding steps.</div>';
+      return;
+    }
+
+    el.stepCounterBadge.textContent = `${steps.length} Steps to <EOS>`;
+
+    el.stepsContainer.innerHTML = steps.map(s => {
+      const isEos = s.is_eos;
+      const alts = s.top_candidates || [];
+
+      const altsHtml = alts.slice(1, 4).map(a => `
+        <div class="alt-row">
+          <span class="alt-char">${escapeHtml(a.char)}</span>
+          <span>${a.pct}%</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-num">STEP ${s.step}</span>
+            <span class="step-conf">${s.confidence}%</span>
+          </div>
+          <div class="step-predicted ${isEos ? 'eos' : ''}">
+            ${escapeHtml(s.selected_token)}
+          </div>
+          <div class="step-alts">
+            ${altsHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   // --- Render Token Strips ---
-  function renderTokens(srcTokens, tgtTokens) {
-    // Source tokens
-    el.srcTokenStrip.innerHTML = srcTokens.map((char, idx) => `
-      <div class="token-pill src ${activeHoveredSrc === idx ? 'active' : ''}" data-idx="${idx}">
-        ${escapeHtml(char)}
-      </div>
-    `).join('');
+  function renderTokens(srcTokens, srcNorms, tgtTokens) {
+    // Source tokens with real L2 embedding norms
+    el.srcTokenStrip.innerHTML = srcTokens.map((char, idx) => {
+      const norm = srcNorms[idx] ? `‖v‖=${srcNorms[idx]}` : '';
+      return `
+        <div class="token-box">
+          <div class="token-pill src ${activeHoveredSrc === idx ? 'active' : ''}" data-idx="${idx}">
+            ${escapeHtml(char)}
+          </div>
+          <span class="token-norm">${norm}</span>
+        </div>
+      `;
+    }).join('');
 
     // Target tokens
     el.tgtTokenStrip.innerHTML = tgtTokens.map((char, idx) => `
-      <div class="token-pill tgt ${activeHoveredTgt === idx ? 'active' : ''}" data-idx="${idx}">
-        ${escapeHtml(char)}
+      <div class="token-box">
+        <div class="token-pill tgt ${activeHoveredTgt === idx ? 'active' : ''}" data-idx="${idx}">
+          ${escapeHtml(char)}
+        </div>
       </div>
     `).join('');
 
@@ -220,7 +301,6 @@
     }
 
     const wrapperRect = el.svgRibbonWrapper.getBoundingClientRect();
-    const width = wrapperRect.width || 800;
     const height = 140;
 
     const srcPills = el.srcTokenStrip.querySelectorAll('.token-pill');
@@ -230,7 +310,6 @@
 
     const paths = [];
 
-    // Map each target token j to source token i
     tgtPills.forEach((tPill, j) => {
       const tRect = tPill.getBoundingClientRect();
       const tx = tRect.left + tRect.width / 2 - wrapperRect.left;
@@ -244,7 +323,7 @@
         const sy = 0;
 
         const weight = row[i] || 0.0;
-        if (weight < 0.05) return; // Skip near-zero weights for clean clarity
+        if (weight < 0.02) return; // Skip negligible noise for visual clarity
 
         // Determine highlighting
         let isHighlighted = false;
@@ -254,7 +333,7 @@
         if (activeHoveredSrc !== null) {
           if (activeHoveredSrc === i) {
             isHighlighted = true;
-            opacity = Math.max(0.6, weight);
+            opacity = Math.max(0.7, weight);
             strokeWidth += 2;
           } else {
             opacity = 0.04;
@@ -262,7 +341,7 @@
         } else if (activeHoveredTgt !== null) {
           if (activeHoveredTgt === j) {
             isHighlighted = true;
-            opacity = Math.max(0.6, weight);
+            opacity = Math.max(0.7, weight);
             strokeWidth += 2;
           } else {
             opacity = 0.04;
@@ -270,8 +349,6 @@
         }
 
         const color = isHighlighted ? '#00f5d4' : (weight > 0.4 ? '#9d4edd' : '#64748b');
-
-        // Smooth cubic bezier S-curve
         const d = `M ${sx} ${sy} C ${sx} ${height * 0.55}, ${tx} ${height * 0.45}, ${tx} ${ty}`;
 
         paths.push(`
@@ -340,7 +417,7 @@
       <div class="cand-item ${c.is_top ? 'top' : ''}">
         <div class="cand-bar" style="width: ${c.confidence_pct}%;"></div>
         <div class="cand-info">
-          <span class="cand-rank">#${idx + 1}</span>
+          <span class="cand-rank">#${idx + 1} (${c.score} log-p)</span>
           <span class="cand-text">${escapeHtml(c.candidate)}</span>
         </div>
         <span class="cand-pct">${c.confidence_pct}%</span>
@@ -350,16 +427,17 @@
 
   // --- Event Listeners ---
   function setupEventListeners() {
-    // Input typing (fast debounced)
+    // Input typing
     el.textInput.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
+      const val = e.target.value;
       debouncedFetch(val);
-      updateActiveChip(val);
+      updateActiveChip(val.trim());
     });
 
     // Clear button
     el.clearBtn.addEventListener('click', () => {
       el.textInput.value = '';
+      showIdleState();
       el.textInput.focus();
     });
 
@@ -391,7 +469,6 @@
       el.heatmapStage.style.display = 'block';
     });
 
-    // Window resize redraws SVG ribbons
     window.addEventListener('resize', () => {
       if (currentView === 'ribbon') redrawRibbons();
     });
