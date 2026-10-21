@@ -73,15 +73,27 @@ The prefix training pairs and the lexicon are built in the next two steps.
 ## 2. Lexicon and language model
 
 ```bash
-# The word list, with the corpus frequency of every word
-python -m scripts.build_lexicon --out data/processed/lexicon
+# The word list of the keyboard, with the count of every word
+python -m data.scripts.download_frequency --out data/raw/frequency
+python -m data.scripts.download_dakshina_lexicon --out data/raw/dakshina
+python -m scripts.build_lexicon --limit 0 --distance 1 --out data/processed/lexicon
 
 # The character n-gram language model that ranks the candidates
-python -m scripts.train_ngram --out data/processed/ngram.json
+python -m scripts.train_ngram --max-words 400000 --out data/processed/ngram.txt
 ```
 
-Both print what they built. The lexicon is a directory with the word list and
-the lookup index. The language model is a single json file.
+The word list is the commonest Malayalam words from two public sources, the
+frequency list of the subtitles and the Malayalam lexicon of the Dakshina
+dataset. It holds 68,000 words and it knows 54% of the words in the
+Aksharantar test set. The `--limit` is the number of *corpus* words to add on
+top, and the corpus is not worth adding: it does not move the coverage.
+
+The `--distance` is how far the lookup looks from a word. One edit is enough
+and it makes the index four times smaller.
+
+The language model is a single text file. It is measured in
+`scripts/eval_suggestions.py` and it is off by default, because it did not
+beat the corpus frequency.
 
 ---
 
@@ -95,13 +107,24 @@ This trains on a GPU when one is visible. The run prints the loss every 100
 steps and the validation numbers after every epoch. The best checkpoint lands
 in `runs/ml_mini/best.pt` and the history in `runs/ml_mini/history.json`.
 
-To train with the prefix pairs as well, use the prefix training file:
+There is a second model, the **prefix model**. It is trained on the same words
+plus the pairs where the roman side is cut short, so it learns to stop in the
+middle of a word and the word list can complete it.
 
 ```bash
-python -m model.train --config configs/ml_mini.yaml --train data/processed/train_prefix.tsv
+# The prefix training pairs
+python -m data.scripts.build_prefix_pairs --out data/processed/train_prefix.tsv \
+    --fraction 0.4 --word-fraction 0.25
+
+# The training run itself
+python -m model.train --config configs/ml_mini_prefix.yaml \
+    --tokenizer runs/ml_mini/tokenizer.json
+python -m model.export_onnx --checkpoint runs/ml_prefix/best.pt --out runs/prefix/onnx
+python -m model.quantize --onnx runs/prefix/onnx --out runs/prefix/onnx-int8
 ```
 
-A full run takes a few hours on a laptop GPU.
+A full run takes a few hours on a laptop GPU. The two models are compared in
+`scripts/compare_models.py`.
 
 ---
 
@@ -121,7 +144,10 @@ python -m scripts.eval_ablation --checkpoint runs/ml_mini/best.pt
 python -m scripts.error_analysis --checkpoint runs/ml_mini/best.pt
 
 # The full suggestion pipeline, model plus lexicon plus ranker
-python -m scripts.eval_suggestions --checkpoint runs/ml_mini/best.pt
+python -m scripts.eval_suggestions --onnx runs/demo/onnx-int8
+
+# The two models against each other
+python -m scripts.compare_models
 ```
 
 The results land in `evals/results/`. The report is rebuilt with:
@@ -205,6 +231,9 @@ with step 5.
 
 ## 9. The Android app
 
+The app is an `InputMethodService`. It carries two models, the word list and
+the language model in its assets, and it asks for no permissions.
+
 ### 9.1 Build the debug package
 
 ```bash
@@ -213,10 +242,20 @@ export ANDROID_HOME=~/Android/Sdk
 ./gradlew :app:assembleDebug
 ```
 
-The package lands in `runtime/app/build/outputs/apk/debug/app-debug.apk`.
+The package lands in `apps/android/build/outputs/apk/debug/app-debug.apk`.
+The build copies the assets out of `runs/` and `data/processed/`, so the model,
+the prefix model, the word list and the language model have to be built first
+with steps 3 and 5.
 
-The app carries the model, the tokenizer, the lexicon and the language model
-in its assets, so it is a few megabytes and it needs no network.
+The paths can be changed:
+
+```bash
+./gradlew :app:assembleDebug \
+    -PmodelDir=../runs/demo/onnx-int8 \
+    -PprefixModelDir=../runs/prefix/onnx-int8 \
+    -PlexiconDir=../data/processed/lexicon \
+    -PngramFile=../data/processed/ngram.txt
+```
 
 ### 9.2 Run it on the emulator
 
@@ -227,7 +266,7 @@ There is an AVD called `Pixel_10` already set up.
 emulator -avd Pixel_10 -no-snapshot -no-audio -gpu swiftshader_indirect &
 ```
 
-Wait for the boot to finish:
+Wait for the boot to finish. This takes two or three minutes:
 
 ```bash
 adb wait-for-device
@@ -258,53 +297,77 @@ The phone must show as `device`, not `unauthorized`.
 The same command works for the emulator and for a real phone.
 
 ```bash
-adb install -r runtime/app/build/outputs/apk/debug/app-debug.apk
+adb install -r apps/android/build/outputs/apk/debug/app-debug.apk
+```
+
+The app copies the assets into its own directory the first time it starts.
+When the assets change, clear the app first, otherwise the old ones are kept:
+
+```bash
+adb shell pm clear com.mangokeyboard
 ```
 
 ### 9.5 Turn the keyboard on
 
 Android will not let an app register a keyboard on its own, so this has to be
-done once by hand.
-
-On the emulator:
-
-```bash
-adb shell settings put secure selected_spell_checker com.android.inputmethod.latin/.LatinIME
-adb shell ime list -s
-```
-
-The reliable route is through the settings screen:
+done once by hand. It can also be done from the command line, and that is
+what the checks below use:
 
 ```bash
-adb shell am start -a android.settings.INPUT_METHOD_SETTINGS
+adb shell ime enable com.mangokeyboard/.ManglishKeyboardService
+adb shell ime set com.mangokeyboard/.ManglishKeyboardService
+adb shell ime list -s -a | grep manglish
 ```
 
-Then pick **Manglish Keyboard** from the list and turn it on. On the phone the
-same screen is at **Settings → System → Languages and input → On-screen
-keyboard → Manage keyboards**.
+The last command has to print
+`com.mangokeyboard/.ManglishKeyboardService`. If it prints nothing, the
+service was not registered, and the reason is in the log:
 
-The keyboard can then be chosen with the globe key, or from the same screen.
+```bash
+adb logcat -d | grep -i "Skipping input method"
+```
+
+The service has to ask for the `BIND_INPUT_METHOD` permission, otherwise
+Android skips it. That permission is a system one that only the platform can
+hold, so the app still asks the user for nothing.
+
+On a phone the same thing is done by hand: **Settings → System → Languages
+and input → On-screen keyboard → Manage keyboards**, then pick **Manglish
+Keyboard** and turn it on.
 
 ### 9.6 Test it
 
-Open any text field. The **Settings** app has one, and so does the browser
-address bar.
+Open any text field. The **Settings** app has one at the top, and it is the
+one that works on the emulator.
 
 ```bash
-# Open a text field in the settings app
+# Open the settings app and tap the search field
 adb shell am start -a android.settings.SETTINGS
 ```
 
 What to check, in order:
 
 1. The keyboard appears when a text field is focused.
-2. Typing `ente` shows `എൻ്റെ` in the suggestion strip.
-3. Typing `aash` shows `ആശംസകൾ` in the strip, because the prefix search
-   completes the word.
+2. Typing `ente` shows `എൻ്റെ` as the first suggestion.
+3. Typing `aash` shows `ആശംസകൾ` in the strip, because the prefix model stops in
+   the middle of the word and the word list completes it.
 4. Tapping a suggestion commits that Malayalam into the text field.
 5. The space bar commits the top suggestion.
 6. Typing nonsense gives no crash and no suggestion.
-7. Swiping between the language keys does not lose the typed text.
+7. The globe key opens the input method picker.
+
+The suggestions can be read from the log, which is easier than looking at the
+screen:
+
+```bash
+adb logcat -s ManglishKeyboard
+```
+
+Each line is the suggestion strip after a keystroke:
+
+```
+I ManglishKeyboard: suggestions: എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
+```
 
 The logs of the keyboard are visible with:
 
@@ -352,11 +415,13 @@ cd runtime && ./gradlew test
 
 | Symptom | Cause and fix |
 |---|---|
+| The keyboard is not in `ime list -s` | The service did not ask for the `BIND_INPUT_METHOD` permission. The log says `Skipping input method`. |
+| The keyboard does not show up when a field is focused | The input method was not selected. Run `adb shell ime set com.mangokeyboard/.ManglishKeyboardService`. |
+| The suggestions are the old ones | The app kept the old assets. Run `adb shell pm clear com.mangokeyboard` and open the app again. |
 | `adb: no devices found` | The phone is not in the USB debugging list, or the prompt was dismissed. Run `adb kill-server && adb start-server` and replug it. |
 | The phone shows `unauthorized` | Accept the prompt on the phone screen. If it does not appear, revoke the USB debugging authorisation in the developer options and replug. |
 | The emulator is very slow | It is running without hardware acceleration. Check that `/dev/kvm` exists and is readable. |
-| The keyboard does not show up in the list | The app was installed but the keyboard service was not registered. Check `adb shell dumpsys package com.mangokeyboard | grep InputMethod`. |
-| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l runtime/app/build/outputs/apk/debug/app-debug.apk | grep assets`. |
+| The suggestion strip is empty | The assets did not make it into the package. Run `unzip -l apps/android/build/outputs/apk/debug/app-debug.apk | grep assets`. |
 | The wasm runtime uses one thread | The demo was opened over `file://` instead of over http. The cross origin headers are only sent by `serve.py`. |
 | The model output is empty in the app | The `tokenizer.json` in the assets is from a different run than the graphs. Rebuild the demo. |
 
@@ -376,6 +441,10 @@ python -m scripts.demo --onnx runs/demo/onnx-int8 \
 python -m scripts.build_demo --checkpoint runs/ml_mini/best.pt --quantize
 python -m scripts.check_demo --url http://localhost:8000   # browser runtime
 cd runtime && ./gradlew test                               # kotlin runtime
-cd .. && ./runtime/gradlew -p runtime :app:assembleDebug   # android app
-adb install -r runtime/app/build/outputs/apk/debug/app-debug.apk
+cd .. && cd runtime && ./gradlew :app:assembleDebug        # android app
+adb install -r apps/android/build/outputs/apk/debug/app-debug.apk
+adb shell ime enable com.mangokeyboard/.ManglishKeyboardService
+adb shell ime set com.mangokeyboard/.ManglishKeyboardService
+adb shell am start -a android.settings.SETTINGS             # the keyboard on the device
+adb logcat -s ManglishKeyboard                              # what it suggests
 ```
