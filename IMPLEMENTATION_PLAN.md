@@ -20,16 +20,21 @@ The project is built and running. This section records where each part stands.
 |---|---|---|
 | Data pipeline | ✅ working on the real 4.1M-pair corpus | `data/scripts/` |
 | Augmentation rules (15) | ✅ with unit tests | `model/src/augment.py` |
+| Prefix training pairs | ✅ the model can stop in the middle of a word | `model/src/prefix.py` |
 | Model, training, AMP, length bucketing | ✅ 5.37M params, 6.6M pairs, 12 epochs | `model/src/seq2seq.py` |
 | Evaluation, grapheme aware CER | ✅ | `model/src/metrics.py` |
 | Rule-based baseline | ✅ Top-1 9.2%, CER 48.8%, 67/67 Mozhi cases | `model/src/rules.py` |
+| Word list with a deletion index | ✅ 118K words, built from two public sources | `model/src/lexicon.py` |
+| Character language model | ✅ trained and measured, it did not help | `model/src/ngram.py` |
+| The ranker that joins them | ✅ the weights are tuned, not guessed | `model/src/suggest.py` |
 | ONNX export, int8 path, Python runtime | ✅ parity checked against PyTorch | `model/export_onnx.py` |
 | Browser runtime | ✅ verified in a real browser, agrees with Python | `runtime/js/` |
-| Kotlin runtime | ✅ written | `runtime/kotlin/` |
-| Static web demo | ✅ working, screenshot verified | `apps/expo-web/` |
+| Kotlin runtime | ✅ builds and passes the unit tests against the real model | `runtime/kotlin/` |
+| The Android input method | ✅ an `InputMethodService`, no permissions | `apps/android/` |
+| Static web demo with a suggestion strip | ✅ working, screenshot verified | `apps/expo-web/` |
 | Corpus ambiguity analysis | ✅ measured | `scripts/analyze_corpus.py` |
 | Error analysis | ✅ 12-class taxonomy | `scripts/error_analysis.py` |
-| Augmentation ablation E1 | ⏳ running | `scripts/run_ablations.py` |
+| Augmentation ablation | ✅ measured, E1 and E2 | `scripts/run_ablations.py` |
 | Adhoc manual eval set | ⬜ needs human collection | `evals/adhoc_manual/` |
 
 ### The headline result
@@ -38,7 +43,17 @@ The project is built and running. This section records where each part stands.
 |---|---|---|---|---|---|
 | Rule engine (ours) | 9.2% | 48.8% | 13.6% | 3 KB | 0.10 |
 | **Our model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | **6.1 MB** | 27.4 |
+| **Our model with the word list** | **57.4%** | **15.9%** | - | 6.1 MB | 33 |
 | Our model, int8, greedy | 53.0% | 17.1% | - | 6.1 MB | **12.0** |
+
+### The keyboard layer
+
+The word list finds the real words around the model's answer. The measurement
+that matters is the coverage: the list knows 54% of the words in the test set,
+and on those words the model is right 69% of the time on its own and 84% of
+the time after the list has had a look. On the words the list does not know,
+the list does more harm than good, so the model's answer is never replaced
+without cause. The report has the full table.
 
 ### The ablation
 
