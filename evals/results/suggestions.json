@@ -40,20 +40,20 @@
   },
   "completion": {
     "4": {
-      "hit": 618,
+      "hit": 680,
       "n": 12330,
-      "rate": 0.0501
+      "rate": 0.0552
     },
     "6": {
-      "hit": 1643,
+      "hit": 1702,
       "n": 11062,
-      "rate": 0.1485
+      "rate": 0.1539
     }
   },
   "latency_ms": {
-    "model": 24.83,
-    "with_word_list": 5.03,
-    "quick": 2.16
+    "model": 35.68,
+    "with_word_list": 6.6,
+    "quick": 2.87
   },
   "weights": {
     "model": 1.0,
