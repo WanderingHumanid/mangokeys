@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FBFBFC">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MangoKeys"
+            android:textColor="#16181C"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="22dp"
+            android:text="A Manglish keyboard that writes Malayalam."
+            android:textColor="#6B7280"
+            android:textSize="14sp" />
+
+        <TextView
+            style="@style/Section"
+            android:text="Appearance" />
+
+        <TextView
+            style="@style/Label"
+            android:text="Dark theme" />
+
+        <Switch
+            android:id="@+id/switch_dark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="Use the dark theme"
+            android:textColor="#16181C"
+            android:textSize="15sp" />
+
+        <TextView
+            style="@style/Label"
+            android:text="Accent colour" />
+
+        <LinearLayout
+            android:id="@+id/accent_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+        <Button
+            android:id="@+id/button_custom_accent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Choose a custom colour" />
+
+        <View style="@style/Divider" />
+
+        <TextView
+            style="@style/Section"
+            android:text="Behaviour" />
+
+        <Switch
+            android:id="@+id/switch_completion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="Complete half typed words"
+            android:textColor="#16181C"
+            android:textSize="15sp" />
+
+        <Switch
+            android:id="@+id/switch_word_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="Use the word list"
+            android:textColor="#16181C"
+            android:textSize="15sp" />
+
+        <TextView
+            style="@style/Label"
+            android:text="Candidates" />
+
+        <RadioGroup
+            android:id="@+id/group_beam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/beam_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1" />
+
+            <RadioButton
+                android:id="@+id/beam_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2" />
+
+            <RadioButton
+                android:id="@+id/beam_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4" />
+        </RadioGroup>
+
+        <View style="@style/Divider" />
+
+        <TextView
+            style="@style/Section"
+            android:text="About" />
+
+        <TextView
+            android:id="@+id/about"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#4B5563"
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>

@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Manglish Keyboard</string>
-    <string name="keyboard_name">Manglish Keyboard</string>
-    <string name="about_title">Manglish Keyboard</string>
-    <string name="about_text">A Manglish to Malayalam keyboard.\n\nThe transliteration is done by a character level model of 5.4 million parameters that runs on the phone. A word list and a language model decide which of the words around the answer is the right one.\n\nNothing is sent anywhere. The keyboard asks for no permissions at all.</string>
+    <string name="app_name">MangoKeys</string>
+    <string name="keyboard_name">MangoKeys</string>
 </resources>

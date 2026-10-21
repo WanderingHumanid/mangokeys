@@ -25,6 +25,7 @@ object KeyboardLayout {
     fun build(
         context: Context,
         container: LinearLayout,
+        palette: Palette,
         onKey: (String) -> Unit,
         onSpace: () -> Unit,
         onBackspace: () -> Unit,
@@ -32,13 +33,19 @@ object KeyboardLayout {
         onGlobe: () -> Unit,
     ) {
         container.removeAllViews()
+        container.setBackgroundColor(palette.background)
         for (row in ROWS) {
-            container.addView(rowView(context, row, onKey))
+            container.addView(rowView(context, row, palette, onKey))
         }
-        container.addView(bottomRow(context, onSpace, onBackspace, onEnter, onGlobe))
+        container.addView(bottomRow(context, palette, onSpace, onBackspace, onEnter, onGlobe))
     }
 
-    private fun rowView(context: Context, row: List<String>, onKey: (String) -> Unit): View {
+    private fun rowView(
+        context: Context,
+        row: List<String>,
+        palette: Palette,
+        onKey: (String) -> Unit,
+    ): View {
         val line = LinearLayout(context)
         line.orientation = LinearLayout.HORIZONTAL
         line.layoutParams = LinearLayout.LayoutParams(
@@ -47,7 +54,7 @@ object KeyboardLayout {
         )
         for (label in row) {
             line.addView(
-                key(context, label, 1f) {
+                key(context, label, 1f, palette.key, palette.keyText) {
                     onKey(label)
                 },
             )
@@ -57,6 +64,7 @@ object KeyboardLayout {
 
     private fun bottomRow(
         context: Context,
+        palette: Palette,
         onSpace: () -> Unit,
         onBackspace: () -> Unit,
         onEnter: () -> Unit,
@@ -68,31 +76,55 @@ object KeyboardLayout {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT,
         )
-        line.addView(key(context, "globe", 1f) { onGlobe() })
-        line.addView(key(context, "⌫", 1f) { onBackspace() })
-        line.addView(key(context, "space", 4f) { onSpace() })
-        line.addView(key(context, "↵", 1.4f) { onEnter() })
+        line.addView(
+            key(context, "globe", 1f, palette.key, palette.keyText) { onGlobe() },
+        )
+        line.addView(
+            key(context, "⌫", 1f, palette.key, palette.keyText) { onBackspace() },
+        )
+        line.addView(
+            key(context, "space", 4f, palette.accent, palette.accentText) { onSpace() },
+        )
+        line.addView(
+            key(context, "↵", 1.4f, palette.accent, palette.accentText) { onEnter() },
+        )
         return line
     }
 
-    private fun key(context: Context, label: String, weight: Float, onClick: () -> Unit): View {
+    private fun key(
+        context: Context,
+        label: String,
+        weight: Float,
+        color: Int,
+        textColor: Int,
+        onClick: () -> Unit,
+    ): View {
         val button = Button(context)
         button.text = label
         button.textSize = 16f
-        button.setTextColor(Color.parseColor("#1A1C1E"))
+        button.setTextColor(textColor)
         button.isAllCaps = false
         button.setOnClickListener { onClick() }
 
         val background = GradientDrawable()
-        background.setColor(Color.parseColor("#FFFFFF"))
+        background.setColor(color)
         background.cornerRadius = 12f
-        background.setStroke(1, Color.parseColor("#D5D8DD"))
+        background.setStroke(1, shade(color))
         button.background = background
 
         val params = LinearLayout.LayoutParams(0, dp(context, 46), weight)
         params.setMargins(dp(context, 2), dp(context, 2), dp(context, 2), dp(context, 2))
         button.layoutParams = params
         return button
+    }
+
+    private fun shade(color: Int): Int {
+        val factor = 0.85
+        return Color.rgb(
+            (Color.red(color) * factor).toInt(),
+            (Color.green(color) * factor).toInt(),
+            (Color.blue(color) * factor).toInt(),
+        )
     }
 
     private fun dp(context: Context, value: Int): Int {

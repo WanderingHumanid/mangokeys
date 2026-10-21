@@ -4,6 +4,7 @@ import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
@@ -14,12 +15,14 @@ import com.mangokeyboard.transliterator.Lexicon
 import java.io.File
 
 /**
- * The Manglish keyboard.
+ * The MangoKeys keyboard.
  *
- * The user types in Latin characters. On every keystroke the rules and the
- * word list give an answer straight away, and the model gives a better one
- * a moment later on a background thread. The suggestion strip shows the
- * words that exist, ranked by the language model.
+ * It behaves like an ordinary keyboard. Every key goes straight into the text
+ * field that has the focus, so the backspace, the cursor and the selection
+ * are the ones of the application, not of the keyboard. What the keyboard
+ * adds is the suggestion strip: the word the user is typing is translated and
+ * the results sit above the keys, and tapping one replaces the typed word in
+ * the field with the Malayalam.
  *
  * The model is loaded once, when the service is created. The onnx runtime
  * needs file paths, so the assets are copied into the private directory of
@@ -29,16 +32,39 @@ class ManglishKeyboardService : InputMethodService() {
 
     private lateinit var keyboard: Keyboard
     private lateinit var strip: LinearLayout
-    private lateinit var composingView: TextView
-    private val composing = StringBuilder()
+    private lateinit var keys: LinearLayout
+    private lateinit var settings: KeyboardSettings
     private val handler = Handler(Looper.getMainLooper())
     private var worker: Thread? = null
-    private var inputView: View? = null
+    private var beam = 4
+    private var completion = true
+    private var wordList = true
+    private var palette = Palette(
+        background = android.graphics.Color.parseColor("#EDEFF2"),
+        panel = android.graphics.Color.WHITE,
+        key = android.graphics.Color.WHITE,
+        keyText = android.graphics.Color.parseColor("#1A1C1E"),
+        panelText = android.graphics.Color.parseColor("#1A1C1E"),
+        accent = KeyboardSettings.DEFAULT_ACCENT,
+        accentText = android.graphics.Color.WHITE,
+    )
 
     override fun onCreate() {
         super.onCreate()
+        settings = KeyboardSettings(this)
+        palette = settings.palette()
+        buildKeyboard()
+        Log.i(TAG, "the model is ready")
+    }
+
+    /** Build the model. The settings can change it, so it is built again. */
+    private fun buildKeyboard() {
         val models = copyAssets()
-        val lexicon = Lexicon().load(File(models, "lexicon"))
+        val lexicon = if (settings.wordList) {
+            Lexicon().load(File(models, "lexicon"))
+        } else {
+            Lexicon(emptyArray(), IntArray(0))
+        }
         val ngramFile = File(models, "ngram.txt")
         val ngram = if (ngramFile.exists()) CharNgram.load(ngramFile) else null
         val prefix = File(models, "prefix")
@@ -47,74 +73,115 @@ class ManglishKeyboardService : InputMethodService() {
             File(models, "tokenizer.json").readText(),
             lexicon,
             ngram,
-            prefixModel = if (prefix.exists()) prefix else null,
+            prefixModel = if (prefix.exists() && settings.completion) prefix else null,
+            beam = settings.beam,
         )
-        Log.i(TAG, "the model is ready")
     }
 
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard, null)
-        inputView = view
         strip = view.findViewById(R.id.suggestion_strip)
-        composingView = view.findViewById(R.id.composing)
-
+        keys = view.findViewById(R.id.keys)
         KeyboardLayout.build(
             this,
-            view.findViewById(R.id.keys),
+            keys,
+            palette,
             onKey = { type(it) },
-            onSpace = { commitTop() },
+            onSpace = { space() },
             onBackspace = { backspace() },
-            onEnter = { commitTop() },
+            onEnter = { enter() },
             onGlobe = { switchKeyboard() },
         )
+        applyTheme(view)
         return view
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        composing.clear()
-        composingView.text = ""
+        // The settings may have changed since the last time.
+        if (settings.beam != beam
+            || settings.completion != completion
+            || settings.wordList != wordList
+        ) {
+            beam = settings.beam
+            completion = settings.completion
+            wordList = settings.wordList
+            buildKeyboard()
+        }
+        palette = settings.palette()
+        applyTheme(inputView())
+        KeyboardLayout.build(
+            this,
+            keys,
+            palette,
+            onKey = { type(it) },
+            onSpace = { space() },
+            onBackspace = { backspace() },
+            onEnter = { enter() },
+            onGlobe = { switchKeyboard() },
+        )
         refresh()
     }
 
     override fun onFinishInput() {
         super.onFinishInput()
-        composing.clear()
+        show(emptyList())
     }
 
     // ------------------------------------------------------------------ input
 
+    /** The word the cursor is in, in the text field that has the focus. */
+    private fun currentWord(): String {
+        val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString() ?: return ""
+        var start = before.length
+        while (start > 0 && isWordChar(before[start - 1])) start--
+        return before.substring(start)
+    }
+
+    private fun isWordChar(char: Char): Boolean = char.isLetter() || char == '\'' || char == '-'
+
     private fun type(letter: String) {
-        composing.append(letter)
-        updateComposing()
+        currentInputConnection?.commitText(letter, 1)
         refresh()
     }
 
     private fun backspace() {
-        if (composing.isNotEmpty()) composing.deleteCharAt(composing.length - 1)
-        updateComposing()
+        val connection = currentInputConnection ?: return
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
         refresh()
     }
 
-    private fun updateComposing() {
-        composingView.text = composing.toString()
-    }
-
-    private fun commit(text: String) {
-        val editor = currentInputConnection
-        if (editor != null && text.isNotEmpty()) editor.commitText(text, 1)
-        composing.clear()
-        updateComposing()
+    private fun enter() {
+        val connection = currentInputConnection ?: return
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
         refresh()
     }
 
-    private fun commitTop() {
-        val top = firstSuggestion()
-        if (top.isNullOrEmpty()) {
-            commit(composing.toString())
+    /** The space bar commits the best suggestion and then a space. */
+    private fun space() {
+        val connection = currentInputConnection ?: return
+        val typed = currentWord()
+        val best = firstSuggestion()
+        if (!typed.isEmpty() && best != null) {
+            replaceWord(best)
+        }
+        connection.commitText(" ", 1)
+        refresh()
+    }
+
+    /** Put the Malayalam where the typed word is, in the field itself. */
+    private fun replaceWord(word: String) {
+        val connection = currentInputConnection ?: return
+        val typed = currentWord()
+        if (typed.isEmpty()) {
+            connection.commitText(word, 1)
             return
         }
-        commit(top)
+        connection.finishComposingText()
+        connection.deleteSurroundingTextInCodePoints(typed.length, 0)
+        connection.commitText(word, 1)
     }
 
     private fun switchKeyboard() {
@@ -126,8 +193,7 @@ class ManglishKeyboardService : InputMethodService() {
     // ------------------------------------------------------------ suggestions
 
     private fun firstSuggestion(): String? {
-        val view = inputView ?: return null
-        val strip = view.findViewById<LinearLayout>(R.id.suggestion_strip)
+        if (!::strip.isInitialized) return null
         if (strip.childCount == 0) return null
         return (strip.getChildAt(0) as? TextView)?.text?.toString()
     }
@@ -139,36 +205,68 @@ class ManglishKeyboardService : InputMethodService() {
      * background thread, because it is too slow for the main thread.
      */
     private fun refresh() {
-        val text = composing.toString()
-        if (text.isEmpty()) {
+        val word = currentWord()
+        if (word.isEmpty()) {
             show(emptyList())
             return
         }
-        show(keyboard.quick(text))
+        show(keyboard.quick(word))
         worker?.interrupt()
         worker = Thread {
             val ranked = try {
-                keyboard.suggest(text)
+                keyboard.suggest(word)
             } catch (error: Exception) {
                 Log.e(TAG, "the model failed", error)
                 emptyList()
             }
-            handler.post { if (composing.toString() == text) show(ranked) }
+            handler.post { if (currentWord() == word) show(ranked) }
         }.also { it.start() }
     }
 
     private fun show(words: List<String>) {
+        if (!::strip.isInitialized) return
         Log.i(TAG, "suggestions: ${words.joinToString(" | ")}")
         strip.removeAllViews()
-        for (word in words) {
+        for ((index, word) in words.withIndex()) {
             val button = android.widget.Button(this)
             button.text = word
-            button.textSize = 15f
+            button.textSize = 16f
             button.isAllCaps = false
-            button.setBackgroundColor(android.graphics.Color.WHITE)
-            button.setOnClickListener { commit(word) }
+            // The first suggestion is the one the space bar commits, so it
+            // gets the accent colour.
+            val colour = if (index == 0) palette.accent else palette.key
+            val text = if (index == 0) palette.accentText else palette.keyText
+            button.setTextColor(text)
+            button.background = rounded(colour)
+            button.setOnClickListener { replaceWord(word) }
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40),
+            )
+            params.setMargins(dp(4), 0, dp(4), 0)
+            button.layoutParams = params
             strip.addView(button)
         }
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
+
+    private fun rounded(colour: Int): android.graphics.drawable.GradientDrawable {
+        val shape = android.graphics.drawable.GradientDrawable()
+        shape.setColor(colour)
+        shape.cornerRadius = 16f
+        shape.setStroke(1, palette.accent)
+        return shape
+    }
+
+    // ------------------------------------------------------------------ theme
+
+    private fun inputView(): View? = window?.window?.decorView?.rootView
+
+    private fun applyTheme(view: View?) {
+        val target = view ?: return
+        target.setBackgroundColor(palette.background)
+        strip.setBackgroundColor(palette.panel)
     }
 
     // ----------------------------------------------------------------- assets
@@ -201,6 +299,6 @@ class ManglishKeyboardService : InputMethodService() {
     }
 
     companion object {
-        const val TAG = "ManglishKeyboard"
+        const val TAG = "MangoKeys"
     }
 }
