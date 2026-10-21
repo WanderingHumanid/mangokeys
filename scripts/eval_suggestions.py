@@ -63,6 +63,7 @@ def main() -> None:
     parser.add_argument("--beam", type=int, default=4)
     parser.add_argument("--n-best", type=int, default=5)
     parser.add_argument("--limit", type=int, default=0, help="rows to evaluate")
+    parser.add_argument("--prefix-model", default="runs/prefix/onnx-int8")
     parser.add_argument("--weights", default="evals/results/weights.json")
     parser.add_argument("--out", default="evals/results/suggestions.json")
     args = parser.parse_args()
@@ -93,6 +94,10 @@ def main() -> None:
         print(f"weights: {saved}")
 
     engine = Transliterator(args.onnx, args.tokenizer, beam=args.beam)
+    prefix_engine = None
+    if args.prefix_model and Path(args.prefix_model).exists():
+        prefix_engine = Transliterator(args.prefix_model, args.tokenizer, beam=1)
+        print(f"prefix model: {args.prefix_model}")
     ranker = SuggestionEngine(lexicon=lexicon, ngram=ngram, weights=weights)
     without_ngram = SuggestionEngine(lexicon=lexicon, ngram=None, weights=weights)
 
@@ -143,7 +148,10 @@ def main() -> None:
             if len(prefix) < cut:
                 continue
             completion_total[cut] += 1
-            partial = engine.transliterate(prefix)
+            if prefix_engine is not None:
+                partial = prefix_engine.transliterate(prefix)
+            else:
+                partial = engine.transliterate(prefix)
             words = lexicon.complete(partial, limit=8)
             if reference in words:
                 completion_hits[cut] += 1

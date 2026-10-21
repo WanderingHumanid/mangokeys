@@ -69,6 +69,11 @@ is right 87% of the time when the list knows the word and 51% of the time when
 it does not, so the list is also a confidence signal. The report has the
 measurements, including the ones that went against us.
 
+**There are two models.** The transliteration model answers whole words. The
+prefix model was trained on the same words plus the pairs where the roman
+side is cut short, so it learns to stop in the middle of a word, and the word
+list completes it. Neither is good at the other's job, and both are 6 MB.
+
 In the browser the model runs in a Web Worker on four threads, so the page
 never stutters: the longest frame gap while typing is 17 to 27 milliseconds,
 which is the normal frame budget. See [`docs/LATENCY.md`](docs/LATENCY.md).

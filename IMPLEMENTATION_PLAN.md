@@ -24,9 +24,10 @@ The project is built and running. This section records where each part stands.
 | Model, training, AMP, length bucketing | ✅ 5.37M params, 6.6M pairs, 12 epochs | `model/src/seq2seq.py` |
 | Evaluation, grapheme aware CER | ✅ | `model/src/metrics.py` |
 | Rule-based baseline | ✅ Top-1 9.2%, CER 48.8%, 67/67 Mozhi cases | `model/src/rules.py` |
-| Word list with a deletion index | ✅ 118K words, built from two public sources | `model/src/lexicon.py` |
+| Word list with a deletion index | ✅ 68K words, built from two public sources | `model/src/lexicon.py` |
 | Character language model | ✅ trained and measured, it did not help | `model/src/ngram.py` |
 | The ranker that joins them | ✅ the weights are tuned, not guessed | `model/src/suggest.py` |
+| The prefix model | ✅ a second model that stops in the middle of a word | `model/src/prefix.py` |
 | ONNX export, int8 path, Python runtime | ✅ parity checked against PyTorch | `model/export_onnx.py` |
 | Browser runtime | ✅ verified in a real browser, agrees with Python | `runtime/js/` |
 | Kotlin runtime | ✅ builds and passes the unit tests against the real model | `runtime/kotlin/` |
@@ -54,6 +55,12 @@ and on those words the model is right 69% of the time on its own and 84% of
 the time after the list has had a look. On the words the list does not know,
 the list does more harm than good, so the model's answer is never replaced
 without cause. The report has the full table.
+
+There are two models. The transliteration model answers whole words. The
+prefix model was trained on the same words plus the pairs where the roman
+side is cut short, and it doubles the rate at which its answer is a prefix
+of the intended word, at the cost of nine points of top-1 on the whole words.
+The system runs both.
 
 ### The ablation
 

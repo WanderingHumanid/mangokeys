@@ -51,9 +51,9 @@
     }
   },
   "latency_ms": {
-    "model": 23.3,
-    "with_word_list": 4.97,
-    "quick": 2.14
+    "model": 24.83,
+    "with_word_list": 5.03,
+    "quick": 2.16
   },
   "weights": {
     "model": 1.0,

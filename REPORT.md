@@ -445,7 +445,9 @@ The result on the Aksharantar test set:
 | **the model with the word list** | **57.4%** | **15.9%** |
 
 The weight of each signal was worked out on the validation set with
-`scripts/tune_suggestions.py`, not guessed.
+`scripts/tune_suggestions.py`, not guessed. The word list costs five
+milliseconds on top of the model and the rules alone take two, which is the
+path that runs on every keystroke.
 
 **The language model did not earn its place.** A character n-gram language
 model over the native side, trained on 400,000 common words, was built and
@@ -455,6 +457,67 @@ say everything that matters about which word the user meant. The language
 model is still in the code and still in the package, and it is off by
 default. We would rather report that than ship a component that does
 nothing.
+
+### 5.6 A second model for the completion
+
+A keyboard that only transliterates is not a keyboard. Manglish finishes the
+word: type `aash` and it gives `ആശംസകൾ`. To do that the model has to be able
+to stop in the middle of a word, and the model we had could not: it always
+finished the word.
+
+So we trained a second model on the same corpus plus the pairs where the
+roman side is cut short. From `kerala` → `കേരളം` the training data gets
+`ker` → `കേര`, `kera` → `കേര`, `keral` → `കേരള`. The cut of the native side
+is found by counting the consonants, because the two sides are not written one
+letter at a time. The run used 13.7 million rows, 5.8 million of them prefix
+pairs, and eight epochs.
+
+**It works, and it costs something.**
+
+| | the transliteration model | the prefix model |
+|---|---|---|
+| Top-1 on the test set | **58.4%** | 49.7% |
+| Character error rate | **11.8%** | 14.7% |
+| The answer is a prefix of the word, after four letters | 33.8% | **72.1%** |
+| The answer is a prefix of the word, after six letters | 33.9% | **67.4%** |
+| The word is among the candidates, after four letters | 42.7% | **48.2%** |
+
+The prefix model learns to stop in the middle of a word: it doubles the rate
+at which its answer is a prefix of the intended word. What it costs is nine
+points of top-1 on the whole words, because a third of its training data is
+now prefixes, and a prefix is an ambiguous thing to learn.
+
+**So the system runs both models.** The transliteration model answers, and the
+prefix model says where the word is going. The word list completes the
+answer, and the ranking decides what the user sees. Twelve megabytes for a
+keyboard that can finish a word.
+
+The honest summary of the two models is that neither is good at the other's
+job, and that is a finding rather than a failure: a model that is good at
+whole words and a model that is good at partial words are different models.
+
+### 5.7 What the word list can and cannot do
+
+The completion is limited by the word list, not by the model. The list knows
+54% of the words in the test set, and it knows them very unevenly:
+
+| Test subset | The word list knows the word |
+|---|---|
+| Dakshina, a dictionary of common words | 97% |
+| AK-Freq, the frequent words of the corpus | 19% |
+| AK-NEI, Indian named entities | 20% |
+| AK-NEF, foreign named entities | 19% |
+
+The Aksharantar test set is made of the words a dictionary does not have. It
+is a held out split of a mined corpus of four million words, and the tail of
+that corpus is long. The Dakshina lexicon, which is a dictionary of common
+words, covers its own test subset almost completely.
+
+This is the whole story of the gap to Manglish Keyboard in one table. Their
+dictionary is fed by ten million daily users, so it holds the words that
+people type, including the ones nobody has written down yet. Ours is the
+public part of that: 68,000 words from two public lists, which covers the
+common words well and the tail not at all.
 
 ---
 
