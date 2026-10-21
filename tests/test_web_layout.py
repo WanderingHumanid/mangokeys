@@ -78,6 +78,25 @@ def test_the_web_demo_has_the_same_palette_as_the_app():
         assert colour.lower() in style.lower(), f"{colour} is not in the demo"
 
 
+def test_the_demo_build_copies_every_file_of_the_page():
+    """A file that the build does not copy is a file the demo cannot load."""
+    script = (ROOT / "scripts" / "build_web.py").read_text(encoding="utf-8")
+    match = re.search(r"PAGE_FILES = \((.*?)\)", script, re.S)
+    assert match, "no PAGE_FILES in the build script"
+    copied = set(re.findall(r'"([^"]+)"', match.group(1)))
+    for name in ("index.html", "style.css", "app.js", "worker.js"):
+        assert name in copied, f"{name} is not copied into the demo"
+
+    # Every file of the page that the browser asks for has to be there.
+    source = ROOT / "apps/expo-web"
+    for path in sorted(source.glob("*")):
+        if path.suffix not in (".html", ".css", ".js"):
+            continue
+        if path.name in ("transliterator.js", "lexicon.js", "ngram.js", "suggest.js"):
+            continue  # these come from the runtime
+        assert path.name in copied, f"{path.name} is not in the list of files to copy"
+
+
 def test_the_demo_does_not_ship_the_direction_contract():
     """The brief is for the people who work on the page, not for the browser."""
     brief = ROOT / ".impeccable/briefs/web-demo.md"
