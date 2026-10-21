@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The colours of the application page.
+
+    They are attributes and not fixed values, because the page follows the
+    theme the user picked. The keyboard has its own palette in Kotlin, and
+    these are the same colours.
+-->
+<resources>
+    <attr name="appBackground" format="color" />
+    <attr name="appSurface" format="color" />
+    <attr name="appField" format="color" />
+    <attr name="appText" format="color" />
+    <attr name="appMuted" format="color" />
+    <attr name="appFaint" format="color" />
+    <attr name="appLine" format="color" />
+    <attr name="appLineSoft" format="color" />
+    <attr name="appChip" format="color" />
+</resources>

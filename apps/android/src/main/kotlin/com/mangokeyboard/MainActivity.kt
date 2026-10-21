@@ -1,6 +1,7 @@
 package com.mangokeyboard
 
 import android.app.Activity
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -19,6 +20,7 @@ import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.mangokeyboard.transliterator.CharNgram
 import com.mangokeyboard.transliterator.Keyboard
 import com.mangokeyboard.transliterator.Lexicon
@@ -29,6 +31,10 @@ import java.io.File
  *
  * It has a test bench at the top, so that the keyboard can be tried without
  * switching the input method, and the settings of the keyboard under it.
+ *
+ * The page follows the theme the user chose, the same way the keyboard does.
+ * The theme is set before the page is built, and the colours of the parts
+ * that are made in code are read from it.
  */
 class MainActivity : Activity() {
 
@@ -44,11 +50,17 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = KeyboardSettings(this)
+        setTheme(if (settings.darkMode) R.style.Theme_Manglish_Dark else R.style.Theme_Manglish)
         setContentView(R.layout.settings)
 
         findViewById<Switch>(R.id.switch_dark).apply {
             isChecked = settings.darkMode
-            setOnCheckedChangeListener { _, value -> settings.darkMode = value }
+            setOnCheckedChangeListener { _, value ->
+                settings.darkMode = value
+                // The page is built with the colours of the theme, so it has
+                // to be built again when the theme changes.
+                recreate()
+            }
         }
 
         findViewById<Switch>(R.id.switch_completion).apply {
@@ -77,6 +89,8 @@ class MainActivity : Activity() {
             }
         }
 
+        tintWithAccent()
+
         buildAccentRow()
         findViewById<Button>(R.id.button_custom_accent).setOnClickListener { showColourPicker() }
         buildExamples()
@@ -102,6 +116,37 @@ class MainActivity : Activity() {
         findViewById<Switch>(R.id.switch_completion).isChecked = settings.completion
         findViewById<Switch>(R.id.switch_word_list).isChecked = settings.wordList
         buildAccentRow()
+    }
+
+    // ----------------------------------------------------------------- theme
+
+    /** One of the colours of the current theme. */
+    private fun themeColour(attribute: Int): Int {
+        val typed = TypedValue()
+        theme.resolveAttribute(attribute, typed, true)
+        return if (typed.resourceId != 0) {
+            ContextCompat.getColor(this, typed.resourceId)
+        } else {
+            typed.data
+        }
+    }
+
+    /** The switches and the radio buttons take the accent of the user. */
+    private fun tintWithAccent() {
+        val states = arrayOf(
+            intArrayOf(android.R.attr.state_checked),
+            intArrayOf(-android.R.attr.state_checked),
+        )
+        val colors = intArrayOf(settings.accent, themeColour(R.attr.appFaint))
+        val tint = ColorStateList(states, colors)
+        for (id in listOf(R.id.switch_dark, R.id.switch_completion, R.id.switch_word_list)) {
+            val switch = findViewById<Switch>(id)
+            switch.thumbTintList = tint
+            switch.trackTintList = tint
+        }
+        for (id in listOf(R.id.beam_1, R.id.beam_2, R.id.beam_4)) {
+            findViewById<RadioButton>(id).buttonTintList = tint
+        }
     }
 
     // ------------------------------------------------------------- test bench
@@ -172,7 +217,7 @@ class MainActivity : Activity() {
             button.text = example
             button.textSize = 13f
             button.isAllCaps = false
-            button.setTextColor(Color.parseColor("#3C4043"))
+            button.setTextColor(themeColour(R.attr.appMuted))
             button.background = chip()
             button.setOnClickListener {
                 val field = findViewById<EditText>(R.id.field)
@@ -205,6 +250,7 @@ class MainActivity : Activity() {
             button.setOnClickListener {
                 settings.accent = colour
                 buildAccentRow()
+                tintWithAccent()
             }
             val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             params.setMargins(0, 0, dp(6), 0)
@@ -217,13 +263,14 @@ class MainActivity : Activity() {
         val shape = GradientDrawable()
         shape.setColor(colour)
         shape.cornerRadius = 12f
-        shape.setStroke(if (selected) 3 else 1, if (selected) Color.parseColor("#111827") else shade(colour))
+        val edge = if (selected) themeColour(R.attr.appText) else shade(colour)
+        shape.setStroke(if (selected) 3 else 1, edge)
         return shape
     }
 
     private fun chip(): GradientDrawable {
         val shape = GradientDrawable()
-        shape.setColor(Color.parseColor("#EDEFF2"))
+        shape.setColor(themeColour(R.attr.appChip))
         shape.cornerRadius = 16f
         return shape
     }
@@ -262,6 +309,7 @@ class MainActivity : Activity() {
             .setPositiveButton("Save") { _, _ ->
                 settings.accent = Color.rgb(red.progress, green.progress, blue.progress)
                 buildAccentRow()
+                tintWithAccent()
                 Toast.makeText(this, "The keyboard will use it now", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
@@ -278,6 +326,7 @@ class MainActivity : Activity() {
             }
 
             override fun onStartTrackingTouch(seek: SeekBar) {}
+
             override fun onStopTrackingTouch(seek: SeekBar) {}
         })
         return bar

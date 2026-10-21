@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The light and the dark colours of the application page. -->
+<resources>
+    <color name="brand">#2C5F8A</color>
+
+    <color name="app_background_light">#FBFBFD</color>
+    <color name="app_surface_light">#FFFFFF</color>
+    <color name="app_field_light">#FFFFFF</color>
+    <color name="app_text_light">#16181C</color>
+    <color name="app_muted_light">#4B5563</color>
+    <color name="app_faint_light">#6B7280</color>
+    <color name="app_line_light">#E5E7EB</color>
+    <color name="app_line_soft_light">#E3E6EA</color>
+    <color name="app_chip_light">#EDEFF2</color>
+
+    <color name="app_background_dark">#101215</color>
+    <color name="app_surface_dark">#1B1D21</color>
+    <color name="app_field_dark">#23262B</color>
+    <color name="app_text_dark">#E8EAED</color>
+    <color name="app_muted_dark">#A2A9B2</color>
+    <color name="app_faint_dark">#8B939D</color>
+    <color name="app_line_dark">#2B2F35</color>
+    <color name="app_line_soft_dark">#24272C</color>
+    <color name="app_chip_dark">#31353B</color>
+</resources>

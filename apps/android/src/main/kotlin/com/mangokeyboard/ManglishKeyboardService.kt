@@ -147,7 +147,13 @@ class ManglishKeyboardService : InputMethodService() {
 
     // ------------------------------------------------------------------ input
 
-    /** The word the cursor is in, in the text field that has the focus. */
+    /**
+     * The word the cursor is in, in the text field that has the focus.
+     *
+     * Only the Roman letters count. The Malayalam that the keyboard wrote
+     * earlier is not a word being typed, and the suggestions must not be
+     * about it.
+     */
     private fun currentWord(): String {
         val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString() ?: return ""
         var start = before.length
@@ -155,7 +161,8 @@ class ManglishKeyboardService : InputMethodService() {
         return before.substring(start)
     }
 
-    private fun isWordChar(char: Char): Boolean = char.isLetter() || char == '\'' || char == '-'
+    private fun isWordChar(char: Char): Boolean =
+        char in 'a'..'z' || char in 'A'..'Z' || char == '\'' || char == '-'
 
     private fun type(letter: String) {
         val text = when (shift) {
@@ -262,8 +269,8 @@ class ManglishKeyboardService : InputMethodService() {
             button.setBackgroundColor(android.graphics.Color.TRANSPARENT)
             // The first suggestion is the one the space bar commits, so it
             // gets the accent colour.
-            val colour = if (index == 0) palette.accent else palette.panel
-            val text = if (index == 0) palette.accentText else palette.panelText
+            val colour = if (index == 0) palette.accent else palette.function
+            val text = if (index == 0) palette.accentText else palette.functionText
             button.setTextColor(text)
             button.background = rounded(colour, if (index == 0) 18f else 10f)
             button.setOnClickListener { replaceWord(word) }

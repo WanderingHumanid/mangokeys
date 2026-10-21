@@ -1,7 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        The light theme of the application page.
+
+        The activity picks one of the two at runtime, from the setting the
+        user chose in the keyboard, so the page and the keyboard are always
+        in the same theme.
+    -->
     <style name="Theme.Manglish" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:colorPrimary">#2C5F8A</item>
-        <item name="android:colorAccent">#2C5F8A</item>
+        <item name="android:colorPrimary">@color/brand</item>
+        <item name="android:colorAccent">@color/brand</item>
+        <item name="android:windowBackground">?attr/appBackground</item>
+        <item name="android:statusBarColor">@color/app_background_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="appBackground">@color/app_background_light</item>
+        <item name="appSurface">@color/app_surface_light</item>
+        <item name="appField">@color/app_field_light</item>
+        <item name="appText">@color/app_text_light</item>
+        <item name="appMuted">@color/app_muted_light</item>
+        <item name="appFaint">@color/app_faint_light</item>
+        <item name="appLine">@color/app_line_light</item>
+        <item name="appLineSoft">@color/app_line_soft_light</item>
+        <item name="appChip">@color/app_chip_light</item>
+    </style>
+
+    <style name="Theme.Manglish.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/brand</item>
+        <item name="android:colorAccent">@color/brand</item>
+        <item name="android:windowBackground">?attr/appBackground</item>
+        <item name="android:statusBarColor">@color/app_background_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="appBackground">@color/app_background_dark</item>
+        <item name="appSurface">@color/app_surface_dark</item>
+        <item name="appField">@color/app_field_dark</item>
+        <item name="appText">@color/app_text_dark</item>
+        <item name="appMuted">@color/app_muted_dark</item>
+        <item name="appFaint">@color/app_faint_dark</item>
+        <item name="appLine">@color/app_line_dark</item>
+        <item name="appLineSoft">@color/app_line_soft_dark</item>
+        <item name="appChip">@color/app_chip_dark</item>
     </style>
 </resources>
