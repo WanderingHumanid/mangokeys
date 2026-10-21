@@ -60,10 +60,12 @@ Settings, Pages, with the source set to GitHub Actions. Until then, or if
 you would rather not wait for it, the two commands below run the same files
 on your own machine.
 
-Type a word and the suggestions appear above. The first suggestion is the one
-the space bar commits, and clicking any of the others replaces the word in
-the field. The model runs in a Web Worker on up to four threads, so the page
-never freezes while it thinks.
+Type a word and the suggestions appear above the keys. The first suggestion is
+the one the space bar commits, and clicking any of the others replaces the
+word in the field. The keyboard itself is on the page, so it can be used with
+the mouse as well, and the key you press on your own keyboard lights up on
+it. The model runs in a Web Worker on up to four threads, so the page never
+freezes while it thinks.
 
 To run it on your own machine:
 

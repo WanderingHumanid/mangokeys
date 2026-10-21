@@ -190,15 +190,30 @@ Add `--suggest` to see the ranked candidate list instead of a single word.
 ## 7. Web demo, in a browser
 
 ```bash
-# Build the demo folder: the graphs, the tokenizer, the lexicon and the ranker
-python -m scripts.build_demo --checkpoint runs/ml_mini/best.pt --quantize
+# Assemble the demo folder from the committed model bundle: the graphs, the
+# tokenizer, the lexicon and the runtime of the browser
+python -m scripts.build_web --out dist/web
 
 # Serve it. The headers are what let the wasm runtime use four threads
-python apps/expo-web/serve.py --port 8000
+python dist/web/serve.py --port 8000
 ```
 
-Open `http://localhost:8000`. Type into the box and the suggestion strip fills
-up. The page must not stutter while you type.
+Open `http://localhost:8000`. The page is the keyboard. Type in the box above
+it and the candidate strip fills up, the first candidate is the one the space
+bar takes, and the space bar takes it in place, in the field.
+
+What to check, in order:
+
+1. The page is dark and the keyboard looks like the one on the phone.
+2. Typing `ente` shows `എൻ്റെ` first in the strip, on the accent colour.
+3. The space bar replaces `ente` with `എൻ്റെ` in the field and adds a space.
+4. Clicking another candidate replaces the word with that one.
+5. The keys on the page type into the field, the backspace deletes in it and
+   the 123 key opens the numbers.
+6. The key you press on your own keyboard lights up on the page.
+7. The table under the keyboard has the three measured systems and the note
+   about the coverage of the word list.
+8. The page does not stutter while you type.
 
 To check it from another machine on the same network, use the address of this
 one and make sure the phone or the other computer is on the same network:
@@ -207,10 +222,14 @@ one and make sure the phone or the other computer is on the same network:
 hostname -I
 ```
 
-There is a headless check as well, which is what the build runs:
+There is a headless check as well, which is what the build runs. It types a
+word, presses the space bar, taps a candidate, types with the keys on the
+page and opens the numbers layer:
 
 ```bash
-python -m scripts.check_demo --url http://localhost:8000
+python -m scripts.check_demo --url http://localhost:8000 \
+    --shot .impeccable/review/desktop.png \
+    --shot-mobile .impeccable/review/mobile.png
 ```
 
 ---
@@ -396,6 +415,10 @@ opens, so the first answer takes a moment.
 Under it are the settings: the dark theme, six accent colours and a custom
 colour picker with three sliders, and the behaviour switches.
 
+The dark theme is not only the keyboard. The whole page follows it: the
+background, the cards, the field, the text and the status bar. Turn it on and
+the page is rebuilt in the dark theme at once.
+
 The settings are stored in the preferences of the app:
 
 ```bash
@@ -471,7 +494,7 @@ source .venv/bin/activate
 python -m pytest tests -q                                  # unit tests
 python -m scripts.demo --onnx runs/demo/onnx-int8 \
     --tokenizer runs/ml_mini/tokenizer.json --word ente     # python runtime
-python -m scripts.build_demo --checkpoint runs/ml_mini/best.pt --quantize
+python -m scripts.build_web --out dist/web                 # the demo folder
 python -m scripts.check_demo --url http://localhost:8000   # browser runtime
 cd runtime && ./gradlew test                               # kotlin runtime
 cd .. && cd runtime && ./gradlew :app:assembleDebug        # android app

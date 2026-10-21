@@ -526,9 +526,11 @@ common words well and the tail not at all.
 Two demos, both running the same 5.4 MB int8 model.
 
 **The web page** runs the model in the browser with ONNX Runtime Web. Nothing
-is uploaded, there is no server, and it works with the network off. It shows
-the model output next to the rule engine output, so the difference is visible
-on every keystroke.
+is uploaded, there is no server, and it works with the network off. It is the
+keyboard, drawn on the page: the candidate strip above the keys, the space
+bar committing the highlighted candidate, and the word in the field changing
+from Manglish to Malayalam in place. The measured results sit under it, read
+from the evaluation files.
 
 **The Android app** is an `InputMethodService` called MangoKeys. It behaves
 like an ordinary keyboard: every key goes straight into the text field that
@@ -549,7 +551,9 @@ permissions at all.
 The application of the keyboard has a test bench, so that the keyboard can be
 tried without switching the input method, and the settings under it: a dark
 and a light theme, six accent colours and a custom colour picker, and the
-switches for the word list, the completion and the number of candidates.
+switches for the word list, the completion and the number of candidates. The
+page itself follows the theme, so the app and the keyboard are never in
+different themes.
 
 The architecture the plan points at is **rules propose, the model disposes**.
 The rule engine generates a bounded set of well formed candidates and the
