@@ -49,20 +49,24 @@ class Candidate:
 
 @dataclass
 class Weights:
-    """How much each signal counts in the final ranking."""
+    """How much each signal counts in the final ranking.
+
+    These are the values that `scripts/tune_suggestions.py` worked out on the
+    validation split.
+    """
 
     # The score the model gave the answer, relative to its best answer.
     model: float = 1.0
     # A word that the word list knows.
-    known: float = 2.0
+    known: float = 4.0
     # A word that extends what the model said.
-    completion: float = 3.0
+    completion: float = 0.0
     # A word that only resembles what the model said.
-    variation: float = -1.0
+    variation: float = -2.0
     # How natural the word sounds.
-    language: float = 0.1
+    language: float = 0.0
     # How common the word is.
-    frequency: float = 0.1
+    frequency: float = 0.0
     # A candidate that came from the rules rather than from the model starts
     # with this score, so that the model is preferred when nothing else
     # separates the two.

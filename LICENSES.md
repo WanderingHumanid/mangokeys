@@ -14,6 +14,7 @@ Everything this project uses, its licence, how we use it, and what we owe.
 |---|---|---|---|
 | [Dakshina](https://github.com/google-research-datasets/dakshina) (Google) | **CC BY-SA 4.0** | Training + evaluation | Attribute; share-alike on redistribution |
 | [Aksharantar](https://huggingface.co/datasets/ai4bharat/Aksharantar) (AI4Bharat) | CC-BY (manual) / CC0 (mined) | Training + evaluation | Attribute the manual rows |
+| [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (Hermit Dave) | **MIT** | Word list of the keyboard | Include the MIT notice |
 | [IndicXlit](https://github.com/AI4Bharat/IndicXlit) model | MIT | Baseline | Include MIT notice |
 | [IndoNLP-2025](https://aclanthology.org/2025.indonlp-1.20) test sets | Per task | Evaluation only | Cite; **never train on** |
 | [Mozhi 2.0](https://mozhi-documentation.digitalmalayali.in) spec | Open spec | Rule engine + conformance tests | Cite |
@@ -131,7 +132,20 @@ readable, so this is a day of work, not a month.
 - **Do not vendor its code** into a non-GPL project. Use it as a behavioural reference for rule
   design and to cross-check outputs.
 
-## 8. Fonts & data
+## 8. The word list of the keyboard
+
+Two public sources decide which words the word list holds and in what order.
+
+| Asset | Licence | Role | Obligation |
+|---|---|---|---|
+| [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (Hermit Dave) | **MIT** | The commonest Malayalam words, with the count from the OpenSubtitles corpus | Include the MIT notice |
+| [Dakshina Malayalam lexicon](https://huggingface.co/datasets/vrclc/dakshina-lexicons-ml) | **CC BY-SA 4.0** (the Dakshina dataset) | More Malayalam words, with a count | Attribute; share-alike on redistribution |
+
+The word list itself is derived data. It is a count per word, so it inherits
+the licence of the corpus it was counted from. It is released with the
+project under the same terms as the model.
+
+## 9. Fonts & data
 
 | Asset | Licence | Obligation |
 |---|---|---|
@@ -140,7 +154,7 @@ readable, so this is a day of work, not a month.
 | Unicode CLDR + Unicode Emoji data | Unicode License v3 | Include notice |
 | CMU Pronouncing Dictionary | BSD-3-Clause | Include notice |
 
-## 9. Our trained model
+## 10. Our trained model
 
 **Recommended licence: CC BY-SA 4.0**, because we train on Dakshina (CC BY-SA 4.0). It keeps
 everything consistent and is compatible with the GPL-3.0 Android fork.
