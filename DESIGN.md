@@ -7,6 +7,8 @@ colors:
   surface: "#23262b"
   key: "#31353b"
   function: "#3a3f46"
+  function-text: "#c9ced5"
+  warning: "#e79a9a"
   line: "#2b2f35"
   line-soft: "#24272c"
   text: "#e8eaed"
@@ -46,12 +48,34 @@ typography:
     fontSize: "12.5px"
     fontWeight: 400
     lineHeight: 1.5
+  key:
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1
+  key-large:
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: 1
+  key-small:
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1
+  candidate:
+    fontFamily: "Noto Sans Malayalam, Nirmala UI, Kartika, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.35
 rounded:
   sm: "10px"
   md: "12px"
   lg: "14px"
   panel: "20px"
+  panel-small: "16px"
   pill: "18px"
+  scroll: "2px"
 spacing:
   xs: "6px"
   sm: "8px"
@@ -145,9 +169,13 @@ allowed to be the only saturated thing on the screen.
   the system.
 - **Body** (`#1b1d21`): the keyboard panel.
 - **Surface** (`#23262b`): the candidate strip and the compose field.
-- **Key** (`#31353b`): the letter keys and the example chips.
+- **Key** (`#31353b`): the letter keys, and the example chips of the test
+  bench in the app.
 - **Function** (`#3a3f46`): the keys that do something other than type a
   letter, and the candidates that are not the first one.
+- **Function text** (`#c9ced5`): the label of a function key, a shade quieter
+  than the letters.
+- **Warning** (`#e79a9a`): the state of the model when something failed.
 - **Line** (`#2b2f35`): the divider under the strip.
 - **Line soft** (`#24272c`): the hairlines inside the results table.
 - **Text** (`#e8eaed`): everything that is being read.
@@ -192,6 +220,10 @@ the only thing the product is about: the Malayalam itself.
   largest type on the page, because it is the thing the visitor came for.
 - **Label** (400, 12.5px): the state of the model, the captions, the table
   headers. Never uppercase, never tracked.
+- **Key** (400, 17px, 18px on a large screen, 16px on a narrow one): the
+  letter on a key.
+- **Candidate** (400, 17px, 1.35): the word in the strip, in the Malayalam
+  face.
 
 ### Named Rules
 
@@ -214,8 +246,8 @@ One column, centred, that holds the product the way a phone holds it.
 
 The column grows and the keyboard grows with it, and the proportions of the
 keys stay the same. The order down the page never changes: the wordmark and
-the state of the model, the compose field and the examples, the keyboard with
-its strip, the measured results, the footer.
+the state of the model, the compose field, the keyboard with its strip, the
+measured results, the footer.
 
 The vertical rhythm is a multiple of four, with more space above a heading
 than below it. The gap between the compose field and the keyboard is 18px,
@@ -244,7 +276,8 @@ floats. A card, a chip, a field or a table never does.
 ## Shapes
 
 The corner language is soft but not round. The keys are 10px, the fields and
-the chips 12px, the compose panel 14px and the keyboard 20px. The first
+the chips 12px, the compose panel 14px, the keyboard 20px and 16px on a
+narrow screen, and the scroll bar 2px. The first
 candidate is a pill at 18px, because it is the one thing on the page that is
 alone in its row.
 
@@ -280,7 +313,8 @@ separates the candidates from the keys.
 ### Chips
 
 - **Style:** the key colour, the muted colour, a pill radius, 13px.
-- **State:** the examples fill the field when they are tapped.
+- **State:** the example chips of the test bench in the app fill its field
+  when they are tapped. The web page has none. The visitor types.
 
 ### Inputs
 

@@ -27,6 +27,7 @@
   --font-native: "Noto Sans Malayalam", "Nirmala UI", Kartika, var(--font-ui);
 
   --radius: 14px;
+  --radius-panel: 20px;
   --key-radius: 10px;
 }
 
@@ -104,7 +105,7 @@ body {
   background: var(--field);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px 14px 10px;
+  padding: 14px 16px;
   transition: border-color 420ms ease-out, box-shadow 420ms ease-out;
 }
 
@@ -116,7 +117,8 @@ body {
 #field {
   display: block;
   width: 100%;
-  min-height: 52px;
+  min-height: 30px;
+  max-height: 150px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -136,37 +138,14 @@ body {
   color: var(--faint);
 }
 
-.examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.example {
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--key);
-  color: var(--muted);
-  font: inherit;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
-}
-
-.example:hover {
-  background: var(--function);
-  color: var(--text);
-}
-
 /* -------------------------------------------------------------- keyboard */
 
 .keyboard {
   margin-top: 18px;
   padding: 0 8px 10px;
   background: var(--body);
-  border-radius: 20px;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
   box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.85);
 }
 
@@ -174,13 +153,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 52px;
-  padding: 8px 6px;
+  min-height: 56px;
+  padding: 12px 0 14px;
   overflow-x: auto;
   background: var(--strip);
   border-bottom: 1px solid var(--function);
   position: relative;
-  border-radius: 19px 19px 0 0;
   scrollbar-width: thin;
   scrollbar-color: var(--function) transparent;
 }
@@ -208,7 +186,6 @@ body {
 
 .strip-hint {
   flex: 0 0 auto;
-  padding: 0 6px;
   color: var(--faint);
   font-size: 12.5px;
 }
@@ -250,6 +227,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-top: 10px;
 }
 
 .key-row {

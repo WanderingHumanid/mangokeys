@@ -537,7 +537,8 @@ like an ordinary keyboard: every key goes straight into the text field that
 has the focus, so the backspace, the cursor and the selection belong to the
 application and not to the keyboard. The layout is the standard one, and the
 suggestion strip above the keys holds the Malayalam. Tapping a suggestion
-replaces the word that is being typed with the Malayalam.
+replaces the word that is being typed with the Malayalam and leaves a
+single space after it, so the next word can be typed straight away.
 
 ```
 ente   →  എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്

@@ -17,7 +17,6 @@ const elements = {
   field: document.getElementById("field"),
   strip: document.getElementById("strip"),
   keys: document.getElementById("keys"),
-  examples: document.getElementById("examples"),
   benchBody: document.querySelector("#bench-table tbody"),
   benchNote: document.getElementById("bench-note"),
   clock: document.getElementById("clock"),
@@ -31,15 +30,6 @@ const state = {
   requestId: 0,
   timer: null,
 };
-
-const EXAMPLE_WORDS = [
-  "ente peru",
-  "njangalkum",
-  "sundari",
-  "keralathil",
-  "sughamano",
-  "ningalkkum",
-];
 
 const keyboard = new OnScreenKeyboard(elements.keys, {
   onCharacter: (letter) => type(keyboard.currentLetter(letter)),
@@ -64,16 +54,23 @@ function currentWord() {
   return value.slice(start, caret);
 }
 
-/** Put a word where the word being typed is, in the field itself. */
-function replaceWord(word) {
+/**
+ * Put a word where the word being typed is, in the field itself.
+ *
+ * A single space is left after it, so that the next word can be typed
+ * straight away and the user does not have to press the space bar between
+ * the words.
+ */
+function replaceWord(word, trailingSpace = true) {
   const field = elements.field;
   const caret = field.selectionStart ?? field.value.length;
   const before = field.value.slice(0, caret);
   const after = field.value.slice(caret);
   let start = caret;
   while (start > 0 && isWordChar(before[start - 1])) start -= 1;
-  field.value = `${before.slice(0, start)}${word}${after}`;
-  const position = start + word.length;
+  const space = trailingSpace ? " " : "";
+  field.value = `${before.slice(0, start)}${word}${space}${after}`;
+  const position = start + word.length + space.length;
   field.setSelectionRange(position, position);
   flashWord();
 }
@@ -107,7 +104,10 @@ function firstSuggestion() {
 function typeSpace() {
   const word = currentWord();
   const best = firstSuggestion();
-  if (word && best) replaceWord(best);
+  if (word && best) {
+    // The space bar leaves the space itself, so the word does not need one.
+    replaceWord(best, false);
+  }
   const field = elements.field;
   const caret = field.selectionStart ?? field.value.length;
   field.value = `${field.value.slice(0, caret)} ${field.value.slice(caret)}`;
@@ -230,7 +230,6 @@ function startWorker() {
 // ------------------------------------------------------------------- boot
 
 async function boot() {
-  buildExamples();
   wireField();
   wirePhysicalKeyboard();
 
@@ -248,27 +247,14 @@ async function boot() {
     elements.status.textContent = "the word list failed to load";
     elements.status.classList.add("bad");
   }
+  resizeField();
   refresh();
   loadBenchmarks();
 }
 
-function buildExamples() {
-  for (const word of EXAMPLE_WORDS) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "example";
-    button.textContent = word;
-    button.addEventListener("click", () => {
-      elements.field.value = word;
-      elements.field.setSelectionRange(word.length, word.length);
-      refresh();
-    });
-    elements.examples.appendChild(button);
-  }
-}
-
 function wireField() {
   elements.field.addEventListener("input", () => {
+    resizeField();
     window.clearTimeout(state.timer);
     state.timer = window.setTimeout(refresh, 60);
   });
@@ -283,6 +269,13 @@ function wireField() {
   elements.field.addEventListener("click", () => {
     window.setTimeout(refresh, 0);
   });
+}
+
+/** The field is one line high until there is more than one line of text. */
+function resizeField() {
+  const field = elements.field;
+  field.style.height = "auto";
+  field.style.height = `${field.scrollHeight}px`;
 }
 
 /** The keys of the physical keyboard light up on the on-screen keyboard. */

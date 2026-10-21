@@ -206,8 +206,10 @@ What to check, in order:
 
 1. The page is dark and the keyboard looks like the one on the phone.
 2. Typing `ente` shows `എൻ്റെ` first in the strip, on the accent colour.
-3. The space bar replaces `ente` with `എൻ്റെ` in the field and adds a space.
-4. Clicking another candidate replaces the word with that one.
+3. The space bar replaces `ente` with `എൻ്റെ` in the field and adds one
+   space.
+4. Clicking another candidate replaces the word with that one and leaves one
+   space after it.
 5. The keys on the page type into the field, the backspace deletes in it and
    the 123 key opens the numbers.
 6. The key you press on your own keyboard lights up on the page.
@@ -376,9 +378,11 @@ What to check, in order:
    enter on the last row.
 3. Typing `ente` puts `ente` in the field, in Manglish, and shows `എൻ്റെ`
    first in the strip.
-4. Tapping `എൻ്റെ` replaces `ente` in the field with `എൻ്റെ`.
+4. Tapping `എൻ്റെ` replaces `ente` in the field with `എൻ്റെ` and leaves a
+   single space after it, so the next word can be typed straight away.
 5. The backspace deletes in the field, not in the keyboard.
-6. The space bar commits the top suggestion and then a space.
+6. The space bar commits the top suggestion and leaves one space. It must
+   not leave two.
 7. The 123 key shows the numbers and the abc key goes back.
 8. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
    middle of the word and the word list completes it.

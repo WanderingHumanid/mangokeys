@@ -198,23 +198,33 @@ class ManglishKeyboardService : InputMethodService() {
         val typed = currentWord()
         val best = firstSuggestion()
         if (!typed.isEmpty() && best != null) {
-            replaceWord(best)
+            // The space bar leaves the space itself, so the word does not
+            // need one.
+            replaceWord(best, trailingSpace = false)
         }
         connection.commitText(" ", 1)
         refresh()
     }
 
-    /** Put the Malayalam where the typed word is, in the field itself. */
-    private fun replaceWord(word: String) {
+    /**
+     * Put the Malayalam where the typed word is, in the field itself.
+     *
+     * A single space is left after it, so that the next word can be typed
+     * straight away and the user does not have to press the space bar
+     * between the words.
+     */
+    private fun replaceWord(word: String, trailingSpace: Boolean = true) {
         val connection = currentInputConnection ?: return
         val typed = currentWord()
         if (typed.isEmpty()) {
             connection.commitText(word, 1)
+            if (trailingSpace) connection.commitText(" ", 1)
             return
         }
         connection.finishComposingText()
         connection.deleteSurroundingTextInCodePoints(typed.length, 0)
         connection.commitText(word, 1)
+        if (trailingSpace) connection.commitText(" ", 1)
     }
 
     private fun switchKeyboard() {
@@ -273,7 +283,12 @@ class ManglishKeyboardService : InputMethodService() {
             val text = if (index == 0) palette.accentText else palette.functionText
             button.setTextColor(text)
             button.background = rounded(colour, if (index == 0) 18f else 10f)
-            button.setOnClickListener { replaceWord(word) }
+            button.setOnClickListener {
+                replaceWord(word)
+                // The word is gone, so the strip has nothing to say until the
+                // next one is typed.
+                refresh()
+            }
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, dp(36),
             )
