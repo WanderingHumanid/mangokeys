@@ -88,12 +88,15 @@ class SuggestionEngine:
         roman: str,
         model_candidates: list[str] | None = None,
         model_scores: list[float] | None = None,
+        completion_candidates: list[str] | None = None,
         use_rules: bool = True,
     ) -> list[Candidate]:
         """Rank the words that a Manglish string could mean.
 
         The model candidates are given with the score the model gave them, so
         that the ranking can prefer the answer the model is most sure about.
+        The completion candidates are the words that start with the answer of
+        the model that was trained on prefixes.
         """
         roman = roman.strip()
         if not roman:
@@ -109,6 +112,15 @@ class SuggestionEngine:
             if model_scores and index < len(model_scores):
                 score = model_scores[index] - best
             self._add(pool, text, "model", score)
+
+        for text in completion_candidates or []:
+            if not text:
+                continue
+            candidate = pool.get(text)
+            if candidate is None:
+                candidate = Candidate(text=text, source="completion", model_score=0.0)
+                pool[text] = candidate
+            candidate.completion = True
 
         if use_rules:
             for text in self.rules.convert(roman)[:4]:

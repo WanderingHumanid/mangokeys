@@ -80,7 +80,7 @@ export class SuggestionEngine {
     this.weights = { ...DEFAULT_WEIGHTS, ...weights };
   }
 
-  suggest(roman, modelCandidates = [], modelScores = [], useRules = true) {
+  suggest(roman, modelCandidates = [], modelScores = [], completionCandidates = [], useRules = true) {
     const text = roman.trim();
     if (!text) return [];
 
@@ -120,16 +120,14 @@ export class SuggestionEngine {
       if (!candidate.known) {
         for (const other of this.lexicon.complete(word, 3)) {
           if (other === word) continue;
-          const neighbour = add(other, source, score);
-          neighbour.completion = true;
+          add(other, source, score).completion = true;
         }
       }
 
       // The words that resemble the answer are the variations.
       for (const item of this.lexicon.nearestWithDistance(word, 3)) {
         if (item.word === word) continue;
-        const neighbour = add(item.word, source, score);
-        neighbour.variation = true;
+        add(item.word, source, score).variation = true;
       }
     };
 
@@ -137,6 +135,11 @@ export class SuggestionEngine {
       if (!word) return;
       offer(word, "model", (modelScores[index] ?? best) - best);
     });
+
+    for (const word of completionCandidates) {
+      if (!word) continue;
+      add(word, "completion", 0).completion = true;
+    }
 
     if (useRules) {
       for (const word of ruleConvert(text).slice(0, 1)) offer(word, "rules", this.weights.rulePenalty);

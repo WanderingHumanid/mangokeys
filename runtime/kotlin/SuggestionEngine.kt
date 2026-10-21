@@ -46,6 +46,7 @@ class SuggestionEngine(
         roman: String,
         modelCandidates: List<String> = emptyList(),
         modelScores: List<Double> = emptyList(),
+        completionCandidates: List<String> = emptyList(),
         useRules: Boolean = true,
     ): List<Candidate> {
         val text = roman.trim()
@@ -57,6 +58,10 @@ class SuggestionEngine(
             if (word.isEmpty()) return@forEachIndexed
             val score = if (index < modelScores.size) modelScores[index] - best else 0.0
             offer(pool, word, "model", score)
+        }
+        for (word in completionCandidates) {
+            if (word.isEmpty()) continue
+            add(pool, word, "completion", 0.0).completion = true
         }
         if (useRules) {
             for (word in RuleEngine().convert(text).take(4)) {

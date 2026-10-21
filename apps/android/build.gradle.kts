@@ -42,14 +42,22 @@ val lexiconDir: String = (project.findProperty("lexiconDir") as String?)
     ?: rootProject.file("../data/processed/lexicon").path
 val ngramFile: String = (project.findProperty("ngramFile") as String?)
     ?: rootProject.file("../data/processed/ngram.txt").path
+val prefixModelDir: String = (project.findProperty("prefixModelDir") as String?)
+    ?: rootProject.file("../runs/prefix/onnx-int8").path
 
 val copyAssets by tasks.registering(Copy::class) {
     from(modelDir) {
         include("*.onnx")
     }
     from(tokenizerFile)
-    from(lexiconDir)
+    from(lexiconDir) {
+        into("lexicon")
+    }
     from(ngramFile)
+    from(prefixModelDir) {
+        include("*.onnx")
+        rename { "prefix-${it}" }
+    }
     into(layout.buildDirectory.dir("generated/assets"))
 }
 

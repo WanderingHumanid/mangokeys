@@ -6,7 +6,7 @@
         "runs/demo/onnx-int8",
         "runs/ml_mini/tokenizer.json",
         "data/processed/lexicon",
-        "data/processed/ngram.txt",
+        prefix_model="runs/prefix/onnx-int8",
     )
     keyboard.suggest("keral")
 
@@ -15,11 +15,14 @@ This is the piece the browser and the phone use. It has two paths.
 `quick` uses the rules and the word list only. It takes well under a
 millisecond, so it can run on every keystroke.
 
-`suggest` adds the model. It takes a few milliseconds, so it runs when the
-typing pauses or when the word is committed.
+`suggest` adds the models. It takes a few milliseconds, so it runs when the
+typing pauses.
 
-Both paths end in the same place. The word list turns whatever was proposed
-into real words, and the language model ranks them.
+There are two models. The transliteration model is the one that was trained
+on whole words, and it is the better of the two at them. The prefix model was
+trained on the same words plus the pairs where the roman side is cut short,
+so it learns to stop in the middle of a word, and the word list completes it.
+Neither model is good at the other's job, and both are 6 MB.
 """
 
 from __future__ import annotations
@@ -44,6 +47,7 @@ class Keyboard:
         tokenizer_path: str | Path,
         lexicon_dir: str | Path | None = None,
         ngram_path: str | Path | None = None,
+        prefix_model: str | Path | None = None,
         beam: int = 4,
         limit: int = 8,
         weights: Weights | None = None,
@@ -51,6 +55,11 @@ class Keyboard:
         self.transliterator = Transliterator(
             onnx_dir, tokenizer_path, max_src=48, max_tgt=64, beam=beam
         )
+        self.prefix_model = None
+        if prefix_model is not None:
+            self.prefix_model = Transliterator(
+                prefix_model, tokenizer_path, max_src=48, max_tgt=64, beam=1
+            )
         self.lexicon = Lexicon.load(lexicon_dir) if lexicon_dir else None
         self.ngram = CharNgram.load(ngram_path) if ngram_path else None
         self.engine = SuggestionEngine(
@@ -74,17 +83,31 @@ class Keyboard:
         ranked = self.engine.suggest(roman, use_rules=True)
         return [item.text for item in ranked[:n_best]]
 
+    def completion(self, roman: str, n_best: int = 8) -> list[str]:
+        """The words that start with what the prefix model said.
+
+        This is the "type four letters and get the whole word" behaviour.
+        """
+        if not self.lexicon or not self.prefix_model:
+            return []
+        prefix = self.prefix_model.transliterate(roman)
+        if not prefix:
+            return []
+        return self.lexicon.complete(prefix, limit=n_best)
+
     def suggest(self, roman: str, n_best: int = 8) -> list[str]:
-        """The suggestions with the model in the loop."""
-        candidates = self.transliterator.scored_candidates(roman, n_best)
+        """The suggestions with the models in the loop."""
+        candidates = self.transliterator.scored_candidates(roman, 5)
         texts = [text for text, _ in candidates]
         scores = [score for _, score in candidates]
-        ranked = self.engine.suggest(roman, texts, scores)
+        completion = self.completion(roman, n_best=8)
+        ranked = self.engine.suggest(roman, texts, scores, completion)
         return [item.text for item in ranked[:n_best]]
 
     def scored_suggestions(self, roman: str, n_best: int = 8):
         """The suggestions with the score of every one of them."""
-        candidates = self.transliterator.scored_candidates(roman, n_best)
+        candidates = self.transliterator.scored_candidates(roman, 5)
         texts = [text for text, _ in candidates]
         scores = [score for _, score in candidates]
-        return self.engine.suggest(roman, texts, scores)[:n_best]
+        completion = self.completion(roman, n_best=8)
+        return self.engine.suggest(roman, texts, scores, completion)[:n_best]

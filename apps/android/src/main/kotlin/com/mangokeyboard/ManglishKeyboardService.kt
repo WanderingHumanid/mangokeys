@@ -41,11 +41,13 @@ class ManglishKeyboardService : InputMethodService() {
         val lexicon = Lexicon().load(File(models, "lexicon"))
         val ngramFile = File(models, "ngram.txt")
         val ngram = if (ngramFile.exists()) CharNgram.load(ngramFile) else null
+        val prefix = File(models, "prefix")
         keyboard = Keyboard(
-            File(models, "model"),
+            models,
             File(models, "tokenizer.json").readText(),
             lexicon,
             ngram,
+            prefixModel = if (prefix.exists()) prefix else null,
         )
         Log.i(TAG, "the model is ready")
     }
@@ -156,6 +158,7 @@ class ManglishKeyboardService : InputMethodService() {
     }
 
     private fun show(words: List<String>) {
+        Log.i(TAG, "suggestions: ${words.joinToString(" | ")}")
         strip.removeAllViews()
         for (word in words) {
             val button = android.widget.Button(this)
@@ -175,6 +178,11 @@ class ManglishKeyboardService : InputMethodService() {
         target.mkdirs()
         for (name in listOf("encoder.onnx", "decoder.onnx", "tokenizer.json")) {
             copyAsset(name, File(target, name))
+        }
+        val prefix = File(target, "prefix")
+        prefix.mkdirs()
+        for (name in listOf("prefix-encoder.onnx", "prefix-decoder.onnx")) {
+            copyAsset(name, File(prefix, name.removePrefix("prefix-")))
         }
         val lexicon = File(target, "lexicon")
         lexicon.mkdirs()

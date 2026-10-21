@@ -17,28 +17,38 @@ ort.env.wasm.numThreads = threads;
 ort.env.wasm.proxy = false;
 
 let engine = null;
+let prefixEngine = null;
+let ranker = null;
 let pending = null;
 let running = false;
 
 async function load() {
-  const [encoder, decoder, tokenizerPayload, lexicon, ngram] = await Promise.all([
-    ort.InferenceSession.create("./models/encoder.onnx"),
-    ort.InferenceSession.create("./models/decoder.onnx"),
-    fetch("./models/tokenizer.json").then((response) => response.json()),
-    Lexicon.load("./models/lexicon"),
-    CharNgram.load("./models/ngram.txt").catch(() => null),
-  ]);
+  const [encoder, decoder, prefixEncoder, prefixDecoder, tokenizerPayload, lexicon, ngram] =
+    await Promise.all([
+      ort.InferenceSession.create("./models/encoder.onnx"),
+      ort.InferenceSession.create("./models/decoder.onnx"),
+      ort.InferenceSession.create("./models/prefix-encoder.onnx").catch(() => null),
+      ort.InferenceSession.create("./models/prefix-decoder.onnx").catch(() => null),
+      fetch("./models/tokenizer.json").then((response) => response.json()),
+      Lexicon.load("./models/lexicon"),
+      CharNgram.load("./models/ngram.txt").catch(() => null),
+    ]);
   const tokenizer = buildTokenizer(tokenizerPayload);
   engine = new Transliterator({ encoder, decoder }, tokenizer, ort, {
     maxSrc: 48,
     maxTgt: 64,
     beam: 4,
   });
+  if (prefixEncoder && prefixDecoder) {
+    prefixEngine = new Transliterator({ encoder: prefixEncoder, decoder: prefixDecoder }, tokenizer, ort, {
+      maxSrc: 48,
+      maxTgt: 64,
+      beam: 1,
+    });
+  }
   ranker = new SuggestionEngine(lexicon, ngram);
   return threads;
 }
-
-let ranker = null;
 
 async function handle({ id, roman, nBest }) {
   if (!engine) {
@@ -63,7 +73,16 @@ async function handle({ id, roman, nBest }) {
     const scored = last ? await engine.scoredCandidates(last, nBest) : [];
     const candidates = scored.map((item) => item.text);
     const scores = scored.map((item) => item.score);
-    const ranked = ranker.suggest(last, candidates, scores);
+
+    // The prefix model stops in the middle of a word, and the word list
+    // completes it. That is the "type four letters and get the word" part.
+    let completion = [];
+    if (last && prefixEngine) {
+      const prefix = await prefixEngine.transliterate(last);
+      completion = prefix ? ranker.lexicon.complete(prefix, 8) : [];
+    }
+
+    const ranked = ranker.suggest(last, candidates, scores, completion);
     const text = await engine.transliterate(roman);
     self.postMessage({
       id,

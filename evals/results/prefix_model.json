@@ -1,0 +1,32 @@
+{
+  "the transliteration model": {
+    "n": 3000,
+    "top1": 0.5843,
+    "cer": 0.1184,
+    "top5": 0.6853,
+    "sub": 1744,
+    "del": 55,
+    "ins": 216,
+    "completion": {
+      "4": 0.0113,
+      "6": 0.0587
+    },
+    "ms_per_word": 40.77,
+    "completion_ms_per_word": 30.47
+  },
+  "the prefix model": {
+    "n": 3000,
+    "top1": 0.4973,
+    "cer": 0.1473,
+    "top5": 0.6,
+    "sub": 2186,
+    "del": 94,
+    "ins": 227,
+    "completion": {
+      "4": 0.0167,
+      "6": 0.0627
+    },
+    "ms_per_word": 29.75,
+    "completion_ms_per_word": 22.46
+  }
+}

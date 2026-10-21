@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument("--results", default="evals/results/eval.json")
     parser.add_argument("--lexicon", default="data/processed/lexicon")
     parser.add_argument("--ngram", default="data/processed/ngram.txt")
+    parser.add_argument("--prefix-model", default="runs/prefix/onnx-int8")
     args = parser.parse_args()
 
     checkpoint = Path(args.checkpoint)
@@ -77,6 +78,16 @@ def main() -> None:
 
     shutil.copy(checkpoint.parent / "tokenizer.json", DEMO / "tokenizer.json")
     print("copied tokenizer.json")
+
+    # The prefix model stops in the middle of a word, and the word list
+    # completes it. It is a second model of the same size.
+    prefix = Path(args.prefix_model)
+    if prefix.exists():
+        for name in ("encoder.onnx", "decoder.onnx"):
+            shutil.copy(prefix / name, DEMO / f"prefix-{name}")
+        print("copied the prefix model")
+    else:
+        print(f"no prefix model at {prefix}, the demo runs without the completion")
 
     # The runtime has to sit next to the page, because the page is served from
     # the demo folder and cannot import from the repository.
