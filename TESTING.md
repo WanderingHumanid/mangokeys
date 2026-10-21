@@ -337,47 +337,79 @@ Keyboard** and turn it on.
 
 ### 9.6 Test it
 
-Open any text field. The **Settings** app has one at the top, and it is the
-one that works on the emulator.
+The keyboard is called **MangoKeys**. It behaves like an ordinary keyboard:
+every key goes straight into the text field, so the backspace, the cursor and
+the selection belong to the application. The suggestion strip above the keys
+holds the Malayalam, and tapping one replaces the word that is being typed.
+
+Open any text field. The browser address bar is the easiest one to reach:
 
 ```bash
-# Open the settings app and tap the search field
-adb shell am start -a android.settings.SETTINGS
+adb shell am start -a android.intent.action.VIEW -d "https://example.com"
 ```
 
 What to check, in order:
 
 1. The keyboard appears when a text field is focused.
-2. Typing `ente` shows `എൻ്റെ` as the first suggestion.
-3. Typing `aash` shows `ആശംസകൾ` in the strip, because the prefix model stops in
-   the middle of the word and the word list completes it.
-4. Tapping a suggestion commits that Malayalam into the text field.
-5. The space bar commits the top suggestion.
-6. Typing nonsense gives no crash and no suggestion.
+2. Typing `ente` puts `ente` in the field, in Manglish, and shows `എൻ്റെ`
+   first in the strip.
+3. Tapping `എൻ്റെ` replaces `ente` in the field with `എൻ്റെ`.
+4. The backspace deletes in the field, not in the keyboard.
+5. The space bar commits the top suggestion and then a space.
+6. Typing `aash` shows `ആശംസകൾ`, because the prefix model stops in the
+   middle of the word and the word list completes it.
 7. The globe key opens the input method picker.
+8. The keys and the strip follow the theme.
 
 The suggestions can be read from the log, which is easier than looking at the
 screen:
 
 ```bash
-adb logcat -s ManglishKeyboard
+adb logcat -s MangoKeys
 ```
 
 Each line is the suggestion strip after a keystroke:
 
 ```
-I ManglishKeyboard: suggestions: എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
+I MangoKeys: suggestions: എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
+```
+
+### 9.7 The settings page
+
+The settings page is the launcher activity, and it is also what the system
+opens when the keyboard settings are changed.
+
+```bash
+adb shell am start -n com.mangokeyboard/.SettingsActivity
+```
+
+It has three parts.
+
+**Appearance.** The dark theme, six accent colours, and a custom colour
+picker with three sliders. The keyboard picks the change up the next time it
+is shown, and the first suggestion and the space bar take the accent.
+
+**Behaviour.** Whether the prefix model may complete a half typed word,
+whether the word list is used at all, and how many candidates the search
+keeps.
+
+**About.** What the two models are and what the keyboard does with them.
+
+The settings are stored in the preferences of the app:
+
+```bash
+adb shell run-as com.mangokeyboard cat shared_prefs/mangokeys.xml
 ```
 
 The logs of the keyboard are visible with:
 
 ```bash
-adb logcat -s ManglishKeyboard
+adb logcat -s MangoKeys
 ```
 
 To watch them while you type, leave that running in a second terminal.
 
-### 9.7 Check that it asks for nothing
+### 9.8 Check that it asks for nothing
 
 ```bash
 # The permission list must be empty
@@ -387,7 +419,7 @@ adb shell dumpsys package com.mangokeyboard | grep -A 20 "requested permissions"
 A keyboard that asks for the *full access* permission shows a warning dialog
 to the user. This one declares no permissions at all, so the list is empty.
 
-### 9.8 Measure the latency on the device
+### 9.9 Measure the latency on the device
 
 ```bash
 adb shell dumpsys gfxinfo com.mangokeyboard
@@ -446,5 +478,5 @@ adb install -r apps/android/build/outputs/apk/debug/app-debug.apk
 adb shell ime enable com.mangokeyboard/.ManglishKeyboardService
 adb shell ime set com.mangokeyboard/.ManglishKeyboardService
 adb shell am start -a android.settings.SETTINGS             # the keyboard on the device
-adb logcat -s ManglishKeyboard                              # what it suggests
+adb logcat -s MangoKeys                              # what it suggests
 ```

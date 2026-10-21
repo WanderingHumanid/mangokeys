@@ -115,7 +115,8 @@ motivated the long vowel augmentation rules.
 | Browser runtime (ONNX Runtime Web) | ✅ verified in a real browser, agrees with Python |
 | Kotlin runtime (ONNX Runtime Mobile) | ✅ builds and passes the unit tests against the real model |
 | Static web demo with a suggestion strip | ✅ working, screenshot verified |
-| Android input method, an `InputMethodService` | ✅ builds, installs, and asks for no permissions |
+| Android input method, an `InputMethodService` | ✅ works as a real keyboard, no permissions |
+| Keyboard themes, accent colours and a settings page | ✅ dark and light, six accents and a custom picker |
 | Error analysis | ✅ 12-class taxonomy, dumped to `evals/results/errors.tsv` |
 | Augmentation ablation | ✅ measured |
 

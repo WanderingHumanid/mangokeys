@@ -530,9 +530,25 @@ is uploaded, there is no server, and it works with the network off. It shows
 the model output next to the rule engine output, so the difference is visible
 on every keystroke.
 
-**The Android app** runs the same graphs through ONNX Runtime Mobile. The
-runtime is a Kotlin class with no Android types in it, so it can be tested on
-a desktop.
+**The Android app** is an `InputMethodService` called MangoKeys. It behaves
+like an ordinary keyboard: every key goes straight into the text field that
+has the focus, so the backspace, the cursor and the selection belong to the
+application and not to the keyboard. What the keyboard adds is the suggestion
+strip above the keys, and tapping a suggestion replaces the word that is
+being typed with the Malayalam.
+
+```
+ente   →  എൻ്റെ | എൻറെ | എന്റെ | നൈറ്റ്
+```
+
+The model runs on a background thread and the strip is filled with the rules
+and the word list first, so the suggestions are there in two milliseconds and
+the model's answer arrives a moment later. The keyboard asks for no
+permissions at all.
+
+The settings page has a dark and a light theme, six accent colours and a
+custom colour picker, and it can turn the word list and the completion on and
+off.
 
 The architecture the plan points at is **rules propose, the model disposes**.
 The rule engine generates a bounded set of well formed candidates and the
