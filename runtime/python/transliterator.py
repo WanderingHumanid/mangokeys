@@ -72,6 +72,14 @@ class Transliterator:
 
         This handles one word at a time, which is how a keyboard uses it.
         """
+        return [text for text, _ in self.scored_candidates(roman, n_best)]
+
+    def scored_candidates(self, roman: str, n_best: int = 5) -> list[tuple[str, float]]:
+        """Return the top n candidates with the score the model gave them.
+
+        The score is the log probability of the whole output, so it can be
+        compared between candidates of the same word.
+        """
         roman = normalize_roman(roman)
         if not roman:
             return []
@@ -142,13 +150,13 @@ class Transliterator:
 
         finished.sort(key=lambda item: item[0], reverse=True)
         seen: set[str] = set()
-        results: list[str] = []
-        for _, ids in finished:
+        results: list[tuple[str, float]] = []
+        for score, ids in finished:
             text = normalize_malayalam(self.tokenizer.decode_tgt(ids))
             if text in seen:
                 continue
             seen.add(text)
-            results.append(text)
+            results.append((text, float(score)))
             if len(results) >= n_best:
                 break
         return results

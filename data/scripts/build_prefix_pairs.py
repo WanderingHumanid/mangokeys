@@ -18,6 +18,7 @@ import argparse
 import random
 import sys
 import time
+import zlib
 from collections import Counter
 from pathlib import Path
 
@@ -25,6 +26,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from model.src.augment import AugmentConfig, ManglishAugmenter  # noqa: E402
 from model.src.prefix import prefix_targets, scan_roman, scan_native  # noqa: E402
+
+
+def _wanted(word: str, fraction: float) -> bool:
+    """Whether a word gets prefix pairs.
+
+    The choice is made on the word itself, so that the two spellings of the
+    same word are treated the same way.
+    """
+    if fraction >= 1.0:
+        return True
+    if fraction <= 0.0:
+        return False
+    return zlib.crc32(word.encode("utf-8")) % 1000 < fraction * 1000
 
 
 def main() -> None:
@@ -38,6 +52,12 @@ def main() -> None:
         type=float,
         default=1.0,
         help="the share of the prefix cuts of one word to keep",
+    )
+    parser.add_argument(
+        "--word-fraction",
+        type=float,
+        default=1.0,
+        help="the share of the words that get prefix pairs at all",
     )
     args = parser.parse_args()
 
@@ -63,6 +83,8 @@ def main() -> None:
 
             pairs = prefix_targets(roman, native)
             stats["prefix_words"] += 1
+            if not _wanted(native, args.word_fraction):
+                continue
             if args.fraction < 1.0 and len(pairs) > 1:
                 keep = max(1, round(len(pairs) * args.fraction))
                 chooser.shuffle(pairs)

@@ -49,6 +49,22 @@ def build_tokenizer(pairs: list) -> TranslitTokenizer:
     return TranslitTokenizer(src=src, tgt=tgt)
 
 
+def build_tokenizer_from_file(path: str) -> TranslitTokenizer:
+    """Build the tokenizer by reading the file once, without keeping it."""
+    src = CharTokenizer.build_source()
+    tgt = CharTokenizer.build_target(_natives(path))
+    return TranslitTokenizer(src=src, tgt=tgt)
+
+
+def _natives(path: str):
+    with Path(path).open(encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 2:
+                continue
+            yield parts[1]
+
+
 def build_model(config: dict, tokenizer: TranslitTokenizer) -> Seq2Seq:
     settings = config["model"]
     return Seq2Seq(
@@ -113,6 +129,7 @@ def main() -> None:
     parser.add_argument("--train", default=None, help="override the training file")
     parser.add_argument("--valid", default=None, help="override the validation file")
     parser.add_argument("--no-amp", action="store_true", help="disable mixed precision")
+    parser.add_argument("--tokenizer", default=None, help="load the tokenizer from a file")
     args = parser.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -137,19 +154,27 @@ def main() -> None:
         yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )
 
-    train_pairs = load_pairs(config["data"]["train"])
     valid_pairs = load_pairs(config["data"]["valid"])
-    print(f"train pairs: {len(train_pairs)}  valid pairs: {len(valid_pairs)}")
+    print(f"valid pairs: {len(valid_pairs)}")
 
-    tokenizer = build_tokenizer(train_pairs)
+    if args.tokenizer:
+        tokenizer = TranslitTokenizer.load(args.tokenizer)
+        print(f"tokenizer loaded from {args.tokenizer}")
+    else:
+        tokenizer = build_tokenizer_from_file(config["data"]["train"])
     tokenizer.save(out_dir / "tokenizer.json")
     print(f"vocab: source {tokenizer.src_vocab}  target {tokenizer.tgt_vocab}")
 
     max_src = config["data"]["max_src"]
-    train_set = PairDataset(train_pairs, tokenizer, max_src, max_tgt)
-    valid_set = PairDataset(valid_pairs, tokenizer, max_src, max_tgt)
-    # The dataset holds the encoded ids, so the raw text is no longer needed.
-    del train_pairs, valid_pairs
+    # The training file is read from disk, because a file with tens of
+    # millions of rows does not fit in memory as a list of strings.
+    train_set = PairDataset.from_file(
+        config["data"]["train"], tokenizer, max_src, max_tgt
+    )
+    valid_set = PairDataset.from_file(
+        config["data"]["valid"], tokenizer, max_src, max_tgt
+    )
+    del valid_pairs
     collator = Collator(tokenizer)
 
     train_sampler = BucketBatchSampler(

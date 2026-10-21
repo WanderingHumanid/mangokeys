@@ -28,7 +28,7 @@ from bisect import bisect_left
 from collections import defaultdict
 from pathlib import Path
 
-from model.src.metrics import graphemes, levenshtein
+from model.src.metrics import letters, levenshtein
 
 WORD_FILE = "words.txt"
 INDEX_FILE = "index.bin"
@@ -136,7 +136,7 @@ class Lexicon:
     def _build_index(self) -> dict[int, list[int]]:
         index: dict[int, list[int]] = defaultdict(list)
         for word_index, word in enumerate(self.words):
-            for variant in _deletions(graphemes(word), self.max_distance):
+            for variant in _deletions(letters(word), self.max_distance):
                 index[fnv1a(variant)].append(word_index)
         return index
 
@@ -157,11 +157,11 @@ class Lexicon:
         """The real words closest to a string, the best match first."""
         if not word:
             return []
-        items = graphemes(word)
+        items = letters(word)
         found: dict[int, int] = {}
         for variant in _deletions(items, self.max_distance):
             for word_index in self._index.get(fnv1a(variant), ()):
-                distance = levenshtein(items, graphemes(self.words[word_index]))
+                distance = levenshtein(items, letters(self.words[word_index]))
                 if distance <= self.max_distance and distance < found.get(word_index, 99):
                     found[word_index] = distance
 

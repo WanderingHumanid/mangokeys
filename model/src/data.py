@@ -19,6 +19,16 @@ from torch.utils.data import Dataset, Sampler
 from model.src.tokenizer import TranslitTokenizer
 
 
+def _read_pairs(path: str):
+    """Read the pairs of a training file, one line at a time."""
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 2:
+                continue
+            yield parts[0], parts[1]
+
+
 class PairDataset(Dataset):
     """Parallel roman and native text encoded to tensors.
 
@@ -36,8 +46,30 @@ class PairDataset(Dataset):
     ) -> None:
         self.max_src = max_src
         self.max_tgt = max_tgt
-        self.count = len(pairs)
+        self.count = 0
+        self._encode(pairs, tokenizer)
 
+    @classmethod
+    def from_file(
+        cls,
+        path: str,
+        tokenizer: TranslitTokenizer,
+        max_src: int = 48,
+        max_tgt: int = 64,
+    ) -> "PairDataset":
+        """Build the dataset by reading the file.
+
+        A training file with tens of millions of rows does not fit in memory
+        as a list of strings, so the pairs are read one line at a time and
+        only the encoded ids are kept.
+        """
+        dataset = cls([], tokenizer, max_src, max_tgt)
+        dataset._encode(_read_pairs(path), tokenizer)
+        return dataset
+
+    def _encode(self, pairs, tokenizer: TranslitTokenizer) -> None:
+        max_src = self.max_src
+        max_tgt = self.max_tgt
         src_flat = array("i")
         tgt_flat = array("i")
         src_offsets = array("q", [0])
@@ -52,6 +84,7 @@ class PairDataset(Dataset):
             src_offsets.append(len(src_flat))
             tgt_offsets.append(len(tgt_flat))
 
+        self.count = len(src_offsets) - 1
         self.src_flat = np.frombuffer(src_flat, dtype=np.int32)
         self.tgt_flat = np.frombuffer(tgt_flat, dtype=np.int32)
         self.src_offsets = np.frombuffer(src_offsets, dtype=np.int64)

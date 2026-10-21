@@ -18,7 +18,30 @@ except ImportError:  # pragma: no cover
     _GRAPHEME = None
 
 # Combining marks that belong to the previous base character.
-_MALAYALAM_MARKS = "".join(chr(cp) for cp in range(0x0D3B, 0x0D4D))
+_MALAYALAM_MARKS = "".join(chr(cp) for cp in range(0x0D3B, 0x0D4E))
+
+# The spacing marks that belong to the previous base character.
+_MALAYALAM_SPACING = "".join(chr(cp) for cp in (0x0D01, 0x0D02, 0x0D03, 0x0D55, 0x0D56, 0x0D57))
+
+# The joiners that hang off the letter before them.
+_JOINERS = ("‍", "‌")
+
+
+def letters(text: str) -> list[str]:
+    """Split text into Malayalam letters.
+
+    A letter is a base character together with the marks that hang off it.
+    The word list index is built with this rule, so the browser and the
+    phone have to use the same one.
+    """
+    out: list[str] = []
+    for char in text:
+        hanging = char in _MALAYALAM_MARKS or char in _MALAYALAM_SPACING or char in _JOINERS
+        if hanging and out:
+            out[-1] += char
+        else:
+            out.append(char)
+    return out
 
 
 def graphemes(text: str) -> list[str]:

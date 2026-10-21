@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -30,16 +31,45 @@ def read_natives(path: Path):
             yield parts[1]
 
 
+def common_words(path: Path, limit: int):
+    """The most frequent words of the corpus.
+
+    The rare words make the model big and say little, so the model is trained
+    on the common ones. That keeps the file small enough to ship inside the
+    application.
+    """
+    counts: Counter[str] = Counter()
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 2:
+                continue
+            if len(parts) > 2 and parts[2] != "standard":
+                continue
+            counts[parts[1]] += 1
+    ordered = sorted(counts, key=lambda word: (-counts[word], word))
+    return ordered[:limit]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train", default="data/processed/train.tsv")
     parser.add_argument("--out", default="data/processed/ngram.txt")
     parser.add_argument("--order", type=int, default=3)
     parser.add_argument("--alpha", type=float, default=0.1)
+    parser.add_argument("--min-freq", type=int, default=1)
+    parser.add_argument("--max-words", type=int, default=0, help="words to train on")
     args = parser.parse_args()
 
     start = time.time()
-    model = CharNgram.train(read_natives(Path(args.train)), order=args.order, alpha=args.alpha)
+    if args.max_words:
+        words = common_words(Path(args.train), args.max_words)
+        print(f"training on {len(words)} words")
+    else:
+        words = read_natives(Path(args.train))
+    model = CharNgram.train(
+        words, order=args.order, alpha=args.alpha, min_freq=args.min_freq
+    )
     print(f"trained in {time.time() - start:.0f}s, {len(model)} contexts")
 
     model.save(args.out)

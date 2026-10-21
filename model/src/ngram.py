@@ -44,8 +44,14 @@ class CharNgram:
         words,
         order: int = 3,
         alpha: float = 0.1,
+        min_freq: int = 1,
     ) -> "CharNgram":
-        """Train on an iterable of native words."""
+        """Train on an iterable of native words.
+
+        The n-grams that were seen only once are dropped when `min_freq` is
+        more than one. They cost a lot of space and they say almost nothing
+        about a word.
+        """
         model = cls(order=order, alpha=alpha)
         symbols_seen: set[str] = set()
         for word in words:
@@ -60,6 +66,13 @@ class CharNgram:
                     table = model.tables[length - 1].setdefault(context, {})
                     table[symbol] = table.get(symbol, 0) + 1
         model.vocabulary = max(len(symbols_seen), 1)
+        if min_freq > 1:
+            for position, table in enumerate(model.tables):
+                model.tables[position] = {
+                    context: counts
+                    for context, counts in table.items()
+                    if sum(counts.values()) >= min_freq
+                }
         model._finalize()
         return model
 
