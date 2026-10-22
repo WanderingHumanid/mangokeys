@@ -34,10 +34,23 @@ The first public prototype.
 - Every key writes into the text field that has the focus, so the backspace,
   the cursor and the selection belong to the app and not to the keyboard.
 - A suggestion strip above the keys. Tapping a candidate replaces the word
-  that is being typed, in the field. The space bar commits the first one.
-- A shift key with three states and a numbers layer.
+  in the field and leaves a single space after it.
+- The space bar takes the best candidate when the auto-convert is on.
+- A shift key with three states that shows the letters in capitals and
+  lights up while it is on, and a numbers layer.
+- A haptics on every key.
 - A dark and a light theme, six accent colours and a custom colour picker.
 - No permissions at all.
+
+### The application page
+
+- The settings are laid out the way a keyboard app lays out its settings:
+  every option has a line under it that says what it does.
+- The groups are Suggestions, Feedback and Appearance.
+- The accent colour picker has the six colours of the app, the three
+  channels as sliders and the hex code as text.
+- The about screen is its own screen, with the version, the models, the data
+  and the licences.
 
 ### The models
 

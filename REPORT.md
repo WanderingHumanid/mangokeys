@@ -550,11 +550,13 @@ the model's answer arrives a moment later. The keyboard asks for no
 permissions at all.
 
 The application of the keyboard has a test bench, so that the keyboard can be
-tried without switching the input method, and the settings under it: a dark
-and a light theme, six accent colours and a custom colour picker, and the
-switches for the word list, the completion and the number of candidates. The
-page itself follows the theme, so the app and the keyboard are never in
-different themes.
+tried without switching the input method, and the settings under it, laid out
+the way a keyboard app lays out its settings: the auto-convert on space, the
+suggestions, the completion, the word list, the number of candidates, the
+haptics, the theme and the accent colour. Every option says what it does
+under its name, and the page itself follows the theme, so the app and the
+keyboard are never in different themes. The about screen is its own screen
+and carries the versions, the models, the data and the licences.
 
 The architecture the plan points at is **rules propose, the model disposes**.
 The rule engine generates a bounded set of well formed candidates and the

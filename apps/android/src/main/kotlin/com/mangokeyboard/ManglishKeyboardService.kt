@@ -40,6 +40,8 @@ class ManglishKeyboardService : InputMethodService() {
     private var beam = 4
     private var completion = true
     private var wordList = true
+    private var autoConvert = true
+    private var showSuggestions = true
     private var shift = KeyboardLayout.Shift.OFF
     private var numbers = false
     private var palette = Palette(
@@ -104,6 +106,8 @@ class ManglishKeyboardService : InputMethodService() {
             wordList = settings.wordList
             buildKeyboard()
         }
+        autoConvert = settings.autoConvert
+        showSuggestions = settings.showSuggestions
         palette = settings.palette()
         shift = KeyboardLayout.Shift.OFF
         numbers = false
@@ -127,12 +131,14 @@ class ManglishKeyboardService : InputMethodService() {
             shift,
             numbers,
             onKey = { type(it) },
+            onSpace = { space() },
             onShift = { cycleShift() },
             onNumbers = { numbers = true; buildKeys() },
             onLetters = { numbers = false; buildKeys() },
             onBackspace = { backspace() },
             onEnter = { enter() },
             onGlobe = { switchKeyboard() },
+            haptics = settings.haptics,
         )
     }
 
@@ -192,12 +198,17 @@ class ManglishKeyboardService : InputMethodService() {
         refresh()
     }
 
-    /** The space bar commits the best suggestion and then a space. */
+    /**
+     * The space bar.
+     *
+     * When the auto-convert is on, the word that is being typed is replaced
+     * by the best candidate before the space goes in.
+     */
     private fun space() {
         val connection = currentInputConnection ?: return
         val typed = currentWord()
         val best = firstSuggestion()
-        if (!typed.isEmpty() && best != null) {
+        if (autoConvert && typed.isNotEmpty() && !best.isNullOrEmpty()) {
             // The space bar leaves the space itself, so the word does not
             // need one.
             replaceWord(best, trailingSpace = false)
@@ -268,8 +279,11 @@ class ManglishKeyboardService : InputMethodService() {
 
     private fun show(words: List<String>) {
         if (!::strip.isInitialized) return
-        Log.i(TAG, "suggestions: ${words.joinToString(" | ")}")
+        Log.i(TAG, "suggestions(${words.size}): ${words.joinToString(" | ")}")
         strip.removeAllViews()
+        // The candidates can be turned off. The strip is hidden, not emptied,
+        // so that the space bar still knows what the best candidate is.
+        strip.visibility = if (showSuggestions) View.VISIBLE else View.GONE
         for ((index, word) in words.withIndex()) {
             val button = android.widget.Button(this)
             button.text = word

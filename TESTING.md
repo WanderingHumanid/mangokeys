@@ -423,12 +423,29 @@ would become, and a row of example words. Tap an example and the line fills
 in with the Malayalam. The models are loaded in the background when the page
 opens, so the first answer takes a moment.
 
-Under it are the settings: the dark theme, six accent colours and a custom
-colour picker with three sliders, and the behaviour switches.
+Under it are the settings, in the groups of a keyboard app:
+
+- **Suggestions**: the auto-convert on space, the suggestions on or off, the
+  completion, the word list and how many candidates the search keeps.
+- **Feedback**: the haptics on every key.
+- **Appearance**: the theme and the accent colour.
+
+The auto-convert on space takes the best candidate when the space bar is
+pressed, and leaves the Malayalam in the field with a single space after it.
+With it off, the space bar leaves the word as it was typed.
+
+The accent colour is opened by tapping the row. The dialog has the six
+colours of the app at the top, the three channels as sliders, and the hex
+code of the colour as text. Writing a hex code there moves the sliders and
+the preview to it.
 
 The dark theme is not only the keyboard. The whole page follows it: the
 background, the cards, the field, the text and the status bar. Turn it on and
 the page is rebuilt in the dark theme at once.
+
+The about screen has its own row at the bottom. It has the version, what the
+models are, where the data came from and the links to the repository, the
+report, the release and the licence.
 
 The settings are stored in the preferences of the app:
 

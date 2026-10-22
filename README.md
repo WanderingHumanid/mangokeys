@@ -39,7 +39,12 @@ Five interactive targets and tools are published from this repository:
 - **The web demo** runs the model in your browser with ONNX Runtime Web.
   Nothing is uploaded, there is no server, and it works with the network off.
 - **The Android app** is a full input method that writes into any app on the
-  phone, with a suggestion strip, a dark theme and no permissions at all.
+  phone, with a suggestion strip, a dark theme, haptics on every key and no
+  permissions at all. The app that comes with it has the settings of a
+  keyboard app: the auto-convert on space, the suggestions, the completion,
+  the word list, the number of candidates, the haptics, the theme and the
+  accent colour, with an about screen that carries the models, the data and
+  the licences.
 
 ## Contents
 

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The about screen.
+
+    It says what the app is, what is inside it, where the data came from and
+    what it does with what you type.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackground"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
+
+        <ImageButton
+            android:id="@+id/button_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/about_back"
+            android:src="@drawable/ic_arrow_back" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:text="About"
+            android:textColor="?attr/appText"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
+
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="MangoKeys" />
+
+                <TextView
+                    android:id="@+id/version"
+                    style="@style/CardText"
+                    android:textColor="?attr/appFaint"
+                    android:textSize="13sp" />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="12dp"
+                    android:text="MangoKeys is a Manglish to Malayalam input method. You type the word the way Malayalam speakers type it, in Latin letters, and the keyboard writes the Malayalam script in its place." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="10dp"
+                    android:text="It asks for no permissions, it has no network code, and nothing you type leaves the phone." />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Section"
+                android:text="The models" />
+
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardText"
+                    android:text="Two character level transformer models of 5.37 million parameters each, quantized to eight bits and running on the phone." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="12dp"
+                    android:text="The first one transliterates whole words. The second one was trained on the same words plus the pairs where the Roman side is cut short, so it learns to stop in the middle of a word, and the word list finishes it." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="12dp"
+                    android:text="The word list holds 68 thousand Malayalam words with a deletion index, so the real words around a guess are found in one lookup." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="12dp"
+                    android:text="Measured on 12,451 words the model has never seen, the keyboard gets 57.4 percent of the words right, with a character error rate of 15.9 percent. The rules alone get 9.2 percent." />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Section"
+                android:text="Where the data comes from" />
+
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardText"
+                    android:text="Aksharantar, the transliteration corpus of AI4Bharat. 4.1 million pairs, CC BY and CC0." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="10dp"
+                    android:text="Dakshina, the dataset of Google. The Malayalam lexicon of it is part of the word list, CC BY-SA 4.0." />
+
+                <TextView
+                    style="@style/CardText"
+                    android:layout_marginTop="10dp"
+                    android:text="The frequency list of the OpenSubtitles corpus, which is where the word list gets its counts. MIT." />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Section"
+                android:text="Read more" />
+
+            <LinearLayout
+                android:id="@+id/row_repository"
+                style="@style/Row">
+
+                <LinearLayout style="@style/RowText">
+
+                    <TextView
+                        style="@style/RowTitle"
+                        android:text="The repository" />
+
+                    <TextView
+                        style="@style/RowSummary"
+                        android:text="The source, the tests and the report" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@string/about_more"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/row_report"
+                style="@style/Row">
+
+                <LinearLayout style="@style/RowText">
+
+                    <TextView
+                        style="@style/RowTitle"
+                        android:text="The report" />
+
+                    <TextView
+                        style="@style/RowSummary"
+                        android:text="Every measurement, with the reasoning behind it" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@string/about_more"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/row_release"
+                style="@style/Row">
+
+                <LinearLayout style="@style/RowText">
+
+                    <TextView
+                        style="@style/RowTitle"
+                        android:text="The release" />
+
+                    <TextView
+                        style="@style/RowSummary"
+                        android:text="The APK of this version" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@string/about_more"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Section"
+                android:text="Licence" />
+
+            <LinearLayout
+                android:id="@+id/row_licence"
+                style="@style/Row">
+
+                <LinearLayout style="@style/RowText">
+
+                    <TextView
+                        style="@style/RowTitle"
+                        android:text="MIT" />
+
+                    <TextView
+                        style="@style/RowSummary"
+                        android:text="The app and the models. The data keeps its own licence." />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@string/about_more"
+                    android:src="@drawable/ic_chevron" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

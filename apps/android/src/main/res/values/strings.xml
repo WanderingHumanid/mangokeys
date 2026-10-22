@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">MangoKeys</string>
     <string name="keyboard_name">MangoKeys</string>
+    <string name="about_back">Back</string>
+    <string name="about_more">More</string>
 </resources>

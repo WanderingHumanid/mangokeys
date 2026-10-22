@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -37,6 +38,9 @@ object KeyboardLayout {
     /** The state of the shift key. */
     enum class Shift { OFF, ON, LOCKED }
 
+    /** Whether the keys vibrate when they are pressed. */
+    private var haptics = true
+
     fun build(
         context: Context,
         container: LinearLayout,
@@ -44,13 +48,16 @@ object KeyboardLayout {
         shift: Shift,
         numbers: Boolean,
         onKey: (String) -> Unit,
+        onSpace: () -> Unit,
         onShift: () -> Unit,
         onNumbers: () -> Unit,
         onLetters: () -> Unit,
         onBackspace: () -> Unit,
         onEnter: () -> Unit,
         onGlobe: () -> Unit,
+        haptics: Boolean = true,
     ) {
+        this.haptics = haptics
         container.removeAllViews()
         container.setBackgroundColor(palette.background)
         val rows = if (numbers) NUMBERS else LETTERS
@@ -104,7 +111,7 @@ object KeyboardLayout {
             key(context, ",", 1f, palette.key, palette.keyText) { onKey(",") },
         )
         last.addView(
-            key(context, "space", 4.4f, palette.key, palette.keyText) { onKey(" ") },
+            key(context, "space", 4.4f, palette.key, palette.keyText) { onSpace() },
         )
         last.addView(
             key(context, ".", 1f, palette.key, palette.keyText) { onKey(".") },
@@ -179,7 +186,14 @@ object KeyboardLayout {
         button.setPadding(0, 0, 0, 0)
         button.setBackgroundColor(Color.TRANSPARENT)
         button.background = rounded(color)
-        button.setOnClickListener { onClick() }
+        button.setOnClickListener {
+            // The key feels the press. The feedback of a view does not need a
+            // permission, so the app still asks for none.
+            if (haptics) {
+                button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            }
+            onClick()
+        }
 
         val params = LinearLayout.LayoutParams(0, dp(context, 44), weight)
         params.setMargins(dp(context, 2), dp(context, 2), dp(context, 2), dp(context, 2))

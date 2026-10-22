@@ -18,6 +18,21 @@ class KeyboardSettings(context: Context) {
         get() = prefs.getInt(KEY_ACCENT, DEFAULT_ACCENT)
         set(value) = prefs.edit().putInt(KEY_ACCENT, value).apply()
 
+    /** Whether the space bar converts the word that is being typed. */
+    var autoConvert: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_CONVERT, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_CONVERT, value).apply()
+
+    /** Whether the keys vibrate when they are pressed. */
+    var haptics: Boolean
+        get() = prefs.getBoolean(KEY_HAPTICS, true)
+        set(value) = prefs.edit().putBoolean(KEY_HAPTICS, value).apply()
+
+    /** Whether the candidates are shown above the keys. */
+    var showSuggestions: Boolean
+        get() = prefs.getBoolean(KEY_SUGGESTIONS, true)
+        set(value) = prefs.edit().putBoolean(KEY_SUGGESTIONS, value).apply()
+
     /** Whether the prefix model may complete the word. */
     var completion: Boolean
         get() = prefs.getBoolean(KEY_COMPLETION, true)
@@ -65,6 +80,9 @@ class KeyboardSettings(context: Context) {
 
         const val KEY_DARK = "dark_mode"
         const val KEY_ACCENT = "accent"
+        const val KEY_AUTO_CONVERT = "auto_convert"
+        const val KEY_SUGGESTIONS = "suggestions"
+        const val KEY_HAPTICS = "haptics"
         const val KEY_COMPLETION = "completion"
         const val KEY_WORD_LIST = "word_list"
         const val KEY_BEAM = "beam"

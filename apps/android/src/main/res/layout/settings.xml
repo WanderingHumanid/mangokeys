@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The application page.
+
+    It is laid out like the settings of a keyboard: a title, the test bench,
+    and then the options in groups, every option with a line under it that
+    says what it does.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,189 +16,276 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingBottom="28dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="22dp"
+            android:layout_marginEnd="20dp"
             android:text="MangoKeys"
             android:textColor="?attr/appText"
-            android:textSize="26sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="20dp"
             android:text="A Manglish keyboard that writes Malayalam."
             android:textColor="?attr/appFaint"
             android:textSize="14sp" />
 
+        <!-- The test bench. -->
+        <LinearLayout
+            style="@style/Card"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="Try it" />
+
+            <TextView
+                style="@style/CardText"
+                android:text="Type in the box. If MangoKeys is the keyboard that is on, the suggestions are above the keys." />
+
+            <EditText
+                android:id="@+id/field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/field"
+                android:gravity="top|start"
+                android:hint="ente peru"
+                android:inputType="textMultiLine|textNoSuggestions"
+                android:minHeight="88dp"
+                android:padding="14dp"
+                android:textColor="?attr/appText"
+                android:textColorHint="?attr/appFaint"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/translation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/card"
+                android:padding="14dp"
+                android:text="The Malayalam appears here"
+                android:textColor="?attr/appFaint"
+                android:textSize="18sp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/examples"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <!-- The options. -->
         <TextView
             style="@style/Section"
-            android:layout_marginTop="24dp"
-            android:text="Try it" />
+            android:text="Suggestions" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:text="Type in the box below. If MangoKeys is the keyboard that is on, the suggestions are above the keys. The line under the box always shows what the word would become."
-            android:textColor="?attr/appMuted"
-            android:textSize="14sp" />
+        <LinearLayout style="@style/Row">
 
-        <EditText
-            android:id="@+id/field"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/field"
-            android:gravity="top|start"
-            android:hint="ente peru"
-            android:inputType="textMultiLine|textNoSuggestions"
-            android:minHeight="96dp"
-            android:padding="14dp"
-            android:textColor="?attr/appText"
-            android:textColorHint="?attr/appFaint"
-            android:textSize="17sp" />
+            <LinearLayout style="@style/RowText">
 
-        <TextView
-            android:id="@+id/translation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/card"
-            android:padding="14dp"
-            android:text="…"
-            android:textColor="?attr/appText"
-            android:textSize="18sp" />
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Auto-convert on space" />
 
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:scrollbars="none">
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="The space bar takes the best candidate and leaves the Malayalam in its place" />
+            </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/examples"
+            <Switch
+                android:id="@+id/switch_auto_convert"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" />
-        </HorizontalScrollView>
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
-        <View style="@style/Divider" />
+        <LinearLayout style="@style/Row">
+
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Show suggestions" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="The candidates sit above the keys while a word is being typed" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switch_suggestions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/Row">
+
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Complete half typed words" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="A second model stops in the middle of a word and the word list finishes it" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switch_completion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/Row">
+
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Use the word list" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="The real Malayalam words around what the model guessed" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switch_word_list"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/row_beam"
+            style="@style/Row">
+
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Candidates" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="How many candidates the search keeps for every word" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/value_beam"
+                style="@style/RowValue"
+                android:text="4" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Section"
+            android:text="Feedback" />
+
+        <LinearLayout style="@style/Row">
+
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Haptics" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="A short vibration on every key" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switch_haptics"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
         <TextView
             style="@style/Section"
             android:text="Appearance" />
 
-        <Switch
-            android:id="@+id/switch_dark"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="Dark theme"
-            android:textColor="?attr/appText"
-            android:textSize="15sp" />
+        <LinearLayout
+            android:id="@+id/row_theme"
+            style="@style/Row">
 
-        <TextView
-            style="@style/Label"
-            android:text="Accent colour" />
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Theme" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="Dark or light, for the keyboard and for this page" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/value_theme"
+                style="@style/RowValue"
+                android:text="Dark" />
+        </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/accent_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
+            android:id="@+id/row_accent"
+            style="@style/Row">
 
-        <Button
-            android:id="@+id/button_custom_accent"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/field"
-            android:stateListAnimator="@null"
-            android:text="Choose a custom colour"
-            android:textAllCaps="false"
-            android:textColor="?attr/appText"
-            android:textSize="15sp" />
+            <LinearLayout style="@style/RowText">
 
-        <View style="@style/Divider" />
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="Accent colour" />
 
-        <TextView
-            style="@style/Section"
-            android:text="Behaviour" />
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="The colour of the first candidate, the enter key and the selection" />
+            </LinearLayout>
 
-        <Switch
-            android:id="@+id/switch_completion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="Complete half typed words"
-            android:textColor="?attr/appText"
-            android:textSize="15sp" />
-
-        <Switch
-            android:id="@+id/switch_word_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="Use the word list"
-            android:textColor="?attr/appText"
-            android:textSize="15sp" />
-
-        <TextView
-            style="@style/Label"
-            android:text="Candidates" />
-
-        <RadioGroup
-            android:id="@+id/group_beam"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/beam_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1"
-                android:textColor="?attr/appText" />
-
-            <RadioButton
-                android:id="@+id/beam_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="2"
-                android:textColor="?attr/appText" />
-
-            <RadioButton
-                android:id="@+id/beam_4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="4"
-                android:textColor="?attr/appText" />
-        </RadioGroup>
-
-        <View style="@style/Divider" />
+            <TextView
+                android:id="@+id/value_accent"
+                style="@style/RowValue"
+                android:text="Ocean" />
+        </LinearLayout>
 
         <TextView
             style="@style/Section"
             android:text="About" />
 
-        <TextView
-            android:id="@+id/about"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:lineSpacingExtra="3dp"
-            android:textColor="?attr/appMuted"
-            android:textSize="14sp" />
+        <LinearLayout
+            android:id="@+id/row_about"
+            style="@style/Row">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="12dp"
-            android:text="Nothing you type leaves the phone. The keyboard asks for no permissions at all."
-            android:textColor="?attr/appFaint"
-            android:textSize="13sp" />
+            <LinearLayout style="@style/RowText">
+
+                <TextView
+                    style="@style/RowTitle"
+                    android:text="About MangoKeys" />
+
+                <TextView
+                    style="@style/RowSummary"
+                    android:text="The models, the data and the licence" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@string/about_more"
+                android:src="@drawable/ic_chevron" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

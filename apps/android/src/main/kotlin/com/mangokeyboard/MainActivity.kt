@@ -1,6 +1,8 @@
 package com.mangokeyboard
 
 import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -8,14 +10,15 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.RadioButton
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
@@ -53,69 +56,19 @@ class MainActivity : Activity() {
         setTheme(if (settings.darkMode) R.style.Theme_Manglish_Dark else R.style.Theme_Manglish)
         setContentView(R.layout.settings)
 
-        findViewById<Switch>(R.id.switch_dark).apply {
-            isChecked = settings.darkMode
-            setOnCheckedChangeListener { _, value ->
-                settings.darkMode = value
-                // The page is built with the colours of the theme, so it has
-                // to be built again when the theme changes.
-                recreate()
-            }
-        }
-
-        findViewById<Switch>(R.id.switch_completion).apply {
-            isChecked = settings.completion
-            setOnCheckedChangeListener { _, value -> settings.completion = value }
-        }
-
-        findViewById<Switch>(R.id.switch_word_list).apply {
-            isChecked = settings.wordList
-            setOnCheckedChangeListener { _, value -> settings.wordList = value }
-        }
-
-        val group = findViewById<android.widget.RadioGroup>(R.id.group_beam)
-        group.check(
-            when (settings.beam) {
-                1 -> R.id.beam_1
-                2 -> R.id.beam_2
-                else -> R.id.beam_4
-            },
-        )
-        group.setOnCheckedChangeListener { _, id ->
-            settings.beam = when (id) {
-                R.id.beam_1 -> 1
-                R.id.beam_2 -> 2
-                else -> 4
-            }
-        }
-
+        buildSwitches()
+        buildRows()
         tintWithAccent()
 
-        buildAccentRow()
-        findViewById<Button>(R.id.button_custom_accent).setOnClickListener { showColourPicker() }
         buildExamples()
         watchField()
         loadModel()
-
-        findViewById<TextView>(R.id.about).text = """
-            The transliteration is done by two character level models of 5.4 million
-            parameters each, and they run on the phone. The first one answers whole
-            words. The second one was trained on the same words plus the pairs where
-            the roman side is cut short, so it knows where the word is going, and the
-            word list completes it.
-
-            The models were trained on the Aksharantar corpus of AI4Bharat and the
-            word list comes from the frequency list of the OpenSubtitles corpus and
-            from the Malayalam lexicon of the Dakshina dataset of Google.
-        """.trimIndent()
     }
 
     override fun onResume() {
         super.onResume()
-        findViewById<Switch>(R.id.switch_dark).isChecked = settings.darkMode
-        findViewById<Switch>(R.id.switch_completion).isChecked = settings.completion
-        findViewById<Switch>(R.id.switch_word_list).isChecked = settings.wordList
-        buildAccentRow()
+        readSwitches()
+        updateValues()
     }
 
     // ----------------------------------------------------------------- theme
@@ -139,14 +92,105 @@ class MainActivity : Activity() {
         )
         val colors = intArrayOf(settings.accent, themeColour(R.attr.appFaint))
         val tint = ColorStateList(states, colors)
-        for (id in listOf(R.id.switch_dark, R.id.switch_completion, R.id.switch_word_list)) {
+        for (id in listOf(
+            R.id.switch_auto_convert,
+            R.id.switch_suggestions,
+            R.id.switch_haptics,
+            R.id.switch_completion,
+            R.id.switch_word_list,
+        )) {
             val switch = findViewById<Switch>(id)
             switch.thumbTintList = tint
             switch.trackTintList = tint
         }
-        for (id in listOf(R.id.beam_1, R.id.beam_2, R.id.beam_4)) {
-            findViewById<RadioButton>(id).buttonTintList = tint
+    }
+
+    // -------------------------------------------------------------- switches
+
+    private fun buildSwitches() {
+        findViewById<Switch>(R.id.switch_auto_convert).setOnCheckedChangeListener { _, value ->
+            settings.autoConvert = value
         }
+        findViewById<Switch>(R.id.switch_suggestions).setOnCheckedChangeListener { _, value ->
+            settings.showSuggestions = value
+        }
+        findViewById<Switch>(R.id.switch_haptics).setOnCheckedChangeListener { _, value ->
+            settings.haptics = value
+        }
+        findViewById<Switch>(R.id.switch_completion).setOnCheckedChangeListener { _, value ->
+            settings.completion = value
+        }
+        findViewById<Switch>(R.id.switch_word_list).setOnCheckedChangeListener { _, value ->
+            settings.wordList = value
+        }
+        readSwitches()
+    }
+
+    /** The state of the switches, from the settings. */
+    private fun readSwitches() {
+        findViewById<Switch>(R.id.switch_auto_convert).isChecked = settings.autoConvert
+        findViewById<Switch>(R.id.switch_suggestions).isChecked = settings.showSuggestions
+        findViewById<Switch>(R.id.switch_haptics).isChecked = settings.haptics
+        findViewById<Switch>(R.id.switch_completion).isChecked = settings.completion
+        findViewById<Switch>(R.id.switch_word_list).isChecked = settings.wordList
+    }
+
+    // ------------------------------------------------------------------ rows
+
+    /** The rows that hold a value, and open a list when they are tapped. */
+    private fun buildRows() {
+        findViewById<View>(R.id.row_beam).setOnClickListener { showCandidates() }
+        findViewById<View>(R.id.row_theme).setOnClickListener { showThemes() }
+        findViewById<View>(R.id.row_accent).setOnClickListener { showColourPicker() }
+        findViewById<View>(R.id.row_about).setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
+        updateValues()
+    }
+
+    /** The value on the right of every row that has one. */
+    private fun updateValues() {
+        findViewById<TextView>(R.id.value_beam).text = settings.beam.toString()
+        findViewById<TextView>(R.id.value_theme).text =
+            if (settings.darkMode) "Dark" else "Light"
+        findViewById<TextView>(R.id.value_accent).text = accentName()
+    }
+
+    /** How many candidates the search keeps. */
+    private fun showCandidates() {
+        val options = arrayOf("1", "2", "4")
+        showDialog(
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Candidates")
+                .setSingleChoiceItems(options, options.indexOf(settings.beam.toString())) { dialog, which ->
+                    settings.beam = when (which) {
+                        0 -> 1
+                        1 -> 2
+                        else -> 4
+                    }
+                    updateValues()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null),
+        )
+    }
+
+    /** The theme of the keyboard and of the page. */
+    private fun showThemes() {
+        val options = arrayOf("Dark", "Light")
+        showDialog(
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Theme")
+                .setSingleChoiceItems(options, if (settings.darkMode) 0 else 1) { dialog, which ->
+                    settings.darkMode = which == 0
+                    updateValues()
+                    dialog.dismiss()
+                    // The page is built with the colours of the theme, so it
+                    // has to be built again when the theme changes.
+                    recreate()
+                }
+                .setNegativeButton("Cancel", null),
+        )
     }
 
     // ------------------------------------------------------------- test bench
@@ -192,10 +236,12 @@ class MainActivity : Activity() {
         val word = text.split(Regex("[\\s,.]")).lastOrNull { it.isNotEmpty() } ?: ""
         val label = findViewById<TextView>(R.id.translation)
         if (word.isEmpty()) {
-            label.text = "…"
+            label.text = "The Malayalam appears here"
+            label.setTextColor(themeColour(R.attr.appFaint))
             return
         }
         label.text = word
+        label.setTextColor(themeColour(R.attr.appText))
         val engine = keyboard ?: return
         worker?.interrupt()
         worker = Thread {
@@ -235,37 +281,12 @@ class MainActivity : Activity() {
 
     // ------------------------------------------------------------- appearance
 
-    /** One round button for every colour the settings page offers. */
-    private fun buildAccentRow() {
-        val row = findViewById<LinearLayout>(R.id.accent_row)
-        row.removeAllViews()
+    /** The name of the accent colour, for the row that shows it. */
+    private fun accentName(): String {
         for ((hex, name) in KeyboardSettings.ACCENTS) {
-            val colour = Color.parseColor(hex)
-            val button = Button(this)
-            button.text = name
-            button.textSize = 12f
-            button.isAllCaps = false
-            button.setTextColor(KeyboardSettings.readableOn(colour))
-            button.background = swatch(colour, settings.accent == colour)
-            button.setOnClickListener {
-                settings.accent = colour
-                buildAccentRow()
-                tintWithAccent()
-            }
-            val params = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            params.setMargins(0, 0, dp(6), 0)
-            button.layoutParams = params
-            row.addView(button)
+            if (Color.parseColor(hex) == settings.accent) return name
         }
-    }
-
-    private fun swatch(colour: Int, selected: Boolean): GradientDrawable {
-        val shape = GradientDrawable()
-        shape.setColor(colour)
-        shape.cornerRadius = 12f
-        val edge = if (selected) themeColour(R.attr.appText) else shade(colour)
-        shape.setStroke(if (selected) 3 else 1, edge)
-        return shape
+        return "Custom"
     }
 
     private fun chip(): GradientDrawable {
@@ -275,45 +296,160 @@ class MainActivity : Activity() {
         return shape
     }
 
-    private fun shade(colour: Int): Int = Color.rgb(
-        (Color.red(colour) * 0.8).toInt(),
-        (Color.green(colour) * 0.8).toInt(),
-        (Color.blue(colour) * 0.8).toInt(),
-    )
-
-    /** A small dialog with three sliders, one for each channel. */
+    /**
+     * The accent colour.
+     *
+     * The colours the app offers are at the top of the dialog, and a colour
+     * that is not one of them can be made with the three sliders or by
+     * writing its hex code.
+     */
     private fun showColourPicker() {
-        val colour = settings.accent
         val panel = LinearLayout(this)
         panel.orientation = LinearLayout.VERTICAL
-        panel.setPadding(dp(28), dp(20), dp(28), dp(8))
+        panel.setPadding(dp(24), dp(20), dp(24), dp(8))
 
+        // The colour as it is now.
+        var current = settings.accent
         val preview = View(this)
         val previewParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, dp(56),
         )
-        previewParams.bottomMargin = dp(12)
-        panel.addView(preview, previewParams)
+        previewParams.topMargin = dp(16)
+        previewParams.bottomMargin = dp(16)
 
-        val red = seekBar(Color.red(colour)) { preview.setBackgroundColor(colour(it, 0, 0)) }
-        val green = seekBar(Color.green(colour)) { preview.setBackgroundColor(colour(0, it, 0)) }
-        val blue = seekBar(Color.blue(colour)) { preview.setBackgroundColor(colour(0, 0, it)) }
+        // The three channels and the hex code. They are filled in below, and
+        // the listeners read them when they run.
+        lateinit var red: SeekBar
+        lateinit var green: SeekBar
+        lateinit var blue: SeekBar
+        lateinit var hex: EditText
+
+        red = seekBar(Color.red(current)) {
+            current = Color.rgb(it, Color.green(current), Color.blue(current))
+            show(current, preview, red, green, blue, hex)
+        }
+        green = seekBar(Color.green(current)) {
+            current = Color.rgb(Color.red(current), it, Color.blue(current))
+            show(current, preview, red, green, blue, hex)
+        }
+        blue = seekBar(Color.blue(current)) {
+            current = Color.rgb(Color.red(current), Color.green(current), it)
+            show(current, preview, red, green, blue, hex)
+        }
+
+        // The hex code of the colour.
+        hex = EditText(this)
+        hex.setText(hexOf(current))
+        hex.inputType = InputType.TYPE_CLASS_TEXT
+        hex.imeOptions = EditorInfo.IME_ACTION_DONE
+        hex.maxLines = 1
+        hex.textSize = 16f
+        hex.hint = "#2C5F8A"
+        hex.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(text: Editable?) {
+                val parsed = parseHex(text?.toString() ?: "") ?: return
+                current = parsed
+                show(current, preview, red, green, blue, hex)
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+
+        // The colours the app offers.
+        val swatches = LinearLayout(this)
+        swatches.orientation = LinearLayout.HORIZONTAL
+        for ((code, name) in KeyboardSettings.ACCENTS) {
+            val colour = Color.parseColor(code)
+            swatches.addView(swatchButton(colour, name) {
+                current = colour
+                show(current, preview, red, green, blue, hex)
+            })
+        }
+
+        panel.addView(swatches)
+        panel.addView(preview, previewParams)
+        preview.setBackgroundColor(current)
         panel.addView(red)
         panel.addView(green)
         panel.addView(blue)
-        preview.setBackgroundColor(colour)
+        panel.addView(hex)
 
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Accent colour")
-            .setView(panel)
-            .setPositiveButton("Save") { _, _ ->
-                settings.accent = Color.rgb(red.progress, green.progress, blue.progress)
-                buildAccentRow()
-                tintWithAccent()
-                Toast.makeText(this, "The keyboard will use it now", Toast.LENGTH_SHORT).show()
+        showDialog(
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Accent colour")
+                .setView(panel)
+                .setPositiveButton("Save") { _, _ ->
+                    settings.accent = current
+                    updateValues()
+                    tintWithAccent()
+                    Toast.makeText(this, "The keyboard will use it now", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancel", null),
+        )
+    }
+
+    /** Show a dialog whose buttons take the accent of the user. */
+    private fun showDialog(builder: android.app.AlertDialog.Builder) {
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            for (button in listOf(
+                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE),
+                dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE),
+            )) {
+                button?.setTextColor(settings.accent)
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+        dialog.show()
+    }
+
+    /** One of the colours the app offers, as a button. */
+    private fun swatchButton(colour: Int, name: String, onClick: () -> Unit): View {
+        val button = Button(this)
+        button.contentDescription = name
+        button.text = ""
+        button.background = roundedSwatch(colour)
+        button.setOnClickListener { onClick() }
+        val params = LinearLayout.LayoutParams(0, dp(44), 1f)
+        params.setMargins(0, 0, dp(6), 0)
+        button.layoutParams = params
+        return button
+    }
+
+    private fun roundedSwatch(colour: Int): GradientDrawable {
+        val shape = GradientDrawable()
+        shape.setColor(colour)
+        shape.cornerRadius = 10f
+        return shape
+    }
+
+    /** Put a colour into the preview, the sliders and the hex field. */
+    private fun show(
+        colour: Int,
+        preview: View,
+        red: SeekBar,
+        green: SeekBar,
+        blue: SeekBar,
+        hex: EditText,
+    ) {
+        preview.setBackgroundColor(colour)
+        if (red.progress != Color.red(colour)) red.progress = Color.red(colour)
+        if (green.progress != Color.green(colour)) green.progress = Color.green(colour)
+        if (blue.progress != Color.blue(colour)) blue.progress = Color.blue(colour)
+        val text = hexOf(colour)
+        if (hex.text.toString() != text) hex.setText(text)
+    }
+
+    /** The hex code of a colour, the way a colour picker writes it. */
+    private fun hexOf(colour: Int): String = String.format("#%02X%02X%02X", Color.red(colour), Color.green(colour), Color.blue(colour))
+
+    /** The colour of a hex code, or nothing when the code is not one. */
+    private fun parseHex(text: String): Int? {
+        val code = text.trim().removePrefix("#")
+        if (code.length != 6) return null
+        val value = code.toLongOrNull(16) ?: return null
+        return Color.rgb(((value shr 16) and 0xFF).toInt(), ((value shr 8) and 0xFF).toInt(), (value and 0xFF).toInt())
     }
 
     private fun seekBar(value: Int, onChange: (Int) -> Unit): SeekBar {
@@ -333,6 +469,16 @@ class MainActivity : Activity() {
     }
 
     private fun colour(red: Int, green: Int, blue: Int): Int = Color.rgb(red, green, blue)
+
+    /** The version of the app, as it is in the package. */
+    private fun versionName(): String {
+        return try {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            info.versionName ?: ""
+        } catch (error: PackageManager.NameNotFoundException) {
+            ""
+        }
+    }
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP,
