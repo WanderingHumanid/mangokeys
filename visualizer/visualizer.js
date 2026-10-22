@@ -156,7 +156,7 @@
           <span class="feed-tgt">${escapeHtml(item.topCand)}</span>
         </div>
         <div class="feed-meta">
-          <span>⚡ ${item.latency.toFixed(2)} ms</span>
+          <span>${item.latency.toFixed(2)} ms</span>
           <span>${item.now}</span>
         </div>
       </div>
@@ -171,7 +171,7 @@
     // Check for idle or warning status
     if (data.status === 'idle' || !data.active) {
       if (data.is_malayalam_input) {
-        el.inputWarning.textContent = `⚠️ ${data.message}`;
+        el.inputWarning.textContent = data.message;
         el.inputWarning.style.display = 'block';
       } else {
         showIdleState();
@@ -186,7 +186,7 @@
     // 1. Update Hero & Status Badges
     el.heroSourceWord.textContent = data.word || '';
     el.heroTargetWord.textContent = data.top_candidate || '';
-    el.latencyBadge.textContent = `⚡ ${(data.latency_ms || 18.0).toFixed(1)} ms`;
+    el.latencyBadge.textContent = `${(data.latency_ms || 18.0).toFixed(1)} ms`;
     el.latencyBadge.className = 'pill-value text-green';
     el.engineBadge.textContent = data.engine || 'Seq2Seq ONNX (5.37M)';
 

@@ -19,10 +19,26 @@
     <!-- Top Navigation Header -->
     <header class="navbar">
       <div class="brand">
-        <span class="brand-icon">🥭</span>
+        <span class="brand-icon">
+          <svg class="brand-svg" width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <defs>
+              <linearGradient id="mGrad2" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#ffb703"/>
+                <stop offset="60%" stop-color="#fb8500"/>
+                <stop offset="100%" stop-color="#f72585"/>
+              </linearGradient>
+              <linearGradient id="lGrad2" x1="16" y1="2" x2="26" y2="12" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#00e676"/>
+                <stop offset="100%" stop-color="#00b0ff"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 6C10 6 6 11 6 18C6 25 11 29 17 29C23 29 27 24 27 17C27 10 22 6 16 6Z" fill="url(#mGrad2)" fill-opacity="0.95"/>
+            <path d="M16 6C18 3 23 2 26 4C26 7 24 10 20 10C17 10 16 7 16 6Z" fill="url(#lGrad2)"/>
+          </svg>
+        </span>
         <div class="brand-text">
           <h1 class="brand-title">Mango<span class="accent-cyan">Keys</span></h1>
-          <span class="brand-badge xray-badge">⚡ Transformer X-Ray Lab</span>
+          <span class="brand-badge xray-badge">Transformer X-Ray Lab</span>
         </div>
       </div>
 
@@ -82,7 +98,13 @@
 
       <!-- Idle Standby Banner -->
       <div id="idleBanner" class="card idle-card" style="display: none;">
-        <div class="idle-icon">⚡</div>
+        <div class="idle-icon">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <circle cx="12" cy="12" r="9" stroke="var(--accent-cyan)" stroke-opacity="0.3" stroke-dasharray="3 3"/>
+            <circle cx="12" cy="12" r="4" fill="var(--accent-cyan)" fill-opacity="0.2" stroke="var(--accent-cyan)"/>
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="var(--accent-cyan)" stroke-opacity="0.5"/>
+          </svg>
+        </div>
         <div class="idle-title">NEURAL TENSORS STANDBY (0 FLOPs)</div>
         <div class="idle-desc">Type any Manglish Latin word above to awaken the ONNX encoder-decoder graphs.</div>
       </div>
