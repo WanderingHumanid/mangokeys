@@ -102,6 +102,43 @@ rules get Top-1 6.1% and CER 57.3%, and they get the ambiguity classes in
 `docs/MANGLISH_STYLE_NOTES.md` exactly wrong, because the roman text does not
 carry the information needed to resolve them.
 
+## The Android app
+
+The app has three parts, and they do not know about each other.
+
+```text
+  ManglishKeyboardService   the keyboard. It is an InputMethodService, so
+    |                       every key goes straight into the field that has
+    |                       the focus. The strip above the keys holds the
+    |                       candidates, and tapping one replaces the word.
+    v
+  runtime/kotlin            the model, the word list and the ranker, in
+    |                       Kotlin. The service asks it for candidates and
+    |                       never touches the model itself.
+    v
+  runtime/android            the same graphs as the web demo, through
+                             onnxruntime-mobile.
+```
+
+The settings live in `MainActivity`, and the keyboard reads them through
+`KeyboardSettings`, which is the only thing the two share. The page is
+laid out the way a keyboard app lays out its settings: groups of rows,
+every row with a line under it that says what the option does.
+
+| Group | What it holds |
+|---|---|
+| Suggestions | the auto-convert on space, the suggestions, the completion, the word list, the number of candidates |
+| Feedback | the haptics on every key |
+| Appearance | the theme and the accent colour |
+
+The about screen is its own activity, so the settings page stays short.
+It carries the version, what the models are, where the data came from and
+the links.
+
+The colours are theme attributes rather than fixed values, because the
+whole page follows the theme the user picked. The keyboard keeps its own
+palette in `KeyboardSettings.palette()`, and the two use the same values.
+
 ## The Linux Desktop Architecture (`typer/`)
 
 The desktop daemon provides instantaneous, system-wide transliteration without
@@ -146,6 +183,8 @@ Full details are documented in [`visualizer/ARCHITECTURE.md`](../visualizer/ARCH
 | Does the ONNX runtime match PyTorch? | `scripts/check_parity.py` |
 | Which augmentation rules matter? | `scripts/run_ablations.py` |
 | Where does it fail? | the error taxonomy in `docs/EVAL_PROTOCOL.md` |
+| Is the ranking any good? | `scripts/eval_suggestions.py` and `scripts/tune_suggestions.py` |
+| Does the word list know the word? | `scripts/eval_suggestions.py`, the coverage of the list |
 
 Every number in the report comes out of one of these. Nothing is quoted from
 memory.

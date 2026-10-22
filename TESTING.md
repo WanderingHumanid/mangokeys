@@ -489,7 +489,9 @@ a background thread and the strip is updated from the main thread.
 # Python model and data unit tests
 python -m pytest tests -q
 
-# Linux desktop typer 12-stage self-tests
+# Linux desktop typer 12-stage self-tests. They need the two Linux packages
+# of the daemon, so they do not run on a machine without them.
+pip install evdev pynput
 python3 typer/test_typer.py
 
 # Typer hardware-free dry-run simulation

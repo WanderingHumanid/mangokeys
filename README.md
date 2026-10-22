@@ -568,6 +568,8 @@ relative to genuinely unseen typing habits.
 | The app | Plain Android views, one activity, no dependency beyond the AndroidX core |
 | The web demo | Plain HTML, CSS and JavaScript, no framework |
 | The tests | pytest for Python, JUnit for Kotlin, Playwright for the browser |
+| The desktop typer | Python with `evdev` and `pynput`, on Wayland and X11, through `/dev/uinput` |
+| The visualizer | A Python server and plain JavaScript, reading the ONNX graphs of the model |
 | The infrastructure | GitHub Actions for the tests, the release and the web demo |
 
 ## Running it yourself
@@ -581,6 +583,17 @@ npm ci
 
 Python 3.11 or newer. A recent JDK and the Android SDK for the app. No GPU is
 needed for anything except training the model from scratch.
+
+The Linux desktop typer needs two packages of its own, and they are Linux
+only:
+
+```bash
+pip install evdev pynput
+```
+
+They read the keyboard and write into the focused window, so the daemon needs
+read access to `/dev/input/event*` and write access to `/dev/uinput`. The
+launcher grants the first one and tells you the second.
 
 ### Building the web demo
 
@@ -608,7 +621,7 @@ procedure, including how to test every part of it on an emulator, is in
 ### The tests
 
 ```bash
-python -m pytest tests -q          # 108 tests, the data, the model, the ranking
+python -m pytest tests -q          # 126 tests, the data, the model, the ranking
 cd runtime && ./gradlew test       # the Kotlin runtime against the real model
 ```
 
@@ -666,7 +679,7 @@ runtime/     python, js and kotlin inference
 apps/        expo-web (the demo) and android (the input method)
 scripts/     the parity check, the baselines, the ablations, the tuning, the builds
 evals/       the adhoc test set, the Mozhi conformance cases, the results
-tests/       108 unit tests (plus 12 typer self-tests)
+tests/       126 unit tests (plus 12 typer self-tests)
 assets/      the model bundle that the release builds against
 docs/        the architecture, the protocol, the latency, the release guide
 ```
