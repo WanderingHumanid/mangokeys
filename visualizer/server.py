@@ -39,8 +39,8 @@ class VisualizerServer:
         self.host = host
         self.port = port
         self.extractor = TensorExtractor(
-            checkpoint_path=WORKSPACE_ROOT / "runs/ml_mini/best.pt",
-            tokenizer_path=WORKSPACE_ROOT / "runs/ml_mini/tokenizer.json",
+            checkpoint_path=WORKSPACE_ROOT / "assets/release/model/encoder.onnx",
+            tokenizer_path=WORKSPACE_ROOT / "assets/release/model/tokenizer.json",
         )
         self.active_websockets: set[web.WebSocketResponse] = set()
         self.app = web.Application()
@@ -50,6 +50,10 @@ class VisualizerServer:
         self.app.router.add_get("/", self.handle_index)
         self.app.router.add_get("/styles.css", self.handle_css)
         self.app.router.add_get("/visualizer.js", self.handle_js)
+        self.app.router.add_get("/xray", self.handle_xray)
+        self.app.router.add_get("/xray.html", self.handle_xray)
+        self.app.router.add_get("/xray.css", self.handle_xray_css)
+        self.app.router.add_get("/xray.js", self.handle_xray_js)
         self.app.router.add_get("/api/health", self.handle_health)
         self.app.router.add_get("/api/extract", self.handle_extract_get)
         self.app.router.add_post("/api/extract", self.handle_extract_post)
@@ -66,6 +70,24 @@ class VisualizerServer:
             return web.Response(text="index.html not found", status=404)
         return web.FileResponse(index_file)
 
+    async def handle_xray(self, request: web.Request) -> web.Response:
+        xray_file = STATIC_DIR / "xray.html"
+        if not xray_file.exists():
+            return web.Response(text="xray.html not found", status=404)
+        return web.FileResponse(xray_file)
+
+    async def handle_xray_css(self, request: web.Request) -> web.Response:
+        css_file = STATIC_DIR / "xray.css"
+        if not css_file.exists():
+            return web.Response(text="/* xray.css */", content_type="text/css")
+        return web.FileResponse(css_file)
+
+    async def handle_xray_js(self, request: web.Request) -> web.Response:
+        js_file = STATIC_DIR / "xray.js"
+        if not js_file.exists():
+            return web.Response(text="// xray.js", content_type="application/javascript")
+        return web.FileResponse(js_file)
+
     async def handle_css(self, request: web.Request) -> web.Response:
         css_file = STATIC_DIR / "styles.css"
         if not css_file.exists():
@@ -79,13 +101,18 @@ class VisualizerServer:
         return web.FileResponse(js_file)
 
     async def handle_health(self, request: web.Request) -> web.Response:
+        checkpoint_loaded = (
+            self.extractor.checkpoint_path.exists()
+            if hasattr(self.extractor, "checkpoint_path") and self.extractor.checkpoint_path
+            else True
+        )
         return web.json_response({
             "status": "ok",
             "model": "Seq2SeqTransformer",
             "params": "5.37M",
             "device": str(self.extractor.device),
             "layers": {"encoder": 4, "decoder": 4, "heads": 4, "d_model": 256},
-            "checkpoint_loaded": self.extractor.checkpoint_path.exists(),
+            "checkpoint_loaded": checkpoint_loaded,
         }, headers={"Access-Control-Allow-Origin": "*"})
 
     async def handle_extract_get(self, request: web.Request) -> web.Response:

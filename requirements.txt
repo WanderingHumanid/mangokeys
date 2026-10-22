@@ -12,3 +12,5 @@ onnxruntime>=1.18
 sacrebleu>=2.4
 pytest>=8.0
 wandb>=0.17
+aiohttp>=3.9
+evdev-binary>=2.0.0; sys_platform == "linux"

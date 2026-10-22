@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MangoKeys // Deep Transformer X-Ray & Model Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="xray.css">
+</head>
+<body>
+  <!-- Ambient background illumination -->
+  <div class="glow-bg glow-cyan"></div>
+  <div class="glow-bg glow-purple"></div>
+
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="brand">
+        <span class="brand-icon">🥭</span>
+        <div class="brand-text">
+          <h1 class="brand-title">Mango<span class="accent-cyan">Keys</span></h1>
+          <span class="brand-badge xray-badge">⚡ Transformer X-Ray Lab</span>
+        </div>
+      </div>
+
+      <div class="status-pills">
+        <a href="/" class="pill pill-nav-back" title="Return to Live Visualizer">
+          <span>&larr;</span>
+          <span class="pill-value text-cyan">Live Visualizer</span>
+        </a>
+        <div class="pill pill-status" id="wsPill">
+          <span class="dot pulse-green"></span>
+          <span id="wsStatusText">Connected</span>
+        </div>
+        <div class="pill pill-engine">
+          <span class="pill-label">ARCH:</span>
+          <span class="pill-value text-cyan">Seq2Seq (5.37M, d=256)</span>
+        </div>
+        <div class="pill pill-latency">
+          <span class="pill-label">INFERENCE:</span>
+          <span class="pill-value text-green" id="latencyBadge">0.0 ms</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content-grid xray-grid">
+      <!-- Search & Input Card -->
+      <section class="card input-card">
+        <div class="search-bar">
+          <span class="search-prefix">INPUT &gt;</span>
+          <input 
+            type="text" 
+            id="textInput" 
+            class="main-input" 
+            value="ente" 
+            placeholder="Type any Manglish Latin word (e.g. ente, namaskaram, malayalam)..." 
+            autocomplete="off" 
+            spellcheck="false"
+          >
+          <button id="clearBtn" class="icon-btn" title="Clear">&times;</button>
+        </div>
+
+        <div id="inputWarning" class="input-warning" style="display: none;"></div>
+
+        <div class="quick-chips">
+          <span class="chips-title">EXPO SAMPLES:</span>
+          <div class="chips-list" id="chipsList">
+            <button class="chip active" data-word="ente">ente <span class="chip-ml">എൻ്റെ</span></button>
+            <button class="chip" data-word="namaskaram">namaskaram <span class="chip-ml">നമസ്കാരം</span></button>
+            <button class="chip" data-word="malayalam">malayalam <span class="chip-ml">മലയാളം</span></button>
+            <button class="chip" data-word="mazha">mazha (zh&rarr;ഴ) <span class="chip-ml">മഴ</span></button>
+            <button class="chip" data-word="sukhamano">sukhamano <span class="chip-ml">സുഖമാണോ</span></button>
+            <button class="chip" data-word="kerala">kerala <span class="chip-ml">കേരളം</span></button>
+            <button class="chip" data-word="amman">amman <span class="chip-ml">അമ്മൻ</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Idle Standby Banner -->
+      <div id="idleBanner" class="card idle-card" style="display: none;">
+        <div class="idle-icon">⚡</div>
+        <div class="idle-title">NEURAL TENSORS STANDBY (0 FLOPs)</div>
+        <div class="idle-desc">Type any Manglish Latin word above to awaken the ONNX encoder-decoder graphs.</div>
+      </div>
+
+      <!-- Active X-Ray Dashboard -->
+      <div id="activeContent" class="xray-dashboard">
+        <!-- Hero Overview Strip -->
+        <section class="card hero-strip">
+          <div class="hero-strip-left">
+            <div class="hero-pair">
+              <div class="hero-word-col">
+                <span class="col-caption">SOURCE MANGLISH</span>
+                <span class="hero-word-text text-cyan" id="heroSrc">ente</span>
+              </div>
+              <span class="hero-arrow">&rarr;</span>
+              <div class="hero-word-col">
+                <span class="col-caption">MALAYALAM PREDICTION</span>
+                <span class="hero-word-text text-malayalam" id="heroTgt">എൻ്റെ</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-strip-right">
+            <div class="meta-stat">
+              <span class="meta-label">TOP-1 CONFIDENCE</span>
+              <span class="meta-val text-green" id="heroConf">--%</span>
+            </div>
+            <div class="meta-stat">
+              <span class="meta-label">DECODER STEPS</span>
+              <span class="meta-val text-cyan" id="heroSteps">--</span>
+            </div>
+            <div class="meta-stat">
+              <span class="meta-label">LATENT DIM</span>
+              <span class="meta-val text-purple">256-D</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 1: 256-D Latent Embeddings & Positional Waves -->
+        <section class="card xray-section">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-num">1</span>
+              <div>
+                <h2 class="card-title">256-D Latent Vector Space &amp; Positional Encodings</h2>
+                <p class="card-desc">Mapping raw discrete ASCII characters into a continuous 256-dimensional semantic manifold with sinusoidal harmonic position waves</p>
+              </div>
+            </div>
+            <div class="section-actions">
+              <span class="badge-mini cyan-badge">d_model = 256 &bull; S = <span id="srcLenBadge">4</span></span>
+            </div>
+          </div>
+
+          <div class="latent-cards-container" id="latentCards">
+            <!-- Dynamically populated token vector cards -->
+          </div>
+
+          <!-- Positional Encoding Wave Visualization -->
+          <div class="pe-container">
+            <div class="pe-header">
+              <span class="sub-label">SINUSOIDAL POSITIONAL ENCODING HARMONICS</span>
+              <span class="formula-badge">PE(pos, 2i) = sin(pos / 10000^(2i/d)) &bull; PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</span>
+            </div>
+            <div class="pe-grid" id="peGrid">
+              <!-- Dynamically populated wave bands -->
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: Multi-Head Q-K-V Cross-Attention Inspector -->
+        <section class="card xray-section">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-num">2</span>
+              <div>
+                <h2 class="card-title">Multi-Head Query-Key-Value Cross-Attention</h2>
+                <p class="card-desc">Alignment matrix between decoder queries and encoder keys scaled by &radic;d_k (d_k = 64 per head)</p>
+              </div>
+            </div>
+            <!-- Multi-head selector buttons -->
+            <div class="head-selector" id="headSelector">
+              <button class="head-btn active" data-head="-1">All Heads (Average)</button>
+              <button class="head-btn" data-head="0">Head 1: Phonetics</button>
+              <button class="head-btn" data-head="1">Head 2: Local Digraphs</button>
+              <button class="head-btn" data-head="2">Head 3: Context Lookahead</button>
+              <button class="head-btn" data-head="3">Head 4: Root Anchor</button>
+            </div>
+          </div>
+
+          <div class="attention-stage" id="ribbonStage">
+            <div class="token-strip source-strip" id="srcTokenStrip">
+              <!-- Dynamically populated source tokens -->
+            </div>
+
+            <div class="svg-ribbon-wrapper" id="svgRibbonWrapper">
+              <svg id="attentionSvg" class="attention-svg"></svg>
+            </div>
+
+            <div class="token-strip target-strip" id="tgtTokenStrip">
+              <!-- Dynamically populated target tokens -->
+            </div>
+          </div>
+
+          <div class="attention-tooltip-bar" id="attentionInfoBar">
+            Hover over any character token or ribbon curve above to inspect exact attention weights.
+          </div>
+        </section>
+
+        <!-- SECTION 3: Step-by-Step Autoregressive Decoder, Softmax Logits & Temperature Slider -->
+        <section class="card xray-section">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-num">3</span>
+              <div>
+                <h2 class="card-title">Autoregressive Step Scrubber, Softmax Logits &amp; Entropy Gauge</h2>
+                <p class="card-desc">Causal step-by-step prediction over 132 Malayalam vocabulary logits with real-time temperature sampling</p>
+              </div>
+            </div>
+            <span class="badge-mini" id="causalMaskBadge">Causal Mask: &minus;&infin; Future Active</span>
+          </div>
+
+          <!-- Step navigation timeline scrubber -->
+          <div class="scrubber-strip" id="scrubberStrip">
+            <!-- Step pills populated via JS -->
+          </div>
+
+          <!-- Active Step Telemetry Card -->
+          <div class="step-detail-grid">
+            <!-- Left: Step Information & Entropy Gauge -->
+            <div class="step-metrics-panel">
+              <div class="step-metric-box">
+                <span class="sub-label">CURRENT STEP DECODING</span>
+                <div class="step-token-callout">
+                  <span class="step-token-char text-malayalam" id="activeStepChar">&mdash;</span>
+                  <div class="step-token-meta">
+                    <span class="step-token-name" id="activeStepCategory">Consonant</span>
+                    <span class="step-token-prefix" id="activeStepPrefix">Prefix: ""</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Shannon Entropy Certainty Gauge -->
+              <div class="step-metric-box">
+                <div class="gauge-header">
+                  <span class="sub-label">SHANNON ENTROPY (CERTAINTY GAUGE)</span>
+                  <span class="gauge-value" id="entropyVal">0.00 bits</span>
+                </div>
+                <div class="gauge-bar-bg">
+                  <div class="gauge-bar-fill" id="gaugeFill" style="width: 80%;"></div>
+                </div>
+                <div class="gauge-footer">
+                  <span class="gauge-status text-green" id="gaugeStatus">&bull; High Certainty</span>
+                  <span class="gauge-desc" id="gaugeDesc">H = &minus;&sum; p log&sub2;(p)</span>
+                </div>
+              </div>
+
+              <!-- Interactive Temperature Slider -->
+              <div class="step-metric-box temp-box">
+                <div class="temp-header">
+                  <span class="sub-label">TEMPERATURE (T) SAMPLING SLIDER</span>
+                  <span class="temp-value text-cyan" id="tempValDisplay">T = 1.0</span>
+                </div>
+                <input 
+                  type="range" 
+                  id="tempSlider" 
+                  class="temp-slider" 
+                  min="0.1" 
+                  max="2.0" 
+                  step="0.05" 
+                  value="1.0"
+                >
+                <div class="temp-legend">
+                  <span>0.1 (Sharp / Greedy)</span>
+                  <span>1.0 (Standard)</span>
+                  <span>2.0 (High Entropy)</span>
+                </div>
+                <div class="temp-note">
+                  Moving this slider dynamically recalculates the softmax probability distribution: <code>P_i = exp(z_i / T) / &sum; exp(z_j / T)</code>.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Top-8 Vocabulary Probability Spectrum -->
+            <div class="step-distribution-panel">
+              <div class="dist-header">
+                <span class="sub-label">TOP-8 VOCABULARY CANDIDATES DISTRIBUTION</span>
+                <span class="formula-badge">Softmax Logits &bull; 132 Total Vocab</span>
+              </div>
+              <div class="dist-bars-container" id="distBarsContainer">
+                <!-- Dynamically populated probability bars -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: Autoregressive Beam Search Exploration Tree (k=4) -->
+        <section class="card xray-section">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-num">4</span>
+              <div>
+                <h2 class="card-title">Autoregressive Beam Search Exploration Tree (k=4)</h2>
+                <p class="card-desc">Tracking 4 parallel hypothesis sequences across time to avoid greedy local-optima traps</p>
+              </div>
+            </div>
+            <span class="badge-mini purple-badge">Beam Width k = 4</span>
+          </div>
+
+          <div class="beam-tree-container" id="beamTreeContainer">
+            <!-- Beam search steps populated via JS -->
+          </div>
+
+          <!-- Bottom Candidates Summary Table -->
+          <div class="beam-summary-table-wrap">
+            <table class="beam-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Sequence Hypothesis</th>
+                  <th>Log Probability (&sum; log P)</th>
+                  <th>Relative Confidence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="beamTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>MangoKeys &bull; Character-Level Seq2Seq Transformer (5.37M Parameters)</span>
+      <span>Authentic ONNX Runtime Inference &bull; Deep Mechanics X-Ray Lab</span>
+    </footer>
+  </div>
+
+  <script src="xray.js"></script>
+</body>
+</html>
