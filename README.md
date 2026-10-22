@@ -1,4 +1,29 @@
+<div align="center">
+
+<img src="apps/expo-web/favicon.svg" width="96" height="96" alt="MangoKeys Logo" />
+
 # MangoKeys
+
+**On-device Manglish to Malayalam neural input method powered by a character-level Transformer**
+
+[![Version](https://img.shields.io/badge/Version-v0.01-blue.svg?style=flat-square)](https://github.com/WanderingHumanid/mangokeys/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84.svg?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+[![Inference](https://img.shields.io/badge/Inference-ONNX_Runtime-005CED.svg?style=flat-square)](https://onnxruntime.ai/)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25_Offline_/_Zero_Network-10B981.svg?style=flat-square)](#the-android-app)
+
+<br/>
+
+<a href="https://wanderinghumanid.github.io/mangokeys"><img src="https://img.shields.io/badge/Web_Demo-Launch_in_Browser-2563EB?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Launch Web Demo" /></a>
+<a href="https://github.com/WanderingHumanid/mangokeys/releases/latest"><img src="https://img.shields.io/badge/Android_APK-Download_v0.01-059669?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
+<a href="REPORT.md"><img src="https://img.shields.io/badge/Report-Evaluation_%26_Ablations-D97706?style=for-the-badge&logo=googlescholar&logoColor=white" alt="Read Report" /></a>
+<a href="visualizer/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Visualizer-X--Ray_Telemetry-7C3AED?style=for-the-badge&logo=blueprint&logoColor=white" alt="Visualizer Lab" /></a>
+
+<br/>
+<br/>
+
+</div>
 
 MangoKeys is a Manglish to Malayalam input method. You type the word the way
 Malayalam speakers actually type it, in Latin letters, and the keyboard gives
@@ -13,18 +38,16 @@ apart. The project measures that gap, closes it with an augmentation
 pipeline, and ships the result as a working keyboard that runs entirely on
 the device.
 
-```text
-ente peru  ->  എൻ്റെ പേരു
-```
+> **Example:** `ente peru`  ->  `എൻ്റെ പേരു`
 
-| | |
-| --- | --- |
-| Model | Character level transformer encoder decoder, 5.37 million parameters |
-| Training data | 4.1 million pairs from Aksharantar, rewritten by 13 augmentation rules |
-| Accuracy | 57.4% top-1, 15.9% character error rate, on a 12,451 word test set |
-| Runs on | Android 7+, Linux Desktops (Wayland & X11), and browsers with WebAssembly |
-| Size | 6 MB per model, 19 MB of model files in the app |
-| Permissions | none |
+| Metric / Property | Specification |
+| :--- | :--- |
+| **Model** | Character level transformer encoder decoder, 5.37 million parameters |
+| **Training data** | 4.1 million pairs from Aksharantar, rewritten by 13 augmentation rules |
+| **Accuracy** | 57.4% top-1, 15.9% character error rate, on a 12,451 word test set |
+| **Runs on** | Android 7+, Linux Desktops (Wayland & X11), and browsers with WebAssembly |
+| **Size** | 6 MB per model, 19 MB of model files in the app |
+| **Permissions** | None (100% on-device, zero telemetry) |
 
 Five interactive targets and tools are published from this repository:
 
@@ -46,6 +69,8 @@ Five interactive targets and tools are published from this repository:
   accent colour, with an about screen that carries the models, the data and
   the licences.
 
+---
+
 ## Contents
 
 - [Try it](#try-it)
@@ -62,6 +87,8 @@ Five interactive targets and tools are published from this repository:
 - [The repository](#the-repository)
 - [Documentation](#documentation)
 - [Credits](#credits)
+
+---
 
 ## Try it
 
@@ -85,6 +112,8 @@ You can also run headless with streaming logs:
 python3 launcher.py --both --debug
 ```
 
+---
+
 ### The Linux desktop typer
 
 Type Manglish into any Linux application (browsers, Slack, Discord, terminal, text editors) and have it replaced inline with Malayalam when you press Space or Enter:
@@ -98,11 +127,15 @@ sudo setfacl -m u:$USER:rw /dev/uinput /dev/input/event*
 python3 typer/run.py
 ```
 
-- Tap **`Right-Alt`** at any time to toggle between Manglish mode and normal English pass-through mode.
-- Press **`Esc`** to cancel the current word buffer.
-- Press **`Ctrl+C`** to cleanly unhook devices and exit.
+> [!TIP]
+> **Keyboard Shortcuts:**
+> - Tap **`Right-Alt`** at any time to toggle between Manglish mode and normal English pass-through mode.
+> - Press **`Esc`** to cancel the current word buffer.
+> - Press **`Ctrl+C`** to cleanly unhook devices and exit.
 
 See [`typer/ARCHITECTURE.md`](typer/ARCHITECTURE.md) for full architecture and operation details.
+
+---
 
 ### The neural transformer visualizer
 
@@ -120,6 +153,8 @@ Open `http://localhost:5000` in your browser. Type words into the prompt or type
 - Automatic 0-FLOP idle standby state when you pause typing.
 
 See [`visualizer/ARCHITECTURE.md`](visualizer/ARCHITECTURE.md) for full telemetry and architecture specifications.
+
+---
 
 ### The web demo
 
@@ -154,9 +189,11 @@ python dist/web/serve.py --port 8000
 
 Then open `http://localhost:8000`.
 
+---
+
 ### The Android app
 
-The APK is on the release page.
+The APK is on the release page:
 
 ```text
 https://github.com/WanderingHumanid/mangokeys/releases/latest
@@ -171,8 +208,9 @@ sideloaded app does. If your phone is from 2017 or later, the smaller
 2. Pick MangoKeys under the list of installed keyboards.
 3. Open the MangoKeys app once and turn the dark theme on if you want it.
 
-The app asks for no permissions. There is no network code in it and nothing
-you type leaves the phone.
+> [!NOTE]
+> The app asks for no permissions. There is no network code in it and nothing
+> you type leaves the phone.
 
 To build it yourself:
 
@@ -187,6 +225,8 @@ The model files the build needs are committed in `assets/release`, so a clean
 checkout builds without training anything first. See
 [`docs/RELEASING.md`](docs/RELEASING.md) for the release procedure.
 
+---
+
 ## How it works
 
 Typing in Malayalam is not transliteration. It is a mapping from a spelling
@@ -194,33 +234,44 @@ that people use to a script that has rules of its own, and the two do not
 line up. A keyboard therefore cannot just translate a finished word, it has
 to offer the words the user might have meant.
 
-The system has four parts.
+The system has four parts:
 
-**1. The rules propose.** A rule engine parses the Roman text with a longest
-match over a table of consonants, vowels and clusters, and renders it with
-the context rules for the places where Malayalam orthography is not a
-concatenation: a consonant with no vowel after it is a half form and joins
-the next one, a final ന becomes ൻ, a final മ becomes ം. The rules are fast
-enough to run on every keystroke, and they give the keyboard an answer
-immediately. They are also wrong about the ambiguities, because the
-information is not in the Roman text: `sundari` could be സുന്ദരി or സുന്ദ്രി
-and the spelling is the same either way.
+1. **The rules propose.** A rule engine parses the Roman text with a longest
+   match over a table of consonants, vowels and clusters, and renders it with
+   the context rules for the places where Malayalam orthography is not a
+   concatenation: a consonant with no vowel after it is a half form and joins
+   the next one, a final ന becomes ൻ, a final മ becomes ം. The rules are fast
+   enough to run on every keystroke, and they give the keyboard an answer
+   immediately. They are also wrong about the ambiguities, because the
+   information is not in the Roman text: `sundari` could be സുന്ദരി or സുന്ദ്രി
+   and the spelling is the same either way.
 
-**2. The model disposes.** A character level transformer reads the same
-Roman text and writes the Malayalam. It has learned the ambiguities from the
-corpus: which of ന്ദ and ണ്ട is more common in which context, when ശ is
-really ഷ, where a consonant should be doubled after a postposition.
+2. **The model disposes.** A character level transformer reads the same
+   Roman text and writes the Malayalam. It has learned the ambiguities from the
+   corpus: which of ന്ദ and ണ്ട is more common in which context, when ശ is
+   really ഷ, where a consonant should be doubled after a postposition.
 
-**3. The word list validates and completes.** A list of 68,000 real Malayalam
-words, with a deletion index that finds the words near any given string in
-one step. A candidate that is a real word beats one that is not. When the
-model returned a prefix instead of a whole word, the list supplies the
-completions.
+3. **The word list validates and completes.** A list of 68,000 real Malayalam
+   words, with a deletion index that finds the words near any given string in
+   one step. A candidate that is a real word beats one that is not. When the
+   model returned a prefix instead of a whole word, the list supplies the
+   completions.
 
-**4. The ranker decides.** A small set of weights combines the model's score,
-whether the word list knows the word, whether a candidate is a completion or
-a variation, and the frequency of the word in the corpus. The weights were
-fitted on the validation split by coordinate descent, not chosen by hand.
+4. **The ranker decides.** A small set of weights combines the model's score,
+   whether the word list knows the word, whether a candidate is a completion or
+   a variation, and the frequency of the word in the corpus. The weights were
+   fitted on the validation split by coordinate descent, not chosen by hand.
+
+```mermaid
+flowchart TD
+    K["Keystroke Input"] --> R["Rule Engine (Longest Match)"]
+    K --> W["Word List (68k Words & Deletion Index)"]
+    R -->|"Initial fast candidates (~3 ms)"| W
+    K --> M["Transformer Model (ONNX int8 Beam 4)"]
+    M -->|"Neural candidates (~27 ms)"| RA["Ranker (Fitted Weights)"]
+    W --> RA
+    RA --> S["Suggestion Strip & Output"]
+```
 
 ```text
    keystroke
@@ -244,6 +295,8 @@ On the phone the rules and the word list answer in about 3 milliseconds, so
 the strip is never empty, and the model's answer arrives a moment later and
 refines it.
 
+---
+
 ## Results
 
 All the numbers below are measured, and the scripts that produce them are in
@@ -254,7 +307,7 @@ spelling cannot end up on both sides of the split.
 ### The whole system
 
 | System | Top-1 | CER | Top-5 | Size |
-| --- | --- | --- | --- | --- |
+| :--- | :--- | :--- | :--- | :--- |
 | Rule engine | 9.2% | 48.8% | 13.6% | 3 KB |
 | **Model, int8, beam 4** | **53.4%** | **17.0%** | **64.6%** | 6.1 MB |
 | **Model with the word list** | **57.4%** | **15.9%** | **73.3%** | 6.1 MB |
@@ -266,14 +319,14 @@ costs nothing measurable. The word list adds four points.
 ### Where it works and where it does not
 
 The test set is four different kinds of word, and they are not equally
-hard.
+hard:
 
 | Test subset | What it is | Top-1 | CER |
-| --- | --- | --- | --- |
-| Dakshina | a dictionary of common words | 58.5% | 15.4% |
-| AK-Freq | the frequent words of the corpus | 58.3% | 11.8% |
-| AK-NEI | Indian named entities | 29.6% | 40.3% |
-| AK-NEF | foreign named entities | 25.2% | 49.7% |
+| :--- | :--- | :--- | :--- |
+| **Dakshina** | A dictionary of common words | 58.5% | 15.4% |
+| **AK-Freq** | The frequent words of the corpus | 58.3% | 11.8% |
+| **AK-NEI** | Indian named entities | 29.6% | 40.3% |
+| **AK-NEF** | Foreign named entities | 25.2% | 49.7% |
 
 Named entities are where the model struggles, and the word list is no help
 there either: it knows 20% of the Indian named entities and 19% of the
@@ -284,11 +337,10 @@ foreign ones, against 97% of the common words.
 Two models, the same architecture, the same number of rows, the same number
 of epochs and the same seed. Only the style of the extra rows differs.
 
-| Training data | Careful spelling | | Real typing | |
-| --- | --- | --- | --- | --- |
-| | Top-1 | CER | Top-1 | CER |
-| careful spelling only | **56.2%** | **15.4%** | 6.2% | 49.7% |
-| careful spelling plus augmented rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
+| Training data | Careful spelling Top-1 | Careful spelling CER | Real typing Top-1 | Real typing CER |
+| :--- | :--- | :--- | :--- | :--- |
+| Careful spelling only | **56.2%** | **15.4%** | 6.2% | 49.7% |
+| Careful spelling plus augmented rows | 53.4% | 17.0% | **46.2%** | **20.0%** |
 
 Training on careful spelling alone makes a model three points better at
 careful spelling and forty points worse at the way people actually type.
@@ -296,8 +348,8 @@ That is the difference between a keyboard that works and one that does not.
 
 ### The two models
 
-| | The transliteration model | The prefix model |
-| --- | --- | --- |
+| Property | The transliteration model | The prefix model |
+| :--- | :--- | :--- |
 | Top-1 on the test set | **58.4%** | 49.7% |
 | Character error rate | **11.8%** | 14.7% |
 | The answer is a prefix of the word, after four letters | 33.8% | **72.1%** |
@@ -312,7 +364,7 @@ going, and the word list completes the answer.
 ### Speed
 
 | Path | Time per word |
-| --- | --- |
+| :--- | :--- |
 | The rules and the word list only, on every keystroke | 2.9 ms |
 | The word list with the model's candidates | 6.6 ms |
 | The model, int8, beam 4, on a desktop cpu | 27.4 ms |
@@ -330,16 +382,18 @@ report has the measurement and the reason: the corpus frequency and the
 distance to the model's answer already say everything that matters about
 which word the user meant.
 
+---
+
 ## The machine learning
 
 ### The data
 
 | Source | Rows | Licence | Role |
-| --- | --- | --- | --- |
-| Aksharantar `mal` train | 4,100,621 | CC-BY / CC0 | training |
-| Aksharantar `mal` valid | 7,613 | CC-BY / CC0 | validation |
-| Aksharantar `mal` test | 12,451 | CC-BY / CC0 | test, four subsets |
-| Dakshina `ml` lexicon | 30,000 | CC BY-SA 4.0 | training and test |
+| :--- | :--- | :--- | :--- |
+| Aksharantar `mal` train | 4,100,621 | CC-BY / CC0 | Training |
+| Aksharantar `mal` valid | 7,613 | CC-BY / CC0 | Validation |
+| Aksharantar `mal` test | 12,451 | CC-BY / CC0 | Test, four subsets |
+| Dakshina `ml` lexicon | 30,000 | CC BY-SA 4.0 | Training and test |
 
 Aksharantar is a corpus of transliteration pairs from AI4Bharat. Each row
 carries a `source` field, which splits it into `IndicCorp` (mined),
@@ -351,21 +405,18 @@ The pipeline is:
 raw -> normalize -> filter -> dedupe -> split -> augment
 ```
 
-**normalize** rewrites the legacy chillu spellings to the atomic ones.
-Malayalam has two byte sequences for the same chillu, the legacy one being
-consonant plus virama plus anusvara. Fonts render both, but an input method
-should only emit the atomic form. The zero width joiner and non joiner forms
-are left alone, because they are different words.
-
-**dedupe** keeps the best attested romanization for each native word, using
-the attestation counts of Dakshina.
-
-**split** partitions on the **native word**, not on the romanization.
-Without this, `sundari` and `sundri` can land on opposite sides of the
-boundary and every number comes out inflated.
-
-**augment** rewrites the roman side of a third of the rows into the way
-people really type. This is described in the next section.
+- **normalize** rewrites the legacy chillu spellings to the atomic ones.
+  Malayalam has two byte sequences for the same chillu, the legacy one being
+  consonant plus virama plus anusvara. Fonts render both, but an input method
+  should only emit the atomic form. The zero width joiner and non joiner forms
+  are left alone, because they are different words.
+- **dedupe** keeps the best attested romanization for each native word, using
+  the attestation counts of Dakshina.
+- **split** partitions on the **native word**, not on the romanization.
+  Without this, `sundari` and `sundri` can land on opposite sides of the
+  boundary and every number comes out inflated.
+- **augment** rewrites the roman side of a third of the rows into the way
+  people really type. This is described in the next section.
 
 The final training file has 6,606,874 rows: the 4.1 million clean pairs plus
 2.5 million augmented ones.
@@ -377,32 +428,31 @@ Real Manglish typing is not ISO 15919. The thirteen rules in
 behind each one is in [`docs/MANGLISH_STYLE_NOTES.md`](docs/MANGLISH_STYLE_NOTES.md).
 
 | Rule | Example | Why |
-| --- | --- | --- |
-| Drop inherent vowels | `sundari` -> `sundri` | the vowel of a consonant in half form is often not typed |
-| Drop the i sign | `ningalkkum` -> `ngalkkum` | the first sign to go |
-| Drop a final u | `cheythu` -> `cheyth` | common at the end of a word |
-| Collapse gemination | `kakka` -> `kaka` | modern Malayalam does not geminate |
-| Geminate the final consonant | `aval` -> `avall` | chillus are sometimes written double |
-| Drop aspiration | `khaanam` -> `kaanam` | accent dependent |
-| Add aspiration | `sa` -> `sha` | accent dependent |
-| Swap retroflex case | `thala` -> `Thala` | nobody holds shift for ട against ത |
+| :--- | :--- | :--- |
+| Drop inherent vowels | `sundari` -> `sundri` | The vowel of a consonant in half form is often not typed |
+| Drop the i sign | `ningalkkum` -> `ngalkkum` | The first sign to go |
+| Drop a final u | `cheythu` -> `cheyth` | Common at the end of a word |
+| Collapse gemination | `kakka` -> `kaka` | Modern Malayalam does not geminate |
+| Geminate the final consonant | `aval` -> `avall` | Chillus are sometimes written double |
+| Drop aspiration | `khaanam` -> `kaanam` | Accent dependent |
+| Add aspiration | `sa` -> `sha` | Accent dependent |
+| Swap retroflex case | `thala` -> `Thala` | Nobody holds shift for ട against ത |
 | Simplify palatal | `chetta` -> `cetta` | ച is often written without the h |
 | Reduce nasal clusters | `santhu` -> `santu` | ന്ത is often written without the h |
-| Use a synonym | `za` -> `Sa` | both mean ശ |
-| Drop the final consonant | `madam` -> `mada` | fast typers |
-| Join a compound | `ente peru` -> `enteperu` | compounds are often run together |
+| Use a synonym | `za` -> `Sa` | Both mean ശ |
+| Drop the final consonant | `madam` -> `mada` | Fast typers |
+| Join a compound | `ente peru` -> `enteperu` | Compounds are often run together |
 
-Two of them need a note.
+Two of them need a note:
 
-**The inherent vowel rule is not a corruption.** `sundari` and `sundri` both
-mean സുന്ദരി, because the ന്ദ is a conjunct and the ദ carries the vowel. The
-rule is guarded, because the a in `kaala` belongs to the long vowel and the a
-in `kam` belongs to the anusvara, and neither may go.
-
-**The retroflex rule is a case change only.** The letters stay the same, so
-the pair stays plausible. The model learns that the case carries little
-information and has to look at the whole word, which is what real typing
-demands.
+- **The inherent vowel rule is not a corruption.** `sundari` and `sundri` both
+  mean സുന്ദരി, because the ന്ദ is a conjunct and the ദ carries the vowel. The
+  rule is guarded, because the a in `kaala` belongs to the long vowel and the a
+  in `kam` belongs to the anusvara, and neither may go.
+- **The retroflex rule is a case change only.** The letters stay the same, so
+  the pair stays plausible. The model learns that the case carries little
+  information and has to look at the whole word, which is what real typing
+  demands.
 
 Every augmented row carries a style tag, so the effect of augmentation is
 measured rather than assumed. The rules are chosen with a probability, and
@@ -418,7 +468,7 @@ baseline from 9.2% and 48.8% CER to the numbers above, a 51% relative
 improvement with no model involved.
 
 | Roman letter | The readings it actually takes |
-| --- | --- |
+| :--- | :--- |
 | `t` | ത 65%, ട 35% |
 | `d` | ദ 69%, ഡ 23%, ധ 7% |
 | `r` | ര 65%, റ 35% |
@@ -436,15 +486,15 @@ of the time, and `t` means ട the rest of the time.
 A character level transformer encoder decoder, written from scratch in
 `model/src/seq2seq.py`.
 
-| | |
-| --- | --- |
+| Parameter | Configuration |
+| :--- | :--- |
 | Encoder | 4 layers, pre-norm, 4 heads, d_model 256, feed forward 512 |
 | Decoder | 4 layers, masked self attention, cross attention, GELU |
-| Positions | sinusoidal, fixed |
-| Embeddings | separate for the two sides, because they share no statistics |
+| Positions | Sinusoidal, fixed |
+| Embeddings | Separate for the two sides, because they share no statistics |
 | Vocabulary | 99 source tokens, 132 target tokens |
 | Parameters | 5,365,504 |
-| Loss | label smoothed cross entropy, 0.1 |
+| Loss | Label smoothed cross entropy, 0.1 |
 | Optimizer | AdamW, inverse square root schedule, 4000 warmup steps |
 | Batch size | 1024 |
 | Epochs | 12 for the transliteration model, 8 for the prefix model |
@@ -452,27 +502,24 @@ A character level transformer encoder decoder, written from scratch in
 | Gradient clipping | 1.0 |
 | Precision | bf16 with automatic mixed precision |
 
-**Why character level.** Malayalam is a matra heavy abugida, so one grapheme
-spans two to four codepoints. Subword tokenizers split those apart, which is
-exactly where transliteration models break. Character level also means the
-model can never be out of vocabulary, which matters when the input is
-whatever the user typed.
-
-**Why the batches are bucketed by length.** Malayalam targets are about
-twice the length of their Roman source, because every matra is a separate
-codepoint. Sorting by length into buckets saves a large fraction of the
-compute.
-
-**Why the export is two graphs.** The model is exported as an `encoder.onnx`
-and a `decoder.onnx`. The encoder runs once per word and the decoder is
-stepped until the end token comes out. Splitting them keeps the two files
-the size of the model rather than twice that, and it lets the host runtime
-own the search loop, which is what makes beam search possible at all.
-
-**Why the causal mask is an input.** A mask built from a length that is only
-known at run time gets frozen when the graph is traced, which silently breaks
-the model. That was a real bug during development, and the parity check is
-what caught it.
+- **Why character level:** Malayalam is a matra heavy abugida, so one grapheme
+  spans two to four codepoints. Subword tokenizers split those apart, which is
+  exactly where transliteration models break. Character level also means the
+  model can never be out of vocabulary, which matters when the input is
+  whatever the user typed.
+- **Why the batches are bucketed by length:** Malayalam targets are about
+  twice the length of their Roman source, because every matra is a separate
+  codepoint. Sorting by length into buckets saves a large fraction of the
+  compute.
+- **Why the export is two graphs:** The model is exported as an `encoder.onnx`
+  and a `decoder.onnx`. The encoder runs once per word and the decoder is
+  stepped until the end token comes out. Splitting them keeps the two files
+  the size of the model rather than twice that, and it lets the host runtime
+  own the search loop, which is what makes beam search possible at all.
+- **Why the causal mask is an input:** A mask built from a length that is only
+  known at run time gets frozen when the graph is traced, which silently breaks
+  the model. That was a real bug during development, and the parity check is
+  what caught it.
 
 ### The prefix model
 
@@ -503,8 +550,8 @@ The word list is not a spell checker that always helps. It is a spell
 checker that helps on the words it covers and does damage on the ones it
 does not.
 
-| | Top-1 |
-| --- | --- |
+| Configuration | Top-1 |
+| :--- | :--- |
 | The model alone | 56.8% |
 | The model, snapped to the nearest word in the list | 36.5% |
 | The model, when the list knows the word | 69.2% |
@@ -522,13 +569,13 @@ Six signals and six weights, fitted on the validation split with coordinate
 descent by `scripts/tune_suggestions.py`.
 
 | Signal | Weight | What it means |
-| --- | --- | --- |
-| `model` | 1.0 | the score the model gave the candidate |
-| `known` | 4.0 | the word list knows this word |
-| `completion` | 0.0 | the candidate completes the model's answer |
-| `variation` | -2.0 | the candidate is a variation of the model's answer |
-| `language` | 0.0 | the score of the character n-gram model |
-| `frequency` | 0.0 | the frequency of the word in the corpus |
+| :--- | :--- | :--- |
+| `model` | 1.0 | The score the model gave the candidate |
+| `known` | 4.0 | The word list knows this word |
+| `completion` | 0.0 | The candidate completes the model's answer |
+| `variation` | -2.0 | The candidate is a variation of the model's answer |
+| `language` | 0.0 | The score of the character n-gram model |
+| `frequency` | 0.0 | The frequency of the word in the corpus |
 
 The fitted weights give 79.3% top-1 on the validation split. The weights of
 the language model and the frequency came out at zero, which is the same
@@ -546,31 +593,36 @@ in `evals/results/errors.tsv`: it classifies every mistake into one of
 twelve kinds, and it is what found that the model has solved the letter
 ambiguities but not the lengths.
 
-**One caveat, stated plainly.** The adhoc test set is built with the same
-augmentation rules as the training data, so a model that has seen those rules
-is being tested on data from the same generator. The comparison between the
-two arms is fair, because both are tested on the same words and only one arm
-was trained on that style, but the absolute adhoc numbers are optimistic
-relative to genuinely unseen typing habits.
+> [!WARNING]
+> **One caveat, stated plainly:** The adhoc test set is built with the same
+> augmentation rules as the training data, so a model that has seen those rules
+> is being tested on data from the same generator. The comparison between the
+> two arms is fair, because both are tested on the same words and only one arm
+> was trained on that style, but the absolute adhoc numbers are optimistic
+> relative to genuinely unseen typing habits.
+
+---
 
 ## Technologies
 
-| Part | What it is |
-| --- | --- |
-| The model | PyTorch, written from scratch, no transformer library |
-| The data | Hugging Face datasets for the download, plain text files after it |
-| The training | A single script, `model/train.py`, with length bucketing and mixed precision |
-| The export | ONNX, then int8 dynamic quantization |
-| The Python runtime | ONNX Runtime, for the evaluation and the parity check |
-| The browser runtime | ONNX Runtime Web, in a Web Worker, on WebAssembly |
-| The Android runtime | ONNX Runtime Mobile, in Kotlin |
-| The keyboard | An Android `InputMethodService`, no third party keyboard library |
-| The app | Plain Android views, one activity, no dependency beyond the AndroidX core |
-| The web demo | Plain HTML, CSS and JavaScript, no framework |
-| The tests | pytest for Python, JUnit for Kotlin, Playwright for the browser |
-| The desktop typer | Python with `evdev` and `pynput`, on Wayland and X11, through `/dev/uinput` |
-| The visualizer | A Python server and plain JavaScript, reading the ONNX graphs of the model |
-| The infrastructure | GitHub Actions for the tests, the release and the web demo |
+| Component | Framework / Library | Role & Details |
+| :--- | :--- | :--- |
+| **The model** | PyTorch | Written from scratch, no transformer library |
+| **The data** | Hugging Face datasets | Raw download, plain text processing after it |
+| **The training** | Custom `model/train.py` | Length bucketing and mixed precision |
+| **The export** | ONNX | int8 dynamic quantization |
+| **The Python runtime** | ONNX Runtime | Evaluation and parity validation |
+| **The browser runtime** | ONNX Runtime Web | Runs in a Web Worker on WebAssembly |
+| **The Android runtime** | ONNX Runtime Mobile | Kotlin implementation |
+| **The keyboard** | Android `InputMethodService` | Native input method, zero 3rd party keyboard dependencies |
+| **The app** | Plain Android Views | Single activity, no dependencies beyond AndroidX core |
+| **The web demo** | HTML5 / CSS3 / Vanilla JS | Framework-free responsive web interface |
+| **The tests** | pytest / JUnit / Playwright | Python test suite, Kotlin runtime tests, browser tests |
+| **The desktop typer** | Python `evdev` & `pynput` | System-wide typing on Wayland and X11 via `/dev/uinput` |
+| **The visualizer** | Python HTTP & Vanilla JS | Live extraction and rendering of ONNX attention matrices |
+| **The infrastructure** | GitHub Actions | Automated CI test suite, releases, and GitHub Pages demo |
+
+---
 
 ## Running it yourself
 
@@ -644,8 +696,7 @@ python -m scripts.train_ngram --max-words 400000 --out data/processed/ngram.txt
 python -m model.train --config configs/ml_mini.yaml
 
 # 4. The evaluation
-python -m model.evaluate --checkpoint runs/ml_mini/best.pt \
-    --data data/processed/test_aksharantar.tsv
+python -m model.evaluate --checkpoint runs/ml_mini/best.pt     --data data/processed/test_aksharantar.tsv
 python -m scripts.run_baselines --data data/processed/test_aksharantar.tsv
 
 # 5. The export and the check that the runtimes agree with PyTorch
@@ -662,6 +713,8 @@ python -m scripts.build_release_assets
 
 The configuration files in `configs/` hold every hyperparameter of every
 run, so a run can be repeated exactly.
+
+---
 
 ## The repository
 
@@ -684,10 +737,12 @@ assets/      the model bundle that the release builds against
 docs/        the architecture, the protocol, the latency, the release guide
 ```
 
+---
+
 ## Documentation
 
-| Document | What is in it |
-| --- | --- |
+| Document | Content & Coverage |
+| :--- | :--- |
 | [`REPORT.md`](REPORT.md) | The full write up of the project, with every measurement |
 | [`TESTING.md`](TESTING.md) | How to test every part of it, module by module |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | The plan the project was built from, and its status |
@@ -700,6 +755,8 @@ docs/        the architecture, the protocol, the latency, the release guide
 | [`docs/RELEASING.md`](docs/RELEASING.md) | How to publish a version |
 | [`CHANGELOG.md`](CHANGELOG.md) | What changed in each version |
 | [`LICENSES.md`](LICENSES.md) | The attribution of every dataset and library |
+
+---
 
 ## Credits
 
